@@ -1,7 +1,11 @@
 # DUI
 
-Prototyp zestawu gier. Pierwsza gra to snake przeniesiony z lokalnego
-projektu DungeonSlime opartego na tutorialu MonoGame.
+Edukacyjny prototyp dla dorosłych dotyczący jazdy pod wpływem alkoholu,
+skierowany również do osób, które faktycznie tak jeżdżą. Ton gry ma być
+przystępny i zabawny, bez zawstydzania odbiorcy.
+
+Pierwsza gra wykorzystuje mechanikę snake’a z tutorialu DungeonSlime:
+gracz prowadzi kolumnę samochodów i zbiera pulsujące butelki piwa.
 
 ## Uruchomienie
 
@@ -25,9 +29,13 @@ tak jak w projekcie źródłowym.
   Można więc zaplanować „prawo → góra → lewo”, ale nie natychmiastowy zwrot.
   Kolejny ruch przy pełnej kolejce jest pomijany, tak jak w DungeonSlime.
 - Pozycja jest płynnie interpolowana między polami, a segmenty podążają
-  za głową. Nietoperz porusza się i odbija od ścian.
-- Zebranie nietoperza dodaje segment i 100 punktów; nietoperz pojawia się
-  po przeciwnej stronie pokoju. Ściana lub własne ciało kończy grę.
+  za prowadzącym autem. Każde auto obraca się zgodnie z aktualnym krokiem.
+- Butelka piwa pulsuje, porusza się i odbija od ścian. Jej zebranie
+  wywołuje rozprysk złotych kropli i białej piany, dodaje samochód oraz
+  100 punktów. Kolejna butelka pojawia się po przeciwnej stronie pokoju.
+  Ściana lub własna kolumna samochodów kończy grę.
+- Pulsowanie jest wyłącznie wizualne; rozmiar obszaru kolizji pozostaje stały.
+  Pauza zatrzymuje też rozprysk, a RETRY usuwa pozostałe cząsteczki.
 - Escape / Start / Back lub przycisk PAUSE pauzuje grę.
   RESUME wznawia, RETRY rozpoczyna nową rozgrywkę z wynikiem 0.
   Przyciski obsługują także Enter / A na padzie.
@@ -45,8 +53,10 @@ się standardowym przyciskiem systemu.
 - `DUI.Game` — wspólny kod gry, UI Gum, zasoby i potrzebne części biblioteki
   tutorialowej. `DUI.Game.projitems` dołącza źródła do projektu platformowego,
   dzięki czemu przyszły host mobilny może użyć własnego backendu MonoGame.
-- `SlimeMovement` — kolejka, segmenty i interpolacja niezależne od grafiki
-  oraz urządzenia wejściowego; `Slime` odpowiada za animację i rysowanie.
+- `SnakeMovement` — kolejka, segmenty i interpolacja niezależne od grafiki
+  oraz urządzenia wejściowego; `CarConvoy` odpowiada za rysowanie i orientację aut.
+- `BeerBottle` — ruch i pulsowanie butelki; `BeerBurst` — krótkotrwałe
+  krople piwa i piana, rysowane prostymi figurami pikselowymi.
 - `DUI.Tests` — testy regresji uruchamiane bez okna i urządzenia graficznego.
 - [Mapa klas](Docs/ClassMap.html) — odpowiedzialności i przepływy aplikacji.
 
@@ -87,8 +97,13 @@ sprawdzenia w uruchomionej grze; te testy nie potwierdzają działania na telefo
 
 Kod i zasoby przeniesiono z lokalnego DungeonSlime, stan
 `ec41fb7eefb4787a652538e37bc0eb0d025998dd`. Zachowano zasady, tempo,
-grafikę i dźwięki tutorialu. Pominięto ekran tytułowy, jego opcje i zasoby,
+planszę, UI i dźwięki tutorialu. Postacie zastępują nowe grafiki samochodu
+i butelki; efekt rozprysku piwa powstaje w kodzie. Pominięto ekran tytułowy, jego opcje i zasoby,
 nakładkę ImGui oraz desktopowy mechanizm obserwowania shaderów.
 Efekt wygaszania kolorów podczas pauzy i końca gry pozostał.
 
 Tutorial: [Building a 2D Game — MonoGame](https://docs.monogame.net/articles/tutorials/building_2d_games/).
+
+Grafiki [samochodu](DUI.Game/Content/Images/car.png) i
+[butelki](DUI.Game/Content/Images/beer-bottle.png) wygenerowano narzędziem
+`image_gen` z przezroczystym tłem. Pełne prompty: [AssetPrompts.json](Docs/AssetPrompts.json).

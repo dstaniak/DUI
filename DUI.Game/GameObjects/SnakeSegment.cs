@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 namespace DUI.GameObjects;
 
 /// <summary>A grid step's endpoints and direction, in logical board pixels.</summary>
-public struct SlimeSegment
+public struct SnakeSegment
 {
     public Vector2 At;
     public Vector2 To;
