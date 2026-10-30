@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="DUI.Desktop/DUI.Desktop.csproj" />
+  <Project Path="DUI.Tests/DUI.Tests.csproj" />
+</Solution>

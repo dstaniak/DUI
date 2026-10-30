@@ -1,0 +1,12 @@
+<Project>
+  <!-- Each host compiles these sources against its own MonoGame backend. -->
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)**/*.cs"
+             Exclude="$(MSBuildThisFileDirectory)bin/**;$(MSBuildThisFileDirectory)obj/**"
+             Link="Game/%(RecursiveDir)%(Filename)%(Extension)" />
+    <MonoGameContentReference Include="$(MSBuildThisFileDirectory)Content/Content.mgcb"
+                              Link="Content/Content.mgcb" />
+    <PackageReference Include="Gum.MonoGame" Version="2026.8.3.1" />
+    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.5.1" />
+  </ItemGroup>
+</Project>
