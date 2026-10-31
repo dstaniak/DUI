@@ -5,7 +5,7 @@ using MonoGameLibrary.Graphics;
 
 namespace DUI.GameObjects;
 
-/// <summary>Renders the convoy with delayed sideways sway and smooth car headings.</summary>
+/// <summary>Renders the convoy with sideways sway, smooth headings and curb hops.</summary>
 public sealed class CarConvoy
 {
     public const float Size = 80.0f;
@@ -51,13 +51,13 @@ public sealed class CarConvoy
         {
             var segment = _movement.Segments[i];
             var pose = CarSway.GetPose(_movement, i);
-            Vector2 position = Vector2.Lerp(segment.At, segment.To, _movement.MovementProgress);
-            Vector2 gridCenter = position + new Vector2(Size * 0.5f);
+            var terrain = parkingLot.GetCarTransform(segment, _movement.MovementProgress);
+            Vector2 center = pose.Position + new Vector2(Size * 0.5f);
 
-            // Lawn height and collision geometry continue to use the logical grid path.
+            // Apply lift in screen-up board space, independently of the car's heading.
             _sprite.Rotation = pose.Rotation;
-            _sprite.Scale = _baseScale * parkingLot.GetCarScale(gridCenter);
-            _sprite.Draw(Core.SpriteBatch, pose.Position + new Vector2(Size * 0.5f));
+            _sprite.Scale = _baseScale * terrain.Scale;
+            _sprite.Draw(Core.SpriteBatch, center - Vector2.UnitY * terrain.Lift);
         }
     }
 

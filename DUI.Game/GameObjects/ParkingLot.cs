@@ -6,7 +6,7 @@ using MonoGameLibrary.Graphics;
 
 namespace DUI.GameObjects;
 
-/// <summary>Owns the parking layout and the visual height of its traversable lawns.</summary>
+/// <summary>Owns the parking layout, lawn height and car hops over its curbs.</summary>
 public sealed class ParkingLot
 {
     public const int TileSize = 80;
@@ -80,6 +80,17 @@ public sealed class ParkingLot
         }
 
         return 1.0f;
+    }
+
+    public (float Scale, float Lift) GetCarTransform(SnakeSegment segment, float progress)
+    {
+        Vector2 centerOffset = new(CarConvoy.Size * 0.5f);
+        Vector2 fromCenter = segment.At + centerOffset;
+        Vector2 toCenter = segment.To + centerOffset;
+        Vector2 center = Vector2.Lerp(fromCenter, toCenter, progress);
+        var hop = CarHop.GetTransform(fromCenter, toCenter, progress, _grassIslands);
+
+        return (GetCarScale(center) * hop.Scale, hop.Lift);
     }
 
     public void Draw(SpriteBatch spriteBatch)
