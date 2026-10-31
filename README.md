@@ -164,7 +164,7 @@ dotnet build DUI.slnx
 dotnet run --project DUI.Tests
 ```
 
-34 testy obejmują natychmiastową reakcję między kafelkami, wszystkie
+37 testów obejmuje natychmiastową reakcję między kafelkami, wszystkie
 kierunki skrętów, kolejkę, odrzucanie nieprawidłowych poleceń, stałą prędkość,
 interpolację i różne podziały czasu. Sprawdzają odtwarzanie śladu przez
 cztery zakręty, odstępy, wzrost, ograniczenie pamięci historii, ciasny nawrót,
@@ -177,7 +177,10 @@ obrócone boki i narożniki auta oraz rzeczywiste uderzenia podczas skrętu.
 Cztery testy geometrii parkingu obejmują asfalt wewnątrz kafelków płotu,
 mijanie narożników bramy ukośnym autem, osobne krawędzie bramy i przęsła
 oraz bezpieczny obszar ruchu butelek.
-Pozostają też testy gestów, mapowania ekranu i kolizji z butelkami.
+Trzy testy `C64DisplayTests` sprawdzają brak ramki i przycinania, pełne
+wypełnienie okna, zgodność kursora Gum z wejściem planszy po zmianie
+rozmiaru (także nieparzystym i bardzo małym) oraz odrzucanie gestów
+z HUD i spoza planszy. Pozostają też testy gestów i kolizji z butelkami.
 Program testowy zwraca kod różny od zera, jeśli dowolny test zawiedzie.
 Renderowanie, dźwięk, interakcje Gum i cykl życia aplikacji wymagają też
 sprawdzenia w uruchomionej grze; te testy nie potwierdzają działania na telefonie.

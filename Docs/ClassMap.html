@@ -180,7 +180,7 @@ w jednej przezroczystej teksturze 42×29. Powstał z ręcznie narysowanych figur
 a GameSceneUI wczytuje ją przez ContentManager Gum. Znak uzupełnia font 04b_30,
 który nie zawiera U+2030; nie wymaga składania kilku sprite’ów.</p>
 <h2>Weryfikacja i ograniczenia</h2>
-<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> uruchamia 34 testy bez GPU.
+<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> uruchamia 37 testów bez GPU.
 <a href="../DUI.Tests/MovementTests.cs">MovementTests</a> sprawdza natychmiastowy skręt,
 cztery kierunki, stałą prędkość, kolejkę, odrzucanie zwrotu i powtórzeń,
 resztę czasu, interpolację, ślad przez cztery zakręty, odstępy, wzrost,
@@ -199,7 +199,11 @@ Korzystają z tych samych granic ParkingGeometry co gra. Cztery testy w
 sprawdzają jazdę po asfalcie wewnątrz kafelków płotu, brak fałszywej kolizji
 przy mijaniu narożników bramy ukośnym autem, osobne krawędzie bramy i przęsła
 oraz obszar odbić i odrodzenia butelek przed zamkniętą bramą.
-Testy kompilują te same źródła modelu co gra.</p>
+Trzy testy <a href="../DUI.Tests/C64DisplayTests.cs">C64DisplayTests</a> sprawdzają
+pełne wypełnienie okna bez ramki i przycinania planszy, zgodność mapowania UI
+i gestów w obu osiach po zmianie rozmiaru oraz blokadę gestów z HUD i spoza planszy.
+Uwzględniają okna szerokie, pionowe, nieparzyste oraz mniejsze niż raster.
+Testy kompilują te same źródła modelu i GameDisplay co gra.</p>
 <p>Testy nie zastępują sprawdzenia renderowania, audio, przycisków Gum,
 łączenia kafelków parkingu, witryny, ogrodzenia i bramy, falowania aut i opóźnienia segmentów, radiowozów w ogonie i dwóch kolorów świateł na obracającym się dachu, powiększania każdego auta na trawie i podskoków przy wjeździe, pulsowania i zebrania butelki, rozprysku piwa, przyrostów wyniku o 0,2‰ i resetu do 0,0‰, położenia sprite’a przy przejściu 9,8‰ → 10,0‰ oraz utraty aktywności w uruchomionej aplikacji.
 Wersja na fizyczny telefon, safe areas i zachowanie po utracie procesu
