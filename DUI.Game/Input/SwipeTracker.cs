@@ -15,7 +15,7 @@ public sealed class SwipeTracker
 
     public void Begin(Vector2 position)
     {
-        // Reserve the top wall for score and pause; ignore letterbox margins.
+        // Reserve the edge tiles for the fence and the top HUD.
         _tracking = position.X >= 80 && position.X < 1200 &&
             position.Y >= 80 && position.Y < 640;
         _origin = position;

@@ -30,12 +30,12 @@ public sealed class C64Renderer : IDisposable
     public void BeginFrame()
     {
         _graphicsDevice.SetRenderTarget(_scene);
-        _graphicsDevice.Clear(C64Palette.LightBlue);
+        _graphicsDevice.Clear(C64Palette.Black);
     }
 
     public void Present(SpriteBatch spriteBatch, GameDisplay display)
     {
-        // Quantize only 320x200 pixels, including alpha blends and the UI.
+        // Quantize only the native raster pixels, including alpha blends and the UI.
         // Running this pass after upscaling would multiply its GPU cost.
         _graphicsDevice.SetRenderTarget(_indexedFrame);
         spriteBatch.Begin(blendState: BlendState.Opaque,
@@ -44,7 +44,6 @@ public sealed class C64Renderer : IDisposable
         spriteBatch.End();
 
         _graphicsDevice.SetRenderTarget(null);
-        _graphicsDevice.Clear(C64Palette.Blue);
         spriteBatch.Begin(blendState: BlendState.Opaque, samplerState: SamplerState.PointClamp);
         spriteBatch.Draw(_indexedFrame, display.OutputBounds, Color.White);
         spriteBatch.End();

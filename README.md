@@ -24,18 +24,20 @@ tak jak w projekcie źródłowym.
 
 ## Oprawa C64
 
-Cała klatka, łącznie z UI, ma **320×200 pikseli**. Plansza 1280×720 jest
-rysowana jako 320×180 z ramką po 10 pikseli u góry i dołu. `PointClamp`
-powiększa obraz całkowitą wielokrotnością, z wyśrodkowaniem w oknie;
-jedynie ekran mniejszy niż 320×200 wymaga pomniejszenia. Kafelek ma na tej
-siatce 20×20 pikseli. Fizyka, prędkość i granice kolizji pozostają w jednostkach
-planszy, niezależnie od rozmiaru okna.
+Cała klatka, łącznie z UI, ma **356×200 pikseli** — szerokość wynika
+z proporcji planszy 1280×720, zaokrąglonych do pełnego piksela. Plansza
+wypełnia cały raster i całe okno, bez ramki i pasów. `PointClamp` skaluje
+obraz bez wygładzania. Kafelek zajmuje około 22×22 piksele. Przy innych
+proporcjach okna obraz dopasowuje się osobno w obu osiach, pozostawiając
+całą planszę widoczną; dla naturalnych proporcji najlepszy jest widok 16:9.
+Fizyka, prędkość i granice kolizji pozostają w jednostkach planszy.
 
 `C64Palette` definiuje 16 kolorów w wariancie
 [Pepto PAL używanym przez VICE](https://raw.githubusercontent.com/VICE-Team/svn-mirror/main/vice/data/C64/pepto-pal.vpl).
 Nowe grafiki parkingu i witryny mają uproszczone kształty oraz wzory
 z dwóch kolorów: szachownice 2×2 i rzadsze pikselowe akcenty w cieniach
-oraz na powierzchniach. Wzory są częścią tekstur. Końcowy shader wyłącznie
+oraz na powierzchniach. Boki butelek w witrynie mają naprzemienne ciemniejsze
+piksele, a ich środki pozostają jednolite. Wzory są częścią tekstur. Końcowy shader wyłącznie
 dopasowuje kolory po mieszaniu przezroczystości i wygaszaniu do tej palety;
 nie nakłada ditheringu na ekran. To stylizacja, bez emulowania ograniczeń
 trybów graficznych VIC-II.
@@ -127,9 +129,9 @@ się standardowym przyciskiem systemu.
   krawężnika przez jego przód; renderowanie korzysta z czasu modelu ruchu.
 - `BeerBottle` — ruch i pulsowanie butelki; `BeerBurst` — krótkotrwałe
   krople piwa i piana, rysowane prostymi figurami pikselowymi.
-- `GameDisplay` — rozdziela współrzędne planszy, rastra 320×200 i okna.
-  Odwrotna transformacja obsługuje gesty oraz kursor Gum, także w marginesach.
-- `C64Renderer` — posiada dwa bufory 320×200: scenę z UI i klatkę ograniczoną
+- `GameDisplay` — rozdziela współrzędne planszy, rastra 356×200 i okna.
+  Odwrotna transformacja obsługuje gesty oraz kursor Gum, aż do krawędzi widocznej planszy.
+- `C64Renderer` — posiada dwa bufory 356×200: scenę z UI i klatkę ograniczoną
   do palety `C64Palette`. `DuiGame` obejmuje nim rysowanie sceny i zwalnia
   bufory przy wyjściu; efekt należy do `ContentManager`. Gum rysuje przy
   zoomie 1 na tej samej siatce, więc tekst pozostaje pikselowy.
@@ -139,7 +141,7 @@ się standardowym przyciskiem systemu.
 ## Mobile
 
 Kod uwzględnia gesty dotykowe, pauzę po utracie aktywności oraz stałą
-planszę 1280 × 720, rysowaną przez raster 320×200 z zachowaniem proporcji. Zmiana rozmiaru
+planszę 1280 × 720, rysowaną przez raster 356×200 dopasowany do całego okna. Zmiana rozmiaru
 ekranu nie zmienia zasad, geometrii kolizji ani prędkości gry. Aktualizacje
 odbywają się w stałym rytmie 60 Hz, także na ekranach o wyższym odświeżaniu.
 

@@ -97,10 +97,10 @@ public class GameSceneUI : ContainerRuntime
     public void Update(GameTime gameTime)
     {
         _scoreText.X = 20;
-        _scoreText.Y = 5 + GameDisplay.BorderHeight;
+        _scoreText.Y = 5;
         PositionPerMilleSymbol();
         _pauseButton.X = -20;
-        _pauseButton.Y = 2 + GameDisplay.BorderHeight;
+        _pauseButton.Y = 2;
         Gum.GumService.Default.Update(gameTime);
     }
 
