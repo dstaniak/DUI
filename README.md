@@ -44,8 +44,13 @@ tak jak w projekcie źródłowym.
   a pośrodku dolnego ogrodzenia zamknięta brama szerokości dwóch kafelków.
   Dolne narożniki mają kątowniki „L” łączące boczną siatkę z dolnym przęsłem.
 - Dwie symetryczne wysepki trawnika mają po 2×4 kafelki. Można po nich
-  przejechać: każde auto płynnie powiększa się do 106% i wraca do 100%
-  na asfalcie. Efekt jest liczony osobno dla każdego segmentu, bez zmiany
+  przejechać: podczas kroku z asfaltu na trawę każde auto podskakuje o 12
+  jednostek planszy i powiększa się do około 128%. Wybicie korzysta
+  z `EaseOutCubic`, a lądowanie z `EaseInQuad`; cały podskok trwa 200 ms.
+  Po lądowaniu zostaje skala 106%, a wyjazd przywraca 100%.
+  Kolejne kafelki trawy nie uruchamiają podskoku. Pauza zatrzymuje go
+  w bieżącej fazie, a RETRY rozpoczyna nową animację ruchu.
+  Efekt jest liczony osobno dla każdego segmentu, bez zmiany
   ruchu ani kolizji. Nad i pod trawnikami pozostaje po jednym rzędzie przejazdu.
 - Pulsowanie jest wyłącznie wizualne; rozmiar obszaru kolizji pozostaje stały.
   Pauza zatrzymuje też rozprysk, a RETRY usuwa pozostałe cząsteczki.
@@ -70,9 +75,12 @@ się standardowym przyciskiem systemu.
   oraz urządzenia wejściowego; `CarConvoy` rysuje auta, a `CarSway` wyznacza
   ich wizualne pozycje i orientację z czasu rozgrywki oraz historii kierunków.
 - `Easings` — statyczne funkcje interpolacji (30 krzywych oraz `Linear`);
-  `CarSway` korzysta z `EaseInOutSine` przy zmianie kierunku jazdy.
+  `CarSway` korzysta z `EaseInOutSine` przy zmianie kierunku jazdy,
+  a `CarHop` z `EaseOutCubic` i `EaseInQuad` podczas podskoku.
 - `ParkingLot` — układ parkingu, granice jazdy, rysowanie witryny oraz
   wspólna geometria kafelków trawy i płynnego efektu wysokości aut.
+  Łączy stałe powiększenie na trawie z krótkim podskokiem `CarHop`,
+  wyznaczanym z końców i postępu kroku każdego samochodu.
 - `BeerBottle` — ruch i pulsowanie butelki; `BeerBurst` — krótkotrwałe
   krople piwa i piana, rysowane prostymi figurami pikselowymi.
 - `DUI.Tests` — testy regresji uruchamiane bez okna i urządzenia graficznego.
@@ -109,6 +117,9 @@ kierunki, czas ruchu i interpolację, wzrost, kolizję z ciałem, świeży stan
 nowej gry, gesty i ich anulowanie, skalowanie oraz okrągłe obszary kolizji.
 Sprawdzają też wizualne falowanie, opóźnienie aut na prostej i zakrętach,
 ciągłość skrętów, pauzę, restart, niezależność od czasu klatki i wzrost kolumny.
+Testy podskoku obejmują wjazd na wyspę z czterech stron, wybicie i lądowanie,
+brak ponownych podskoków na trawie lub przy wyjeździe, opóźnienie segmentów,
+pauzę, restart i różne długości klatek.
 Program testowy zwraca kod różny od zera, jeśli dowolny test zawiedzie.
 Renderowanie, dźwięk, interakcje Gum i cykl życia aplikacji wymagają też
 sprawdzenia w uruchomionej grze; te testy nie potwierdzają działania na telefonie.

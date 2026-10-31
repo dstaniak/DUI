@@ -22,6 +22,10 @@ var tests = new (string Name, Action Run)[]
     ("Visual car headings and offsets stay continuous at corners", SwayCorners),
     ("Sway freezes on pause, resets on retry and ignores frame size", SwayTiming),
     ("Growing at a corner produces a finite car pose", SwayGrowth),
+    ("Entering an island from any side gives one eased hop", HopEntry),
+    ("Grass travel, exits and stationary cars do not hop", HopOnlyOnEntry),
+    ("Each car hops when its own grid step reaches the island", HopFollowsHead),
+    ("Hops freeze on pause, reset on retry and ignore frame size", HopTiming),
     ("Swipe emits once at the threshold and accepts the next contact", Swipe),
     ("Swipe ignores the score bar and margins", SwipeMargins),
     ("Cancelling a swipe cannot steer after resume", CancelSwipe),
@@ -268,6 +272,130 @@ static void EqualPose((Vector2 Position, float Rotation) expected, (Vector2 Posi
     Equal(expected.Position, actual.Position);
     float difference = MathHelper.WrapAngle(expected.Rotation - actual.Rotation);
     Check(float.IsFinite(difference) && MathF.Abs(difference) < 0.0001f);
+}
+
+static Rectangle[] HopIslands() => [new Rectangle(160, 240, 160, 320)];
+
+static void HopEntry()
+{
+    Rectangle[] islands = HopIslands();
+    var entries = new (Vector2 From, Vector2 To)[]
+    {
+        (new(120, 280), new(200, 280)),
+        (new(360, 280), new(280, 280)),
+        (new(200, 200), new(200, 280)),
+        (new(200, 600), new(200, 520))
+    };
+
+    foreach (var entry in entries)
+    {
+        EqualHop((1f, 0f), CarHop.GetTransform(entry.From, entry.To, 0f, islands));
+        EqualHop((1.28f, 12f), CarHop.GetTransform(entry.From, entry.To, 0.5f, islands));
+        EqualHop((1f, 0f), CarHop.GetTransform(entry.From, entry.To, 1f, islands));
+
+        // Easing lifts the car quickly and slows around the apex.
+        Check(CarHop.GetTransform(entry.From, entry.To, 0.25f, islands).Lift > 6f);
+        Check(CarHop.GetTransform(entry.From, entry.To, 0.75f, islands).Lift > 6f);
+        float previousLift = 0f;
+        for (int sample = 0; sample <= 100; sample++)
+        {
+            var hop = CarHop.GetTransform(entry.From, entry.To, sample / 100f, islands);
+            Check(hop.Scale >= 1f && hop.Scale <= 1.28f);
+            Check(hop.Lift >= 0f && hop.Lift <= 12f);
+            Check(sample <= 50 ? hop.Lift >= previousLift : hop.Lift <= previousLift);
+            previousLift = hop.Lift;
+        }
+    }
+}
+
+static void HopOnlyOnEntry()
+{
+    Rectangle[] islands = HopIslands();
+    var paths = new (Vector2 From, Vector2 To)[]
+    {
+        (new(200, 280), new(280, 280)),
+        (new(200, 280), new(200, 360)),
+        (new(200, 280), new(120, 280)),
+        (new(280, 280), new(360, 280)),
+        (new(200, 280), new(200, 200)),
+        (new(200, 520), new(200, 600)),
+        (new(120, 280), new(120, 360)),
+        (new(200, 280), new(200, 280)),
+        (new(120, 280), new(120, 280))
+    };
+
+    foreach (var path in paths)
+    {
+        foreach (float progress in new[] { 0f, 0.25f, 0.5f, 0.75f, 1f })
+        {
+            EqualHop((1f, 0f), CarHop.GetTransform(path.From, path.To, progress, islands));
+        }
+    }
+}
+
+static void HopFollowsHead()
+{
+    var movement = new SnakeMovement(new Vector2(80, 240), 80);
+    for (int i = 0; i < 3; i++)
+    {
+        movement.Grow();
+    }
+
+    var history = new (float Scale, float Lift)[201];
+    history[0] = GetHop(movement, 0);
+    for (int frame = 1; frame < history.Length; frame++)
+    {
+        movement.Update(TimeSpan.FromMilliseconds(5));
+        history[frame] = GetHop(movement, 0);
+        for (int i = 1; i < movement.Segments.Count; i++)
+        {
+            int previousFrame = frame - i * 40;
+            if (previousFrame >= 0)
+            {
+                EqualHop(history[previousFrame], GetHop(movement, i));
+            }
+        }
+    }
+
+    Check(history[20].Lift == 12f);
+    EqualHop((1f, 0f), history[60]);
+}
+
+static void HopTiming()
+{
+    var smallFrames = new SnakeMovement(new Vector2(80, 240), 80);
+    var largeFrame = new SnakeMovement(new Vector2(80, 240), 80);
+    for (int i = 0; i < 30; i++)
+    {
+        smallFrames.Update(TimeSpan.FromMilliseconds(5));
+    }
+    largeFrame.Update(TimeSpan.FromMilliseconds(150));
+    EqualHop(GetHop(smallFrames, 0), GetHop(largeFrame, 0));
+    Check(GetHop(smallFrames, 0).Lift > 0f);
+
+    var paused = GetHop(smallFrames, 0);
+    smallFrames.Update(TimeSpan.Zero);
+    EqualHop(paused, GetHop(smallFrames, 0));
+
+    var restarted = new SnakeMovement(new Vector2(80, 240), 80);
+    EqualHop((1f, 0f), GetHop(restarted, 0));
+    largeFrame.Update(TimeSpan.FromMilliseconds(1000));
+    EqualHop((1f, 0f), GetHop(largeFrame, 0));
+}
+
+static (float Scale, float Lift) GetHop(SnakeMovement movement, int index)
+{
+    SnakeSegment segment = movement.Segments[index];
+    Vector2 centerOffset = new(40f);
+    return CarHop.GetTransform(segment.At + centerOffset, segment.To + centerOffset,
+        movement.MovementProgress, HopIslands());
+}
+
+static void EqualHop((float Scale, float Lift) expected, (float Scale, float Lift) actual)
+{
+    Check(float.IsFinite(actual.Scale) && float.IsFinite(actual.Lift));
+    Check(MathF.Abs(expected.Scale - actual.Scale) < 0.0001f);
+    Check(MathF.Abs(expected.Lift - actual.Lift) < 0.0001f);
 }
 
 static void Swipe()
