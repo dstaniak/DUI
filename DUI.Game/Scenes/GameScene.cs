@@ -23,8 +23,8 @@ public class GameScene : Scene
     private CarConvoy _convoy;
     private BeerBottle _bottle;
     private BeerBurst _beerBurst;
-    private Tilemap _tilemap;
-    private Rectangle _roomBounds;
+    private ParkingLot _parkingLot;
+    private Rectangle _drivingBounds;
     private SoundEffect _collectSoundEffect;
     private int _score;
     private GameSceneUI _ui;
@@ -39,8 +39,7 @@ public class GameScene : Scene
 
         Core.ExitOnEscape = false;
 
-        _roomBounds = new Rectangle(0, 0, GameDisplay.Width, GameDisplay.Height);
-        _roomBounds.Inflate(-_tilemap.TileWidth, -_tilemap.TileHeight);
+        _drivingBounds = _parkingLot.DrivingBounds;
 
         _convoy.BodyCollision += OnConvoyBodyCollision;
 
@@ -52,8 +51,7 @@ public class GameScene : Scene
 
     public override void LoadContent()
     {
-        _tilemap = Tilemap.FromFile(Content, "Images/tilemap-definition.xml");
-        _tilemap.Scale = new Vector2(4.0f, 4.0f);
+        _parkingLot = new ParkingLot(Content);
         _convoy = new CarConvoy(LoadSprite("Images/car"));
         var bounceEffect = Content.Load<SoundEffect>("Audio/bounce");
         _bottle = new BeerBottle(LoadSprite("Images/beer-bottle"), bounceEffect);
@@ -123,8 +121,8 @@ public class GameScene : Scene
             effect: sceneEffect,
             transformMatrix: Core.Display.Transform);
 
-        _tilemap.Draw(Core.SpriteBatch);
-        _convoy.Draw();
+        _parkingLot.Draw(Core.SpriteBatch);
+        _convoy.Draw(_parkingLot);
         _bottle.Draw();
         _beerBurst.Draw(Core.SpriteBatch);
         Core.SpriteBatch.End();
@@ -187,31 +185,31 @@ public class GameScene : Scene
             Core.Audio.PlaySoundEffect(_collectSoundEffect);
         }
 
-        if (convoyBounds.Top < _roomBounds.Top ||
-            convoyBounds.Bottom > _roomBounds.Bottom ||
-            convoyBounds.Left < _roomBounds.Left ||
-            convoyBounds.Right > _roomBounds.Right)
+        if (convoyBounds.Top < _drivingBounds.Top ||
+            convoyBounds.Bottom > _drivingBounds.Bottom ||
+            convoyBounds.Left < _drivingBounds.Left ||
+            convoyBounds.Right > _drivingBounds.Right)
         {
             GameOver();
             return;
         }
 
-        if (bottleBounds.Top <= _roomBounds.Top)
+        if (bottleBounds.Top <= _drivingBounds.Top)
         {
             _bottle.Bounce(Vector2.UnitY);
         }
 
-        if (bottleBounds.Bottom >= _roomBounds.Bottom)
+        if (bottleBounds.Bottom >= _drivingBounds.Bottom)
         {
             _bottle.Bounce(-Vector2.UnitY);
         }
 
-        if (bottleBounds.Left <= _roomBounds.Left)
+        if (bottleBounds.Left <= _drivingBounds.Left)
         {
             _bottle.Bounce(Vector2.UnitX);
         }
 
-        if (bottleBounds.Right >= _roomBounds.Right)
+        if (bottleBounds.Right >= _drivingBounds.Right)
         {
             _bottle.Bounce(-Vector2.UnitX);
         }
@@ -228,12 +226,7 @@ public class GameScene : Scene
 
     private void InitializeNewGame()
     {
-        Vector2 startingPosition = new();
-        startingPosition.X = (_tilemap.Columns / 2) * _tilemap.TileWidth;
-        startingPosition.Y = (_tilemap.Rows / 2) * _tilemap.TileHeight;
-
-        // TODO(dstaniak) : What if TileWidth is different than TileHeight.
-        _convoy.Initialize(startingPosition, _tilemap.TileWidth);
+        _convoy.Initialize(_parkingLot.StartingPosition, ParkingLot.TileSize);
         _beerBurst.Clear();
 
         _bottle.RandomizeVelocity();
@@ -255,47 +248,49 @@ public class GameScene : Scene
 
     private void PositionBottleAwayFromConvoy()
     {
-        float roomCenterX = _roomBounds.X + _roomBounds.Width * 0.5f;
-        float roomCenterY = _roomBounds.Y + _roomBounds.Height * 0.5f;
-        Vector2 roomCenter = new(roomCenterX, roomCenterY);
+        float parkingCenterX = _drivingBounds.X + _drivingBounds.Width * 0.5f;
+        float parkingCenterY = _drivingBounds.Y + _drivingBounds.Height * 0.5f;
+        Vector2 parkingCenter = new(parkingCenterX, parkingCenterY);
 
         Circle convoyBounds = _convoy.GetBounds();
         Vector2 convoyCenter = new(convoyBounds.X, convoyBounds.Y);
 
-        Vector2 centerToConvoy = convoyCenter - roomCenter;
+        Vector2 centerToConvoy = convoyCenter - parkingCenter;
 
         Circle bottleBounds = _bottle.GetBounds();
         int padding = bottleBounds.Radius * 2;
 
+        // Position is the texture's top-left, so the far-side random limit
+        // must also reserve its center offset, not just the collision radius.
         var newBottlePosition = Vector2.Zero;
         if (Math.Abs(centerToConvoy.X) > Math.Abs(centerToConvoy.Y))
         {
             newBottlePosition.Y = Random.Shared.Next(
-                _roomBounds.Top + padding, _roomBounds.Bottom - padding
+                _drivingBounds.Top + padding, _drivingBounds.Bottom - padding * 2
             );
 
             if (centerToConvoy.X > 0)
             {
-                newBottlePosition.X = _roomBounds.Left + padding;
+                newBottlePosition.X = _drivingBounds.Left + padding;
             }
             else
             {
-                newBottlePosition.X = _roomBounds.Right - padding * 2;
+                newBottlePosition.X = _drivingBounds.Right - padding * 2;
             }
         }
         else
         {
             newBottlePosition.X = Random.Shared.Next(
-                _roomBounds.Left + padding, _roomBounds.Right - padding
+                _drivingBounds.Left + padding, _drivingBounds.Right - padding * 2
             );
 
             if (centerToConvoy.Y > 0)
             {
-                newBottlePosition.Y = _roomBounds.Top + padding;
+                newBottlePosition.Y = _drivingBounds.Top + padding;
             }
             else
             {
-                newBottlePosition.Y = _roomBounds.Bottom - padding * 2;
+                newBottlePosition.Y = _drivingBounds.Bottom - padding * 2;
             }
         }
 

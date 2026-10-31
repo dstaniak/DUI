@@ -30,10 +30,17 @@ tak jak w projekcie źródłowym.
   Kolejny ruch przy pełnej kolejce jest pomijany, tak jak w DungeonSlime.
 - Pozycja jest płynnie interpolowana między polami, a segmenty podążają
   za prowadzącym autem. Każde auto obraca się zgodnie z aktualnym krokiem.
-- Butelka piwa pulsuje, porusza się i odbija od ścian. Jej zebranie
+- Butelka piwa pulsuje, porusza się i odbija od granic parkingu. Jej zebranie
   wywołuje rozprysk złotych kropli i białej piany, dodaje samochód oraz
-  100 punktów. Kolejna butelka pojawia się po przeciwnej stronie pokoju.
-  Ściana lub własna kolumna samochodów kończy grę.
+  100 punktów. Kolejna butelka pojawia się po przeciwnej stronie parkingu.
+  Witryna, ogrodzenie, zamknięta brama lub własna kolumna aut kończą grę.
+- Plansza jest parkingiem pod sklepem z alkoholem i przekąskami. Witryna
+  zajmuje dwa górne rzędy; po bokach i na dole jest ogrodzenie z siatki,
+  a pośrodku dolnego ogrodzenia zamknięta brama szerokości dwóch kafelków.
+- Dwie symetryczne wysepki trawnika mają po 2×4 kafelki. Można po nich
+  przejechać: każde auto płynnie powiększa się do 106% i wraca do 100%
+  na asfalcie. Efekt jest liczony osobno dla każdego segmentu, bez zmiany
+  ruchu ani kolizji. Nad i pod trawnikami pozostaje po jednym rzędzie przejazdu.
 - Pulsowanie jest wyłącznie wizualne; rozmiar obszaru kolizji pozostaje stały.
   Pauza zatrzymuje też rozprysk, a RETRY usuwa pozostałe cząsteczki.
 - Escape / Start / Back lub przycisk PAUSE pauzuje grę.
@@ -55,6 +62,8 @@ się standardowym przyciskiem systemu.
   dzięki czemu przyszły host mobilny może użyć własnego backendu MonoGame.
 - `SnakeMovement` — kolejka, segmenty i interpolacja niezależne od grafiki
   oraz urządzenia wejściowego; `CarConvoy` odpowiada za rysowanie i orientację aut.
+- `ParkingLot` — układ parkingu, granice jazdy, rysowanie witryny oraz
+  wspólna geometria kafelków trawy i płynnego efektu wysokości aut.
 - `BeerBottle` — ruch i pulsowanie butelki; `BeerBurst` — krótkotrwałe
   krople piwa i piana, rysowane prostymi figurami pikselowymi.
 - `DUI.Tests` — testy regresji uruchamiane bez okna i urządzenia graficznego.
@@ -97,8 +106,9 @@ sprawdzenia w uruchomionej grze; te testy nie potwierdzają działania na telefo
 
 Kod i zasoby przeniesiono z lokalnego DungeonSlime, stan
 `ec41fb7eefb4787a652538e37bc0eb0d025998dd`. Zachowano zasady, tempo,
-planszę, UI i dźwięki tutorialu. Postacie zastępują nowe grafiki samochodu
-i butelki; efekt rozprysku piwa powstaje w kodzie. Pominięto ekran tytułowy, jego opcje i zasoby,
+rozmiar planszy, UI i dźwięki tutorialu. Postacie zastępują nowe grafiki samochodu
+i butelki; efekt rozprysku piwa powstaje w kodzie. Loch zastępuje parking.
+Pominięto ekran tytułowy, jego opcje i zasoby,
 nakładkę ImGui oraz desktopowy mechanizm obserwowania shaderów.
 Efekt wygaszania kolorów podczas pauzy i końca gry pozostał.
 
@@ -107,3 +117,11 @@ Tutorial: [Building a 2D Game — MonoGame](https://docs.monogame.net/articles/t
 Grafiki [samochodu](DUI.Game/Content/Images/car.png) i
 [butelki](DUI.Game/Content/Images/beer-bottle.png) wygenerowano narzędziem
 `image_gen` z przezroczystym tłem. Pełne prompty: [AssetPrompts.json](Docs/AssetPrompts.json).
+
+Nowy [atlas parkingu](DUI.Game/Content/Images/parking-atlas.png) zawiera
+16 kafelków asfaltu, linii, krawężników, trawy, siatki i bramy.
+[Witryna](DUI.Game/Content/Images/storefront.png) jest osobną panoramą.
+Oba zasoby powstały we wbudowanym `image_gen`; prompty zapisano w tym samym
+pliku AssetPrompts.json. Definicja mapy wycina wnętrza kafelków bez linii
+podziału atlasu; `ParkingLot` skaluje je do logicznych 80×80.
+Dotychczasowy atlas pozostaje źródłem fontu i elementów UI.

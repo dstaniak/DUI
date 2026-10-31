@@ -11,6 +11,7 @@ public sealed class CarConvoy
     public const float Size = 80.0f;
 
     private readonly Sprite _sprite;
+    private readonly Vector2 _baseScale;
     private SnakeMovement _movement;
 
     public event EventHandler BodyCollision;
@@ -19,7 +20,8 @@ public sealed class CarConvoy
     {
         _sprite = sprite;
         _sprite.CenterOrigin();
-        _sprite.Scale = new Vector2(Size / sprite.Region.Width, Size / sprite.Region.Height);
+        _baseScale = new Vector2(Size / sprite.Region.Width, Size / sprite.Region.Height);
+        _sprite.Scale = _baseScale;
     }
 
     public void Initialize(Vector2 startingPosition, float stride)
@@ -43,7 +45,7 @@ public sealed class CarConvoy
         _movement.Update(gameTime.ElapsedGameTime);
     }
 
-    public void Draw()
+    public void Draw(ParkingLot parkingLot)
     {
         float rotation = 0.0f;
         foreach (var segment in _movement.Segments)
@@ -58,7 +60,9 @@ public sealed class CarConvoy
             // A newly grown tail overlaps its predecessor until the next step.
             // Reuse that car's heading while the new segment has no travel yet.
             _sprite.Rotation = rotation;
-            _sprite.Draw(Core.SpriteBatch, position + new Vector2(Size * 0.5f));
+            Vector2 center = position + new Vector2(Size * 0.5f);
+            _sprite.Scale = _baseScale * parkingLot.GetCarScale(center);
+            _sprite.Draw(Core.SpriteBatch, center);
         }
     }
 
