@@ -55,7 +55,7 @@ public class GameScene : Scene
     public override void LoadContent()
     {
         _parkingLot = new ParkingLot(Content);
-        _convoy = new CarConvoy(LoadSprite("Images/car"), _parkingLot);
+        _convoy = new CarConvoy(LoadSprite("Images/car"), LoadSprite("Images/police-car"), _parkingLot);
         var bounceEffect = Content.Load<SoundEffect>("Audio/bounce");
         _bottle = new BeerBottle(LoadSprite("Images/beer-bottle"), bounceEffect);
         _beerBurst = new BeerBurst(Core.GraphicsDevice);
@@ -153,6 +153,7 @@ public class GameScene : Scene
 
     public override void UnloadContent()
     {
+        _convoy.Dispose();
         _beerBurst?.Dispose();
         base.UnloadContent();
     }

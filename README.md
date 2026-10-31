@@ -5,7 +5,8 @@ skierowany również do osób, które faktycznie tak jeżdżą. Ton gry ma być
 przystępny i zabawny, bez zawstydzania odbiorcy.
 
 Pierwsza gra wykorzystuje mechanikę snake’a z tutorialu DungeonSlime:
-gracz prowadzi kolumnę samochodów i zbiera pulsujące butelki piwa.
+gracz prowadzi czerwony samochód, zbiera pulsujące butelki piwa,
+a za nim rośnie kolumna radiowozów.
 
 ## Uruchomienie
 
@@ -34,6 +35,10 @@ tak jak w projekcie źródłowym.
 - Segmenty odtwarzają pozycje i obroty głowy z jej śladu, w odstępach 80
   jednostek wzdłuż drogi. Nowe auto pojawia się za ogonem, bez przesuwania
   pozostałych. Symulacja używa podkroków 5 ms i interpolacji obrazu.
+- Każdy segment ogona jest srebrno-niebieskim radiowozem. Światła na dachu
+  mają dwa stany: niebieski i czerwony, zmieniane co 250 ms. Belka obraca się,
+  skaluje i podskakuje razem z autem. Pauza i koniec gry zamrażają światła,
+  a RETRY zaczyna od stanu niebieskiego. Auto gracza pozostaje czerwone.
 - Delikatne falowanie ma amplitudę ±1,5 jednostki i ±2°, z okresem 1,2 s.
   Faza zależy od przebytej drogi, więc każdy segment powtarza ruch głowy.
   To efekt wizualny; pauza go zatrzymuje, a RETRY zeruje fazę.
@@ -89,7 +94,10 @@ się standardowym przyciskiem systemu.
   historię do długości kolumny i zapasu na nowy segment.
   `ConvoyCollision` sprawdza ruchome okręgi oraz granice parkingu.
 - `CarConvoy` — łączy model z rysowaniem, aktualizuje podskoki i sprawdza
-  granice po każdym podkroku. `CarSway` dodaje małe wizualne falowanie.
+  granice po każdym podkroku. Rysuje czerwone auto gracza oraz radiowozy
+  w ogonie. `PoliceLightbar` nakłada dwuklatkowe światła na dach, używając
+  czasu modelu i tej samej transformacji co auto; posiada i zwalnia teksturę
+  jednego piksela. `CarSway` dodaje małe wizualne falowanie.
 - `Easings` — statyczne funkcje interpolacji (30 krzywych oraz `Linear`);
   `ConvoyMovement` używa `EaseInOutSine` do skrętów, a `CarHop` używa
   `EaseOutCubic` i `EaseInQuad` do wybicia oraz lądowania.
@@ -163,6 +171,9 @@ Tutorial: [Building a 2D Game — MonoGame](https://docs.monogame.net/articles/t
 Grafiki [samochodu](DUI.Game/Content/Images/car.png) i
 [butelki](DUI.Game/Content/Images/beer-bottle.png) wygenerowano narzędziem
 `image_gen` z przezroczystym tłem. Pełne prompty: [AssetPrompts.json](Docs/AssetPrompts.json).
+[Grafika radiowozu](DUI.Game/Content/Images/police-car.png) to wariant
+oryginalnego auta wygenerowany wbudowanym `image_gen`, z zachowaniem sylwetki
+i przezroczystości. Dach jest pusty w teksturze; światła rysuje kod gry.
 
 Nowy [atlas parkingu](DUI.Game/Content/Images/parking-atlas.png) zawiera
 16 kafelków asfaltu, linii, krawężników, trawy, siatki i bramy.

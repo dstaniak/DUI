@@ -6,13 +6,16 @@ using MonoGameLibrary.Graphics;
 
 namespace DUI.GameObjects;
 
-/// <summary>Renders the convoy with sideways sway, smooth headings and curb hops.</summary>
-public sealed class CarConvoy
+/// <summary>Renders the player's car and police followers with roof lights and curb hops.</summary>
+public sealed class CarConvoy : IDisposable
 {
     public const float Size = 80.0f;
 
-    private readonly Sprite _sprite;
-    private readonly Vector2 _baseScale;
+    private readonly Sprite _playerSprite;
+    private readonly Sprite _policeSprite;
+    private readonly Vector2 _playerScale;
+    private readonly Vector2 _policeScale;
+    private readonly PoliceLightbar _lightbar;
     private readonly ParkingLot _parkingLot;
     private readonly List<CarHop> _hops = [];
     private readonly List<CarPose> _previousPoses = [];
@@ -21,13 +24,16 @@ public sealed class CarConvoy
     public event EventHandler BodyCollision;
     public event EventHandler BoundaryCollision;
 
-    public CarConvoy(Sprite sprite, ParkingLot parkingLot)
+    public CarConvoy(Sprite playerSprite, Sprite policeSprite, ParkingLot parkingLot)
     {
         _parkingLot = parkingLot;
-        _sprite = sprite;
-        _sprite.CenterOrigin();
-        _baseScale = new Vector2(Size / sprite.Region.Width, Size / sprite.Region.Height);
-        _sprite.Scale = _baseScale;
+        _playerSprite = playerSprite;
+        _policeSprite = policeSprite;
+        _playerSprite.CenterOrigin();
+        _policeSprite.CenterOrigin();
+        _playerScale = new Vector2(Size / playerSprite.Region.Width, Size / playerSprite.Region.Height);
+        _policeScale = new Vector2(Size / policeSprite.Region.Width, Size / policeSprite.Region.Height);
+        _lightbar = new PoliceLightbar(policeSprite.Region.Texture.GraphicsDevice);
     }
 
     public void Initialize(Vector2 startingPosition)
@@ -65,12 +71,27 @@ public sealed class CarConvoy
             CarPose pose = CarSway.GetPose(logicalPose);
             var hop = _hops[i].GetTransform(_movement.RenderTime);
             float terrainScale = _parkingLot.GetCarScale(logicalPose.Center);
+            float visualScale = terrainScale * hop.Scale;
+            Sprite sprite = i == 0 ? _playerSprite : _policeSprite;
+            Vector2 baseScale = i == 0 ? _playerScale : _policeScale;
 
             // Apply lift in screen-up board space, independently of the car's heading.
-            _sprite.Rotation = pose.Rotation;
-            _sprite.Scale = _baseScale * terrainScale * hop.Scale;
-            _sprite.Draw(Core.SpriteBatch, pose.Center - Vector2.UnitY * hop.Lift);
+            Vector2 center = pose.Center - Vector2.UnitY * hop.Lift;
+            sprite.Rotation = pose.Rotation;
+            sprite.Scale = baseScale * visualScale;
+            sprite.Draw(Core.SpriteBatch, center);
+            if (i > 0)
+            {
+                _lightbar.Draw(Core.SpriteBatch, center, pose.Rotation,
+                    visualScale, _movement.RenderTime);
+            }
         }
+    }
+
+    public void Dispose()
+    {
+        // Sprite textures belong to the scene's ContentManager.
+        _lightbar.Dispose();
     }
 
     public Circle GetBounds()
