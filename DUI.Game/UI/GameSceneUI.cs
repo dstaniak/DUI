@@ -96,13 +96,11 @@ public class GameSceneUI : ContainerRuntime
 
     public void Update(GameTime gameTime)
     {
-        float zoom = Core.Display.Scale * 4.0f;
-        Vector2 margin = Core.Display.Offset / zoom;
-        _scoreText.X = 20 + margin.X;
-        _scoreText.Y = 5 + margin.Y;
+        _scoreText.X = 20;
+        _scoreText.Y = 5 + GameDisplay.BorderHeight;
         PositionPerMilleSymbol();
-        _pauseButton.X = -20 - margin.X;
-        _pauseButton.Y = 2 + margin.Y;
+        _pauseButton.X = -20;
+        _pauseButton.Y = 2 + GameDisplay.BorderHeight;
         Gum.GumService.Default.Update(gameTime);
     }
 
@@ -150,7 +148,7 @@ public class GameSceneUI : ContainerRuntime
     private void PositionPerMilleSymbol()
     {
         // Reposition immediately when the number changes width (e.g. 9,8→10,0),
-        // and again when Update applies display margins.
+        // and again when Update applies the native-raster HUD position.
         _perMilleSymbol.X = _scoreText.X + _scoreText.AbsoluteWidth + 1;
         _perMilleSymbol.Y = _scoreText.Y + 0.5f;
     }

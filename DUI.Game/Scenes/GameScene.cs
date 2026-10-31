@@ -113,8 +113,6 @@ public class GameScene : Scene
 
     public override void Draw(GameTime gameTime)
     {
-        Core.GraphicsDevice.Clear(Color.Black);
-
         Effect sceneEffect = null;
         if (_state != GameState.Playing)
         {
@@ -127,7 +125,7 @@ public class GameScene : Scene
             blendState: BlendState.NonPremultiplied,
             samplerState: SamplerState.PointClamp,
             effect: sceneEffect,
-            transformMatrix: Core.Display.Transform);
+            transformMatrix: GameDisplay.RasterTransform);
 
         _parkingLot.Draw(Core.SpriteBatch);
         _convoy.Draw();

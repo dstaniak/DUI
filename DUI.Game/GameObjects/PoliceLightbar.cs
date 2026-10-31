@@ -1,6 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MonoGameLibrary.Graphics;
 
 namespace DUI.GameObjects;
 
@@ -23,7 +24,7 @@ internal sealed class PoliceLightbar : IDisposable
         // the lights, while retry resets them. There are exactly two frames.
         const long frameTicks = 250 * TimeSpan.TicksPerMillisecond;
         bool blueFrame = renderTime.Ticks / frameTicks % 2 == 0;
-        Color lightColor = blueFrame ? new(50, 150, 255) : new(255, 45, 55);
+        Color lightColor = blueFrame ? C64Palette.LightBlue : C64Palette.LightRed;
         Vector2 forward = new(MathF.Cos(rotation), MathF.Sin(rotation));
         Vector2 side = new(-forward.Y, forward.X);
 
@@ -39,7 +40,7 @@ internal sealed class PoliceLightbar : IDisposable
             DrawBlock(position, new(13, 14), new(lightColor, 45));
             DrawBlock(position, new(9, 10), new(lightColor, 100));
             DrawBlock(position, new(5, 8), lightColor);
-            DrawBlock(position, new(2, 5), Color.White);
+            DrawBlock(position, new(2, 5), C64Palette.White);
         }
 
         void DrawBlock(Vector2 localPosition, Vector2 size, Color color)

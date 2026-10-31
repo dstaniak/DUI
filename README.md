@@ -22,6 +22,24 @@ Windows i Linux. MGCB buduje zasoby podczas kompilacji. Kompilacja shadera
 na macOS/Linux wymaga środowiska Wine skonfigurowanego dla MonoGame MGFXC,
 tak jak w projekcie źródłowym.
 
+## Oprawa C64
+
+Cała klatka, łącznie z UI, ma **320×200 pikseli**. Plansza 1280×720 jest
+rysowana jako 320×180 z ramką po 10 pikseli u góry i dołu. `PointClamp`
+powiększa obraz całkowitą wielokrotnością, z wyśrodkowaniem w oknie;
+jedynie ekran mniejszy niż 320×200 wymaga pomniejszenia. Kafelek ma na tej
+siatce 20×20 pikseli. Fizyka, prędkość i granice kolizji pozostają w jednostkach
+planszy, niezależnie od rozmiaru okna.
+
+`C64Palette` definiuje 16 kolorów w wariancie
+[Pepto PAL używanym przez VICE](https://raw.githubusercontent.com/VICE-Team/svn-mirror/main/vice/data/C64/pepto-pal.vpl).
+Nowe grafiki parkingu i witryny mają uproszczone kształty oraz wzory
+z dwóch kolorów: szachownice 2×2 i rzadsze pikselowe akcenty w cieniach
+oraz na powierzchniach. Wzory są częścią tekstur. Końcowy shader wyłącznie
+dopasowuje kolory po mieszaniu przezroczystości i wygaszaniu do tej palety;
+nie nakłada ditheringu na ekran. To stylizacja, bez emulowania ograniczeń
+trybów graficznych VIC-II.
+
 ## Zasady i sterowanie
 
 - Strzałki / WASD lub D-pad / lewy drążek pada zmieniają kierunek.
@@ -109,13 +127,19 @@ się standardowym przyciskiem systemu.
   krawężnika przez jego przód; renderowanie korzysta z czasu modelu ruchu.
 - `BeerBottle` — ruch i pulsowanie butelki; `BeerBurst` — krótkotrwałe
   krople piwa i piana, rysowane prostymi figurami pikselowymi.
+- `GameDisplay` — rozdziela współrzędne planszy, rastra 320×200 i okna.
+  Odwrotna transformacja obsługuje gesty oraz kursor Gum, także w marginesach.
+- `C64Renderer` — posiada dwa bufory 320×200: scenę z UI i klatkę ograniczoną
+  do palety `C64Palette`. `DuiGame` obejmuje nim rysowanie sceny i zwalnia
+  bufory przy wyjściu; efekt należy do `ContentManager`. Gum rysuje przy
+  zoomie 1 na tej samej siatce, więc tekst pozostaje pikselowy.
 - `DUI.Tests` — testy regresji uruchamiane bez okna i urządzenia graficznego.
 - [Mapa klas](Docs/ClassMap.html) — odpowiedzialności i przepływy aplikacji.
 
 ## Mobile
 
 Kod uwzględnia gesty dotykowe, pauzę po utracie aktywności oraz stałą
-planszę 1280 × 720, skalowaną z zachowaniem proporcji. Zmiana rozmiaru
+planszę 1280 × 720, rysowaną przez raster 320×200 z zachowaniem proporcji. Zmiana rozmiaru
 ekranu nie zmienia zasad, geometrii kolizji ani prędkości gry. Aktualizacje
 odbywają się w stałym rytmie 60 Hz, także na ekranach o wyższym odświeżaniu.
 
@@ -175,13 +199,14 @@ Grafiki [samochodu](DUI.Game/Content/Images/car.png) i
 oryginalnego auta wygenerowany wbudowanym `image_gen`, z zachowaniem sylwetki
 i przezroczystości. Dach jest pusty w teksturze; światła rysuje kod gry.
 
-Nowy [atlas parkingu](DUI.Game/Content/Images/parking-atlas.png) zawiera
+Aktywny [atlas parkingu C64](DUI.Game/Content/Images/c64-parking-atlas.png) zawiera
 16 kafelków asfaltu, linii, krawężników, trawy, siatki i bramy.
-[Witryna](DUI.Game/Content/Images/storefront.png) jest osobną panoramą.
-Oba zasoby powstały we wbudowanym `image_gen`; prompty zapisano w tym samym
+[Witryna C64](DUI.Game/Content/Images/c64-storefront.png) jest osobną panoramą.
+Oba zasoby i ich warianty z wzorami powstały we wbudowanym `image_gen`; prompty zapisano w tym samym
 pliku AssetPrompts.json. Definicja mapy wycina wnętrza kafelków bez linii
 podziału atlasu; `ParkingLot` skaluje je do logicznych 80×80.
-Dotychczasowy atlas pozostaje źródłem fontu i elementów UI.
+Oryginalne parking-atlas.png i storefront.png pozostają materiałem źródłowym.
+Tutorialowy atlas.png pozostaje źródłem fontu i elementów UI.
 Narożniki są składane z fragmentów pionowego i poziomego przęsła tego samego
 atlasu, dzięki czemu zachowują rozstaw szyn oraz wzór siatki. Na styku jest
 [kątownik](DUI.Game/Content/Images/fence-corner.png) wycięty podczas rysowania

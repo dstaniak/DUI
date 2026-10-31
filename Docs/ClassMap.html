@@ -3,14 +3,14 @@
 <title>DUI — mapa klas</title>
 <style>body{font:16px/1.6 system-ui;max-width:1080px;margin:48px auto;padding:0 24px;color:#172338;background:#f6f8fa}a{color:#174ca0}table{border-collapse:collapse;width:100%;background:white}th,td{text-align:left;vertical-align:top;padding:12px 16px;border:1px solid #d9e0e8}code{background:#e6edf4;padding:2px 5px}h1,h2{line-height:1.25}.flow{background:#e6edf4;padding:20px;border-radius:8px}</style>
 <h1>DUI — mapa klas i przepływów</h1>
-<p>Aktualny stan: edukacyjna gra z płynnie skręcającą kolumną radiowozów za czerwonym autem gracza, podskakujących na krawężnikach, pulsującymi butelkami piwa i rozpryskiem piany na parkingu pod sklepem, bez menu głównego. Działający host DesktopGL,
+<p>Aktualny stan: edukacyjna gra z płynnie skręcającą kolumną radiowozów za czerwonym autem gracza, podskakujących na krawężnikach, pulsującymi butelkami piwa i rozpryskiem piany na parkingu pod sklepem, bez menu głównego. Oprawa C64: 320×200, 16 kolorów i dwukolorowe wzory w teksturach. Działający host DesktopGL,
 wspólne źródła i zasoby, podstawy wejścia dotykowego. Hosty Android/iOS nie są jeszcze dodane.</p>
 <h2>Start i własność stanu</h2>
 <p class="flow"><a href="../DUI.Desktop/Program.cs">Program</a> →
 <a href="#DuiGame">DuiGame</a> → <a href="#Core">Core.ChangeScene</a> →
 <a href="#GameScene">GameScene.Initialize</a> → plansza i rozgrywka.</p>
 <p>Host wybiera backend MonoGame. <code>DUI.Game.projitems</code> włącza wspólne źródła
-oraz content do hosta. Core posiada scenę i usługi. GameScene posiada stan sesji,
+oraz content do hosta. Core posiada scenę i usługi. DuiGame posiada C64Renderer i zwalnia jego dwa bufory 320×200; efekt palety należy do ContentManager gry. GameScene posiada stan sesji,
 wynik gry w promilach (decimal), ParkingLot, CarConvoy, BeerBottle, BeerBurst i UI. ParkingLot posiada mapę kafelkową, witrynę, ParkingGeometry i geometrię trawników; tekstury zwalnia ContentManager sceny. ConvoyMovement posiada kolejkę, pozy aut i czas symulacji; ConvoyTrail przechowuje ograniczoną historię drogi. CarConvoy posiada model, sprite gracza i radiowozu, PoliceLightbar oraz stan CarHop dla każdego auta; CarSway dodaje delikatne falowanie. CarHop wykrywa wjazd przodu na wyspę i oblicza skalę oraz uniesienie; UI prezentuje wynik i emituje intencje.</p>
 <h2>Przepływy użytkownika i relacje</h2>
 <ol>
@@ -35,7 +35,7 @@ Dwa stany świateł — niebieski i czerwony — zmieniają się co 250 ms wedł
 Pauza i koniec gry zamrażają klatkę, a RETRY resetuje czas do niebieskiej.
 Zmiana wyglądu ogona nie zmienia śladu ruchu, odstępów ani kolizji.</li>
 <li><strong>Parking i trawa:</strong> ParkingLot wczytuje tilemap-definition.xml
-z atlasem parking-atlas.png. Dwie wysepki 2×4 zajmują kolumny 2–3 i 12–13,
+z atlasem c64-parking-atlas.png. Dwie wysepki 2×4 zajmują kolumny 2–3 i 12–13,
 wiersze 3–6. Te same prostokąty układają kafle, wyznaczają skalę przez GetCarScale
 i są udostępniane jako GrassIslands dla animacji. SmoothStep zwiększa skalę
 od 1 do 1,06 na dystansie połowy kafelka od krawędzi.
@@ -81,26 +81,38 @@ oraz ConvoyMovement są aktualizowane tylko podczas Playing, więc pauza zatrzym
 <li><strong>Tło aplikacji:</strong> DuiGame.OnDeactivated → GameScene.Pause i AudioController.PauseAudio.
 Core nie aktualizuje sceny bez aktywności. OnActivated resetuje licznik czasu i wznawia audio;
 rozgrywka czeka na RESUME. To nie zapis stanu po zabiciu procesu przez system.</li>
-<li><strong>Ekran:</strong> DuiGame aktualizuje GameDisplay i skalę Gum.
-SpriteBatch stosuje GameDisplay.Transform; UI uwzględnia marginesy.
-GameSceneUI.PositionPerMilleSymbol ustawia znak bezpośrednio po zmianie wyniku
-oraz przy aktualizacji marginesów; liczba i sprite mają tę samą skalę 0,25 przed zoomem Gum.
-GameController mapuje pozycje myszy/dotyku przez ToGamePosition.
-Kolizje używają zawsze układu 1280 × 720. Rozmiar logiczny aut i butelki to 80;
-falowanie, podskoki, powiększenie aut i puls butelki nie zmieniają geometrii kolizji. Ściany używają obróconego obrysu auta 74×36 px; promienie to 40 dla głowy przy zbieraniu, 20 dla butelki oraz 32 dla kolizji aut z ogonem.</li>
+<li><strong>Ekran C64:</strong> DuiGame.Draw → C64Renderer.BeginFrame → GameScene.Draw
+→ C64Renderer.Present. Scena stosuje GameDisplay.RasterTransform: plansza 1280×720
+trafia do 320×180 z ramką po 10 pikseli. Gum rysuje na tym samym buforze 320×200
+przy Camera.Zoom=1. Wynik ma pozycję (20,15), a PAUSE odstęp 20 od prawej krawędzi i Y=12.
+GameSceneUI.PositionPerMilleSymbol dopasowuje znak do szerokości liczby przy skali 0,25.
+Shader <a href="../DUI.Game/Content/Effects/c64Palette.fx">c64Palette.fx</a> wybiera
+najbliższy kolor z C64Palette po wszystkich mieszaniach alpha i efekcie pauzy.
+Nie tworzy ditheringu: wzory dwóch kolorów są zapisane w grafice parkingu i witryny.
+Drugi bufor 320×200 jest powiększany przez PointClamp do GameDisplay.OutputBounds,
+całkowitą wielokrotnością i z marginesami; mniejsze okna używają pomniejszenia.
+DuiGame.UpdateDisplay ustawia Cursor.TransformMatrix=ScreenToRaster,
+a GameController mapuje mysz/dotyk przez ToGamePosition do planszy.
+UI i gesty korzystają więc z tej samej geometrii również po zmianie rozmiaru.
+Kolizje zawsze używają układu 1280×720. Logiczny rozmiar aut i butelki to 80;
+falowanie, podskoki, powiększenie aut i puls butelki nie zmieniają kolizji.
+Ściany używają obrysu 74×36; promienie to 40 przy zbieraniu, 20 dla butelki
+oraz 32 dla kolizji aut z ogonem.</li>
 <li><strong>Wyjście:</strong> systemowy przycisk zamyka okno desktopowe.
 GameScene.UnloadContent zwalnia teksturę BeerBurst i wywołuje CarConvoy.Dispose,
-które zwalnia teksturę PoliceLightbar; Core zwalnia scenę, content, audio i SpriteBatch. Brak powrotu do ekranu tytułowego.</li>
+które zwalnia teksturę PoliceLightbar; DuiGame zwalnia bufory C64Renderer, a Core scenę, content, audio i SpriteBatch. Brak powrotu do ekranu tytułowego.</li>
 </ol>
 <h2>Klasy i typy</h2>
 <table><thead><tr><th>Typ i źródło</th><th>Odpowiedzialność</th></tr></thead><tbody>
-<tr id="DuiGame"><td><a href="../DUI.Game/DuiGame.cs">DuiGame</a></td><td>Uruchamia GameScene bez menu; ustala 60 Hz, skalę UI oraz obsługuje utratę i odzyskanie aktywności.</td></tr>
+<tr id="DuiGame"><td><a href="../DUI.Game/DuiGame.cs">DuiGame</a></td><td>Uruchamia GameScene bez menu; ustala 60 Hz, raster Gum 320×200 i transformację kursora. Posiada C64Renderer, obejmuje nim Draw i zwalnia bufory. Obsługuje utratę i odzyskanie aktywności.</td></tr>
 <tr id="AudioController"><td><a href="../DUI.Game/Framework/Audio/AudioController.cs">AudioController</a></td><td>Zarządza muzyką i instancjami efektów dźwiękowych oraz pauzą po utracie aktywności.</td></tr>
 <tr id="Circle"><td><a href="../DUI.Game/Framework/Circle.cs">Circle</a></td><td>Okrągły obszar kolizji, z testem ścisłego przecięcia jak w tutorialu.</td></tr>
 <tr id="Core"><td><a href="../DUI.Game/Framework/Core.cs">Core</a></td><td>Właściciel usług MonoGame i aktywnej sceny. Aktualizuje wejście, audio i grę; zwalnia zasoby przy wyjściu.</td></tr>
 <tr id="AnimatedSprite"><td><a href="../DUI.Game/Framework/Graphics/AnimatedSprite.cs">AnimatedSprite</a></td><td>Przesuwa aktualną klatkę animacji na podstawie GameTime.</td></tr>
 <tr id="Animation"><td><a href="../DUI.Game/Framework/Graphics/Animation.cs">Animation</a></td><td>Lista klatek atlasu i czas każdej klatki.</td></tr>
-<tr id="GameDisplay"><td><a href="../DUI.Game/Framework/Graphics/GameDisplay.cs">GameDisplay</a></td><td>Mapuje stałą planszę 1280 × 720 na ekran, zachowując proporcje; odwrotnie mapuje wejście.</td></tr>
+<tr id="GameDisplay"><td><a href="../DUI.Game/Framework/Graphics/GameDisplay.cs">GameDisplay</a></td><td>Mapuje planszę 1280×720 przez RasterTransform na 320×180 z ramką w rastrze 320×200. Resize wyznacza całkowite powiększenie i OutputBounds; ScreenToRaster mapuje kursor Gum, a ToGamePosition gesty na planszę. Małe okna są pomniejszane.</td></tr>
+<tr id="C64Palette"><td><a href="../DUI.Game/Framework/Graphics/C64Palette.cs">C64Palette</a></td><td>16 kolorów Pepto PAL w kolejności VIC-II. Udostępnia nieedytowalną paletę shaderowi i kolory świateł PoliceLightbar.</td></tr>
+<tr id="C64Renderer"><td><a href="../DUI.Game/Framework/Graphics/C64Renderer.cs">C64Renderer</a></td><td>Posiada dwa RenderTarget2D 320×200. BeginFrame czyści ramkę; Present ogranicza kompletną scenę i UI do C64Palette, następnie powiększa przez PointClamp. Nie dodaje ditheringu. Dispose zwalnia bufory; ContentManager posiada Effect.</td></tr>
 <tr id="Sprite"><td><a href="../DUI.Game/Framework/Graphics/Sprite.cs">Sprite</a></td><td>Parametry rysowania regionu tekstury: pozycja, skala, obrót, kolor i warstwa.</td></tr>
 <tr id="TextureAtlas"><td><a href="../DUI.Game/Framework/Graphics/TextureAtlas.cs">TextureAtlas</a></td><td>Wczytuje definicję XML, teksturę, regiony i animacje; tworzy sprite’y.</td></tr>
 <tr id="TextureRegion"><td><a href="../DUI.Game/Framework/Graphics/TextureRegion.cs">TextureRegion</a></td><td>Prostokątny fragment atlasu wraz ze współrzędnymi UV i operacją rysowania.</td></tr>
@@ -119,17 +131,17 @@ które zwalnia teksturę PoliceLightbar; Core zwalnia scenę, content, audio i S
 <tr id="CarSway"><td><a href="../DUI.Game/GameObjects/CarSway.cs">CarSway</a></td><td>Czysta funkcja CarPose → CarPose dodająca wizualne przesunięcie ±1,5 px i obrót ±2°. Faza zależy od drogi, więc segment powtarza falowanie głowy; okres odpowiada 1,2 s. Nie zmienia modelu ani kolizji.</td></tr>
 <tr id="Easings"><td><a href="../DUI.Game/Framework/Easings.cs">Easings</a></td><td>31 statycznych funkcji float → float: Linear i 30 krzywych z easings.net. Postęp wejściowy 0–1; Back i Elastic zachowują wychylenia poza ten zakres. EaseInOutSine wygładza orientację aut, a EaseOutCubic i EaseInQuad sterują wybiciem i lądowaniem.</td></tr>
 <tr id="CarConvoy"><td><a href="../DUI.Game/GameObjects/CarConvoy.cs">CarConvoy</a></td><td>Łączy ConvoyMovement z renderowaniem i ParkingLot. Posiada stan CarHop oraz poprzednią pozę każdego auta. Po każdym podkroku aktualizuje podskoki i sprawdza ogrodzenie i bramę przez ParkingGeometry na podstawie środka oraz obrotu głowy. Draw pobiera interpolowaną pozę, dodaje CarSway, skalę trawnika i podskok. Indeks 0 rysuje autem gracza, pozostałe radiowozem ze światłami PoliceLightbar. Dispose zwalnia zasób belki; tekstury samochodów należą do ContentManager. Przekazuje BodyCollision i BoundaryCollision do sceny; GetBounds zachowuje promień 40 px dla zbierania butelek.</td></tr>
-<tr id="PoliceLightbar"><td><a href="../DUI.Game/GameObjects/PoliceLightbar.cs">PoliceLightbar</a></td><td>Rysuje pikselową belkę świetlną w lokalnych współrzędnych radiowozu. Dokładnie dwie klatki: niebieska i czerwona po 250 ms, wyznaczane z RenderTime modelu. Współdzieli obrót, skalę i uniesienie auta. Posiada teksturę jednego białego piksela; CarConvoy.Dispose ją zwalnia.</td></tr>
-<tr id="ParkingLot"><td><a href="../DUI.Game/GameObjects/ParkingLot.cs">ParkingLot</a></td><td>Posiada Tilemap, witrynę, regiony ogrodzenia i geometrię dwóch wysp trawy. DrawFenceCorners składa lustrzane narożniki z poziomego półprzęsła, pionowego odcinka i kątownika. Ustala kafelek 80×80, początek gry oraz ParkingGeometry; udostępnia DrivingBounds i BottleBounds. GrassIslands udostępnia nieedytowalny widok prostokątów dla CarHop; GetCarScale oblicza powiększenie terenu do 106%.</td></tr>
+<tr id="PoliceLightbar"><td><a href="../DUI.Game/GameObjects/PoliceLightbar.cs">PoliceLightbar</a></td><td>Rysuje pikselową belkę świetlną w lokalnych współrzędnych radiowozu. Dokładnie dwie klatki w kolorach C64Palette.LightBlue i LightRed po 250 ms, wyznaczane z RenderTime modelu. Współdzieli obrót, skalę i uniesienie auta. Posiada teksturę jednego białego piksela; CarConvoy.Dispose ją zwalnia.</td></tr>
+<tr id="ParkingLot"><td><a href="../DUI.Game/GameObjects/ParkingLot.cs">ParkingLot</a></td><td>Posiada Tilemap z c64-parking-atlas, witrynę c64-storefront, regiony ogrodzenia i geometrię dwóch wysp trawy. DrawFenceCorners składa lustrzane narożniki z poziomego półprzęsła, pionowego odcinka i kątownika. Ustala kafelek 80×80, początek gry oraz ParkingGeometry; udostępnia DrivingBounds i BottleBounds. GrassIslands udostępnia nieedytowalny widok prostokątów dla CarHop; GetCarScale oblicza powiększenie terenu do 106%.</td></tr>
 <tr id="ParkingGeometry"><td><a href="../DUI.Game/GameObjects/ParkingGeometry.cs">ParkingGeometry</a></td><td>Geometria kolizji zgodna z grafiką parkingu w skali kafelka 80×80. DrivingBounds sięga do wewnętrznych krawędzi płotu; GateBounds opisuje wysuniętą zamkniętą bramę. IntersectsBoundary sprawdza oba obszary przez ConvoyCollision. BottleBounds wyznacza prostokątny obszar odbić i odrodzeń butelek, kończący się przed bramą.</td></tr>
 <tr id="ConvoyMovement"><td><a href="../DUI.Game/GameObjects/ConvoyMovement.cs">ConvoyMovement</a></td><td>Model płynnej jazdy: 400 px/s, skręt 90° w 160 ms przez EaseInOutSine, dwa oczekujące kierunki. Podkroki 5 ms, zachowanie reszty czasu i interpolacja obrazu. Cars udostępnia aktualne CarPose, GetRenderPose pozy do rysowania. Auta odtwarzają ślad w odstępach 80 px. Stepped synchronizuje teren i granice, BodyCollision zatrzymuje symulację. Stop przerywa także pozostałą część aktualizacji.</td></tr>
 <tr id="CarPose"><td><a href="../DUI.Game/GameObjects/CarPose.cs">CarPose</a></td><td>Niezmienny środek auta w pikselach planszy, obrót w radianach oraz droga wzdłuż śladu głowy. Interpolacja uwzględnia zawijanie kąta.</td></tr>
 <tr id="ConvoyTrail"><td><a href="../DUI.Game/GameObjects/ConvoyTrail.cs">ConvoyTrail</a></td><td>Historia pozycji głowy indeksowana odległością. Wyszukiwanie binarne i interpolacja dla segmentów; zachowuje długość kolumny oraz zapas dla nowego auta. Kompaktuje bufor partiami. Brakujący początek historii przedłuża wstecz wzdłuż najstarszego kierunku.</td></tr>
 <tr id="ConvoyCollision"><td><a href="../DUI.Game/GameObjects/ConvoyCollision.cs">ConvoyCollision</a></td><td>Przecięcie ruchomych okręgów aut o promieniu 32 px w przestrzeni względnej, także między końcami podkroku. Granice parkingu sprawdza dla obróconego obrysu auta 74×36 px. IsOutsideParking przyjmuje CarPose, a skrajne współrzędne zależą od długości, szerokości oraz aktualnego kąta auta. IntersectsObstacle sprawdza obrócone auto i prostokąt bramy na czterech osiach separacji.</td></tr>
 <tr id="SwipeTracker"><td><a href="../DUI.Game/Input/SwipeTracker.cs">SwipeTracker</a></td><td>Rozpoznaje jeden kierunek na kontakt po przesunięciu o 32 jednostki planszy; pomija marginesy i pasek wyniku.</td></tr>
-<tr id="GameScene"><td><a href="../DUI.Game/Scenes/GameScene.cs">GameScene</a></td><td>Zarządza stanem Playing/Paused/GameOver, zderzeniami, wynikiem decimal w promilach (0,2 za butelkę, reset do 0), odrodzeniem i odbiciami butelki wewnątrz ParkingLot.BottleBounds, wybuchem piwa i panelami UI. Łączy ParkingLot z rysowaniem CarConvoy i kontrolą kolizji.</td></tr>
+<tr id="GameScene"><td><a href="../DUI.Game/Scenes/GameScene.cs">GameScene</a></td><td>Zarządza stanem Playing/Paused/GameOver, zderzeniami, wynikiem decimal w promilach (0,2 za butelkę, reset do 0), odrodzeniem i odbiciami butelki wewnątrz ParkingLot.BottleBounds, wybuchem piwa i panelami UI. Łączy ParkingLot z rysowaniem CarConvoy i kontrolą kolizji. Rysuje świat przez RasterTransform do bufora C64Renderer, a potem UI Gum.</td></tr>
 <tr id="AnimatedButton"><td><a href="../DUI.Game/UI/AnimatedButton.cs">AnimatedButton</a></td><td>Przycisk Gum z animowanym fokusem i grafiką atlasu, obsługujący mysz, dotyk, klawiaturę i pada.</td></tr>
-<tr id="GameSceneUI"><td><a href="../DUI.Game/UI/GameSceneUI.cs">GameSceneUI</a></td><td>Formatuje wynik z jedną cyfrą po przecinku (pl-PL), rysuje liczbę przez TextRuntime i cały znak ‰ przez jeden SpriteRuntime z per-mille.png. Dopasowuje pozycję znaku do szerokości liczby i marginesów ekranu. Rysuje PAUSE, panel pauzy z RESUME i koniec gry z RETRY. Zdarzenia trafiają do GameScene.</td></tr>
+<tr id="GameSceneUI"><td><a href="../DUI.Game/UI/GameSceneUI.cs">GameSceneUI</a></td><td>Formatuje wynik z jedną cyfrą po przecinku (pl-PL), rysuje liczbę przez TextRuntime i cały znak ‰ przez jeden SpriteRuntime z per-mille.png. Dopasowuje pozycję znaku do szerokości liczby na stałym rastrze 320×200, z uwzględnieniem górnej ramki 10 px. Rysuje PAUSE, panel pauzy z RESUME i koniec gry z RETRY. Zdarzenia trafiają do GameScene.</td></tr>
 </tbody></table>
 <h2>Zasoby samochodów</h2>
 <p>Gracz używa <a href="../DUI.Game/Content/Images/car.png">car.png</a>, a ogon
@@ -140,12 +152,15 @@ PoliceLightbar nakłada na pusty dach animację z dwóch stanów.
 Pełny prompt i źródło referencyjne są w <a href="AssetPrompts.json">AssetPrompts.json</a>.</p>
 <h2>Zasoby parkingu</h2>
 <p><a href="../DUI.Game/Content/Images/tilemap-definition.xml">Definicja mapy</a>
-wykorzystuje <a href="../DUI.Game/Content/Images/parking-atlas.png">atlas 4×4</a>:
+wykorzystuje <a href="../DUI.Game/Content/Images/c64-parking-atlas.png">atlas C64 4×4</a>:
 0 asfalt, 1–3 linie parkingowe, 4–9 brzegi trawników, 10–11 siatka pionowa,
 12 i 15 siatka pozioma, 13–14 zamknięta brama. Regiony mają 306×306 pikseli,
 odstęp 8 i początek (4,4), co pomija linie podziału arkusza.
-<a href="../DUI.Game/Content/Images/storefront.png">Witryna</a> pokrywa dwa górne rzędy,
-a atlas.png nadal obsługuje font i UI.
+<a href="../DUI.Game/Content/Images/c64-storefront.png">Witryna C64</a> pokrywa dwa górne rzędy,
+a atlas.png nadal obsługuje font i UI. Kafelki są widoczne jako 20×20 pikseli,
+a witryna jako 320×40. Szachownice 2×2 z dwóch kolorów oraz rzadsze pikselowe akcenty
+stanowią część materiałów i cieni w teksturach. Oba warianty powstały przez edycję
+wbudowanym image_gen; oryginały pozostają materiałem źródłowym.
 Narożniki korzystają z górnych 100 wierszy kafelka 10 i prawej połowy
 kafelka 12. Oba fragmenty zachowują skalę atlasu, więc szyny i wzór siatki
 pasują do prostych przęseł. Tylko metalowy kątownik pochodzi z

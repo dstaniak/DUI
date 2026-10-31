@@ -4,7 +4,7 @@
          ParkingLot adds the two 2x4 lawns from its height rectangles.
          Row 8, columns 7 and 8 form the closed gate. The two end cells are
          asphalt under the mirrored L-shaped fence corners drawn by ParkingLot. -->
-    <Tileset region="4 4 1248 1248" tileWidth="306" tileHeight="306" spacing="8">Images/parking-atlas</Tileset>
+    <Tileset region="4 4 1248 1248" tileWidth="306" tileHeight="306" spacing="8">Images/c64-parking-atlas</Tileset>
     <Tiles>
         00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
         00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00

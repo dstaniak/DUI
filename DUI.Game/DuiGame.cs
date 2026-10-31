@@ -3,9 +3,11 @@ using DUI.Scenes;
 using Gum.Forms;
 using Gum.Forms.Controls;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Media;
 using MonoGameGum;
 using MonoGameLibrary;
+using MonoGameLibrary.Graphics;
 
 namespace DUI;
 
@@ -14,6 +16,7 @@ public sealed class DuiGame : Core
     private GameScene _gameScene;
     private Song _themeSong;
     private Point _screenSize;
+    private C64Renderer _renderer;
 
     public DuiGame() : base("DUI — Snake", 1280, 720, false)
     {
@@ -27,6 +30,7 @@ public sealed class DuiGame : Core
     {
         base.Initialize();
         InitializeGum();
+        _renderer = new C64Renderer(GraphicsDevice, Content.Load<Effect>("Effects/c64Palette"));
         UpdateDisplay();
         Audio.PlaySong(_themeSong);
         _gameScene = new GameScene();
@@ -42,6 +46,19 @@ public sealed class DuiGame : Core
     {
         UpdateDisplay();
         base.Update(gameTime);
+    }
+
+    protected override void Draw(GameTime gameTime)
+    {
+        _renderer.BeginFrame();
+        base.Draw(gameTime);
+        _renderer.Present(SpriteBatch, Display);
+    }
+
+    protected override void UnloadContent()
+    {
+        _renderer?.Dispose();
+        base.UnloadContent();
     }
 
     protected override void OnDeactivated(object sender, EventArgs args)
@@ -85,9 +102,9 @@ public sealed class DuiGame : Core
         Display.Resize(screenSize.X, screenSize.Y);
 
         var service = Gum.GumService.Default;
-        float uiZoom = Display.Scale * 4.0f;
-        service.CanvasWidth = screenSize.X / uiZoom;
-        service.CanvasHeight = screenSize.Y / uiZoom;
-        service.Renderer.Camera.Zoom = uiZoom;
+        service.CanvasWidth = GameDisplay.RasterWidth;
+        service.CanvasHeight = GameDisplay.RasterHeight;
+        service.Renderer.Camera.Zoom = 1f;
+        service.Cursor.TransformMatrix = Display.ScreenToRaster;
     }
 }
