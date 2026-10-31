@@ -19,7 +19,7 @@ var tests = new (string Name, Action Run)[]
     .Concat(CarAnimationTests.Cases)
     .Concat(WallCollisionTests.Cases)
     .Concat(ParkingGeometryTests.Cases)
-    .Concat(C64DisplayTests.Cases)
+    .Concat(GameDisplayTests.Cases)
     .ToArray();
 
 int failures = 0;

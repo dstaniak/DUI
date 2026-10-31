@@ -3,7 +3,6 @@ using DUI.Scenes;
 using Gum.Forms;
 using Gum.Forms.Controls;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Media;
 using MonoGameGum;
 using MonoGameLibrary;
@@ -16,7 +15,7 @@ public sealed class DuiGame : Core
     private GameScene _gameScene;
     private Song _themeSong;
     private Point _screenSize;
-    private C64Renderer _renderer;
+    private RetroRenderer _renderer;
 
     public DuiGame() : base("DUI — Snake", 1280, 720, false)
     {
@@ -30,7 +29,7 @@ public sealed class DuiGame : Core
     {
         base.Initialize();
         InitializeGum();
-        _renderer = new C64Renderer(GraphicsDevice, Content.Load<Effect>("Effects/c64Palette"));
+        _renderer = new RetroRenderer(GraphicsDevice);
         UpdateDisplay();
         Audio.PlaySong(_themeSong);
         _gameScene = new GameScene();
@@ -102,9 +101,10 @@ public sealed class DuiGame : Core
         Display.Resize(screenSize.X, screenSize.Y);
 
         var service = Gum.GumService.Default;
-        service.CanvasWidth = GameDisplay.RasterWidth;
-        service.CanvasHeight = GameDisplay.RasterHeight;
-        service.Renderer.Camera.Zoom = 1f;
+        service.CanvasWidth = GameDisplay.UiWidth;
+        service.CanvasHeight = GameDisplay.UiHeight;
+        service.Renderer.Camera.Zoom = GameDisplay.UiScale;
+        // Gum applies its camera zoom after transforming the screen position.
         service.Cursor.TransformMatrix = Display.ScreenToRaster;
     }
 }

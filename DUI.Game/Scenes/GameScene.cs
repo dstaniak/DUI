@@ -124,8 +124,7 @@ public class GameScene : Scene
         Core.SpriteBatch.Begin(
             blendState: BlendState.NonPremultiplied,
             samplerState: SamplerState.PointClamp,
-            effect: sceneEffect,
-            transformMatrix: GameDisplay.RasterTransform);
+            effect: sceneEffect);
 
         _parkingLot.Draw(Core.SpriteBatch);
         _convoy.Draw();

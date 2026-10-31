@@ -3,24 +3,21 @@ using Microsoft.Xna.Framework;
 namespace MonoGameLibrary.Graphics;
 
 /// <summary>
-/// Maps the fixed board through a 200-pixel-high raster onto the whole window.
+/// Maps the fixed 720p frame onto the whole window, without borders.
 /// Positions and collision bounds remain in 1280 by 720 game coordinates.
 /// </summary>
 public sealed class GameDisplay
 {
     public const int Width = 1280;
     public const int Height = 720;
-    public const int RasterHeight = 200;
-    // Round the board's 16:9 aspect up to a whole native pixel.
-    public const int RasterWidth = (Width * RasterHeight + Height - 1) / Height;
+    public const int RasterWidth = Width;
+    public const int RasterHeight = Height;
+    // Keep the compact UI layout while drawing its pixel font at full detail.
+    public const int UiScale = 4;
+    public const int UiWidth = RasterWidth / UiScale;
+    public const int UiHeight = RasterHeight / UiScale;
 
-    private static readonly Vector2 s_rasterScale = new(
-        RasterWidth / (float)Width, RasterHeight / (float)Height);
-
-    public static Matrix RasterTransform { get; } = Matrix.CreateScale(
-        s_rasterScale.X, s_rasterScale.Y, 1);
-
-    public Matrix Transform { get; private set; } = RasterTransform;
+    public Matrix Transform { get; private set; } = Matrix.Identity;
     public Rectangle OutputBounds { get; private set; } = new(0, 0, RasterWidth, RasterHeight);
     public Matrix ScreenToRaster { get; private set; } = Matrix.Identity;
 
@@ -41,6 +38,6 @@ public sealed class GameDisplay
 
     public Vector2 ToGamePosition(Vector2 screenPosition)
     {
-        return Vector2.Transform(screenPosition, ScreenToRaster) / s_rasterScale;
+        return Vector2.Transform(screenPosition, ScreenToRaster);
     }
 }

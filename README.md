@@ -22,25 +22,28 @@ Windows i Linux. MGCB buduje zasoby podczas kompilacji. Kompilacja shadera
 na macOS/Linux wymaga środowiska Wine skonfigurowanego dla MonoGame MGFXC,
 tak jak w projekcie źródłowym.
 
-## Oprawa C64
+## Oprawa retro
 
-Cała klatka, łącznie z UI, ma **356×200 pikseli** — szerokość wynika
-z proporcji planszy 1280×720, zaokrąglonych do pełnego piksela. Plansza
-wypełnia cały raster i całe okno, bez ramki i pasów. `PointClamp` skaluje
-obraz bez wygładzania. Kafelek zajmuje około 22×22 piksele. Przy innych
-proporcjach okna obraz dopasowuje się osobno w obu osiach, pozostawiając
-całą planszę widoczną; dla naturalnych proporcji najlepszy jest widok 16:9.
-Fizyka, prędkość i granice kolizji pozostają w jednostkach planszy.
+Cała klatka, łącznie z UI, ma **1280×720 pikseli**. Kafelek zajmuje
+80×80 pikseli, a witryna 1280×160, dzięki czemu widać kształty samochodów,
+butelki, przekąski i cieniowanie grafik. `PointClamp` zachowuje ostre
+piksele przy skalowaniu. Obraz wypełnia całe okno bez ramki i pasów.
+Przy innych proporcjach okna każda oś jest dopasowywana osobno; dla
+naturalnych proporcji najlepszy jest widok 16:9. Fizyka, prędkość i granice
+kolizji pozostają w jednostkach planszy.
 
-`C64Palette` definiuje 16 kolorów w wariancie
+Retro wygląd tworzą same grafiki: uproszczone kształty, pikselowy font,
+kolory inspirowane C64 i wybrane dwukolorowe wzory w cieniach.
+Boki butelek w witrynie mają naprzemienne ciemniejsze piksele, a ich
+środki pozostają jednolite. Wzory są częścią tekstur; ekran nie nakłada
+ditheringu ani nie ogranicza całej klatki do 16 kolorów. Oryginalne odcienie
+tekstur, przezroczystość i wygaszanie podczas pauzy zachowują szczegóły.
+`C64Palette` pozostaje zestawem kolorów świateł radiowozów, opartym na
 [Pepto PAL używanym przez VICE](https://raw.githubusercontent.com/VICE-Team/svn-mirror/main/vice/data/C64/pepto-pal.vpl).
-Nowe grafiki parkingu i witryny mają uproszczone kształty oraz wzory
-z dwóch kolorów: szachownice 2×2 i rzadsze pikselowe akcenty w cieniach
-oraz na powierzchniach. Boki butelek w witrynie mają naprzemienne ciemniejsze
-piksele, a ich środki pozostają jednolite. Wzory są częścią tekstur. Końcowy shader wyłącznie
-dopasowuje kolory po mieszaniu przezroczystości i wygaszaniu do tej palety;
-nie nakłada ditheringu na ekran. To stylizacja, bez emulowania ograniczeń
-trybów graficznych VIC-II.
+
+UI ma układ logiczny 320×180 i zoom 4, rysowany bezpośrednio w buforze
+720p. Napisy zachowują czytelną wielkość i szczegóły fontu bez pośredniego
+pomniejszania do 200 wierszy.
 
 ## Zasady i sterowanie
 
@@ -129,19 +132,19 @@ się standardowym przyciskiem systemu.
   krawężnika przez jego przód; renderowanie korzysta z czasu modelu ruchu.
 - `BeerBottle` — ruch i pulsowanie butelki; `BeerBurst` — krótkotrwałe
   krople piwa i piana, rysowane prostymi figurami pikselowymi.
-- `GameDisplay` — rozdziela współrzędne planszy, rastra 356×200 i okna.
-  Odwrotna transformacja obsługuje gesty oraz kursor Gum, aż do krawędzi widocznej planszy.
-- `C64Renderer` — posiada dwa bufory 356×200: scenę z UI i klatkę ograniczoną
-  do palety `C64Palette`. `DuiGame` obejmuje nim rysowanie sceny i zwalnia
-  bufory przy wyjściu; efekt należy do `ContentManager`. Gum rysuje przy
-  zoomie 1 na tej samej siatce, więc tekst pozostaje pikselowy.
+- `GameDisplay` — mapuje planszę i klatkę 1280×720 na całe okno oraz
+  określa logiczny układ UI 320×180 przy zoomie 4. Odwrotna transformacja
+  obsługuje gesty oraz kursor Gum, aż do krawędzi widocznej planszy.
+- `RetroRenderer` — posiada jeden bufor 1280×720 ze sceną i UI. Prezentuje
+  go przez `PointClamp`, zachowując kolory źródłowe. `DuiGame` obejmuje nim
+  rysowanie sceny i zwalnia bufor przy wyjściu.
 - `DUI.Tests` — testy regresji uruchamiane bez okna i urządzenia graficznego.
 - [Mapa klas](Docs/ClassMap.html) — odpowiedzialności i przepływy aplikacji.
 
 ## Mobile
 
 Kod uwzględnia gesty dotykowe, pauzę po utracie aktywności oraz stałą
-planszę 1280 × 720, rysowaną przez raster 356×200 dopasowany do całego okna. Zmiana rozmiaru
+planszę i klatkę 1280×720 dopasowaną do całego okna. Zmiana rozmiaru
 ekranu nie zmienia zasad, geometrii kolizji ani prędkości gry. Aktualizacje
 odbywają się w stałym rytmie 60 Hz, także na ekranach o wyższym odświeżaniu.
 
@@ -177,8 +180,8 @@ obrócone boki i narożniki auta oraz rzeczywiste uderzenia podczas skrętu.
 Cztery testy geometrii parkingu obejmują asfalt wewnątrz kafelków płotu,
 mijanie narożników bramy ukośnym autem, osobne krawędzie bramy i przęsła
 oraz bezpieczny obszar ruchu butelek.
-Trzy testy `C64DisplayTests` sprawdzają brak ramki i przycinania, pełne
-wypełnienie okna, zgodność kursora Gum z wejściem planszy po zmianie
+Trzy testy `GameDisplayTests` sprawdzają brak ramki i przycinania, pełne
+wypełnienie okna, zgodność kursora Gum przy zoomie 4 z wejściem planszy po zmianie
 rozmiaru (także nieparzystym i bardzo małym) oraz odrzucanie gestów
 z HUD i spoza planszy. Pozostają też testy gestów i kolizji z butelkami.
 Program testowy zwraca kod różny od zera, jeśli dowolny test zawiedzie.

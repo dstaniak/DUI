@@ -6,11 +6,11 @@ using Assert = DUI.Tests.MovementTests;
 
 namespace DUI.Tests;
 
-internal static class C64DisplayTests
+internal static class GameDisplayTests
 {
     public static readonly (string Name, Action Run)[] Cases =
     [
-        ("The 200-pixel raster fills the window without borders or cropping", FullWindow),
+        ("The 720p frame fills the window without borders or cropping", FullWindow),
         ("UI and steering agree at odd, portrait and small window sizes", InputMapping),
         ("Playable area accepts swipes; the HUD and outside remain excluded", OutsideInput)
     ];
@@ -18,9 +18,9 @@ internal static class C64DisplayTests
     private static void FullWindow()
     {
         var display = new GameDisplay();
-        Assert.Check(GameDisplay.RasterHeight == 200 && GameDisplay.RasterWidth == 356);
-        Assert.Equal(Vector2.Zero, Vector2.Transform(Vector2.Zero, GameDisplay.RasterTransform));
-        Assert.Equal(new(356, 200), Vector2.Transform(new(1280, 720), GameDisplay.RasterTransform));
+        Assert.Check(GameDisplay.RasterHeight == 720 && GameDisplay.RasterWidth == 1280);
+        Assert.Check(GameDisplay.UiWidth * GameDisplay.UiScale == GameDisplay.RasterWidth);
+        Assert.Check(GameDisplay.UiHeight * GameDisplay.UiScale == GameDisplay.RasterHeight);
 
         foreach (Point size in new[] { new Point(1280, 720), new Point(2560, 1440), new Point(720, 1280) })
         {
@@ -39,14 +39,16 @@ internal static class C64DisplayTests
         {
             display.Resize(size.X, size.Y);
             Matrix rasterToScreen = Matrix.Invert(display.ScreenToRaster);
-            // Cover the HUD, dialog and lower parking, using the exact rectangle
-            // sent to SpriteBatch. UI and world input must hit the same pixel.
-            foreach (Vector2 raster in new[] { new Vector2(320, 10), new Vector2(65, 115), new Vector2(100, 180) })
+            // Gum draws logical UI coordinates with a 4x camera zoom and divides
+            // the transformed cursor by that zoom. Match HUD and dialog hits
+            // to the world position underneath at every window size.
+            foreach (Vector2 ui in new[] { new Vector2(280, 10), new Vector2(65, 115), new Vector2(100, 155) })
             {
+                Vector2 raster = ui * GameDisplay.UiScale;
                 Vector2 screen = Vector2.Transform(raster, rasterToScreen);
-                Assert.Equal(raster, Vector2.Transform(screen, display.ScreenToRaster));
+                Assert.Equal(ui, Vector2.Transform(screen, display.ScreenToRaster) / GameDisplay.UiScale);
                 Vector2 world = display.ToGamePosition(screen);
-                Assert.Equal(raster, Vector2.Transform(world, GameDisplay.RasterTransform));
+                Assert.Equal(raster, world);
                 Assert.Equal(screen, Vector2.Transform(world, display.Transform));
             }
         }
@@ -58,10 +60,10 @@ internal static class C64DisplayTests
     private static void OutsideInput()
     {
         var display = new GameDisplay();
-        display.Resize(1280, 720);
+        display.Resize(1920, 1080);
         Matrix rasterToScreen = Matrix.Invert(display.ScreenToRaster);
-        foreach (Vector2 excluded in new[] { new Vector2(100, 5), new Vector2(100, 201),
-            new Vector2(-1, 100), new Vector2(357, 100) })
+        foreach (Vector2 excluded in new[] { new Vector2(400, 20), new Vector2(400, 721),
+            new Vector2(-1, 400), new Vector2(1281, 400) })
         {
             var swipe = new SwipeTracker();
             Vector2 start = display.ToGamePosition(Vector2.Transform(excluded, rasterToScreen));
@@ -70,7 +72,7 @@ internal static class C64DisplayTests
         }
 
         var edgeSwipe = new SwipeTracker();
-        Vector2 nearBottom = display.ToGamePosition(Vector2.Transform(new(100, 170), rasterToScreen));
+        Vector2 nearBottom = display.ToGamePosition(Vector2.Transform(new(400, 620), rasterToScreen));
         edgeSwipe.Begin(nearBottom);
         Assert.Equal(Vector2.UnitX, edgeSwipe.Move(nearBottom + new Vector2(100, 0)));
     }
