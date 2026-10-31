@@ -17,6 +17,11 @@ var tests = new (string Name, Action Run)[]
     ("Growth retains the tail and follows the head", Growth),
     ("Turning into the body raises a collision", BodyCollision),
     ("A new game starts with an empty queue and fresh interpolation", NewGame),
+    ("Car sway moves sideways and steers without changing the grid path", SwayIsVisual),
+    ("Cars repeat the head's sway with one step of delay per segment", SwayFollowsHead),
+    ("Visual car headings and offsets stay continuous at corners", SwayCorners),
+    ("Sway freezes on pause, resets on retry and ignores frame size", SwayTiming),
+    ("Growing at a corner produces a finite car pose", SwayGrowth),
     ("Swipe emits once at the threshold and accepts the next contact", Swipe),
     ("Swipe ignores the score bar and margins", SwipeMargins),
     ("Cancelling a swipe cannot steer after resume", CancelSwipe),
@@ -153,6 +158,116 @@ static void NewGame()
     movement.Update(TimeSpan.FromMilliseconds(200));
     Equal(Vector2.UnitX, movement.Segments[0].Direction);
     Check(movement.Segments.Count == 1);
+}
+
+static void SwayIsVisual()
+{
+    var movement = CreateMovement();
+    var initialPose = CarSway.GetPose(movement, 0);
+    Equal(Vector2.Zero, initialPose.Position);
+    Check(initialPose.Rotation > 0.1f && initialPose.Rotation < 0.11f);
+
+    movement.Update(TimeSpan.FromMilliseconds(300));
+    Equal(new Vector2(120, 0), movement.GetHeadPosition());
+    var rightPose = CarSway.GetPose(movement, 0);
+    Equal(new Vector2(120, 5), rightPose.Position);
+    Check(MathF.Abs(rightPose.Rotation) < 0.0001f);
+
+    movement.Update(TimeSpan.FromMilliseconds(600));
+    Equal(new Vector2(360, -5), CarSway.GetPose(movement, 0).Position);
+}
+
+static void SwayFollowsHead()
+{
+    var movement = CreateMovement();
+    for (int i = 0; i < 4; i++)
+    {
+        movement.Grow();
+        movement.Update(SnakeMovement.StepDuration);
+    }
+
+    var history = new (Vector2 Position, float Rotation)[401];
+    history[0] = CarSway.GetPose(movement, 0);
+    for (int frame = 1; frame < history.Length; frame++)
+    {
+        Vector2 turn = frame switch
+        {
+            55 => -Vector2.UnitY,
+            135 => -Vector2.UnitX,
+            215 => Vector2.UnitY,
+            335 => Vector2.UnitX,
+            _ => Vector2.Zero
+        };
+        if (turn != Vector2.Zero)
+        {
+            Check(movement.QueueDirection(turn));
+        }
+
+        movement.Update(TimeSpan.FromMilliseconds(10));
+        history[frame] = CarSway.GetPose(movement, 0);
+        for (int i = 1; i < movement.Segments.Count; i++)
+        {
+            int previousFrame = frame - i * 20;
+            if (previousFrame >= 0)
+            {
+                EqualPose(history[previousFrame], CarSway.GetPose(movement, i));
+            }
+        }
+    }
+}
+
+static void SwayCorners()
+{
+    var movement = CreateMovement();
+    foreach (Vector2 turn in new[] { -Vector2.UnitY, -Vector2.UnitX, Vector2.UnitY, Vector2.UnitX })
+    {
+        Check(movement.QueueDirection(turn));
+        movement.Update(SnakeMovement.StepDuration - TimeSpan.FromTicks(1));
+        var before = CarSway.GetPose(movement, 0);
+        movement.Update(TimeSpan.FromTicks(1));
+        EqualPose(before, CarSway.GetPose(movement, 0));
+    }
+}
+
+static void SwayTiming()
+{
+    var smallFrames = CreateMovement();
+    var largeFrame = CreateMovement();
+    for (int i = 0; i < 137; i++)
+    {
+        smallFrames.Update(TimeSpan.FromMilliseconds(10));
+    }
+    largeFrame.Update(TimeSpan.FromMilliseconds(1370));
+    EqualPose(CarSway.GetPose(smallFrames, 0), CarSway.GetPose(largeFrame, 0));
+
+    var pausedPose = CarSway.GetPose(smallFrames, 0);
+    smallFrames.Update(TimeSpan.Zero);
+    EqualPose(pausedPose, CarSway.GetPose(smallFrames, 0));
+
+    var restarted = CreateMovement();
+    Check(restarted.ElapsedTime == TimeSpan.Zero);
+    EqualPose(CarSway.GetPose(CreateMovement(), 0), CarSway.GetPose(restarted, 0));
+}
+
+static void SwayGrowth()
+{
+    var movement = CreateMovement();
+    Check(movement.QueueDirection(-Vector2.UnitY));
+    movement.Update(TimeSpan.FromMilliseconds(300));
+    for (int i = 0; i < 3; i++)
+    {
+        movement.Grow();
+        var pose = CarSway.GetPose(movement, movement.Segments.Count - 1);
+        Check(float.IsFinite(pose.Position.X) && float.IsFinite(pose.Position.Y));
+        Check(float.IsFinite(pose.Rotation));
+    }
+}
+
+static void EqualPose((Vector2 Position, float Rotation) expected, (Vector2 Position, float Rotation) actual)
+{
+    Equal(expected.Position, actual.Position);
+    float difference = MathHelper.WrapAngle(expected.Rotation - actual.Rotation);
+    Check(float.IsFinite(difference) && MathF.Abs(difference) < 0.0001f);
 }
 
 static void Swipe()

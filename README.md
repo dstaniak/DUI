@@ -29,7 +29,10 @@ tak jak w projekcie źródłowym.
   Można więc zaplanować „prawo → góra → lewo”, ale nie natychmiastowy zwrot.
   Kolejny ruch przy pełnej kolejce jest pomijany, tak jak w DungeonSlime.
 - Pozycja jest płynnie interpolowana między polami, a segmenty podążają
-  za prowadzącym autem. Każde auto obraca się zgodnie z aktualnym krokiem.
+  za prowadzącym autem. Auta płynnie skręcają i falują na boki o ±5 jednostek
+  planszy, z dodatkowym obrotem ±6°. Cykl trwa 1,2 s, a każdy kolejny
+  segment powtarza falę z opóźnieniem 200 ms. Falowanie nie zmienia kolizji;
+  pauza je zatrzymuje, a RETRY zeruje jego fazę.
 - Butelka piwa pulsuje, porusza się i odbija od granic parkingu. Jej zebranie
   wywołuje rozprysk złotych kropli i białej piany, dodaje samochód oraz
   0,2‰ do wyniku. Licznik zaczyna od `0,0‰` i pokazuje jedną cyfrę po
@@ -64,7 +67,10 @@ się standardowym przyciskiem systemu.
   tutorialowej. `DUI.Game.projitems` dołącza źródła do projektu platformowego,
   dzięki czemu przyszły host mobilny może użyć własnego backendu MonoGame.
 - `SnakeMovement` — kolejka, segmenty i interpolacja niezależne od grafiki
-  oraz urządzenia wejściowego; `CarConvoy` odpowiada za rysowanie i orientację aut.
+  oraz urządzenia wejściowego; `CarConvoy` rysuje auta, a `CarSway` wyznacza
+  ich wizualne pozycje i orientację z czasu rozgrywki oraz historii kierunków.
+- `Easings` — statyczne funkcje interpolacji (30 krzywych oraz `Linear`);
+  `CarSway` korzysta z `EaseInOutSine` przy zmianie kierunku jazdy.
 - `ParkingLot` — układ parkingu, granice jazdy, rysowanie witryny oraz
   wspólna geometria kafelków trawy i płynnego efektu wysokości aut.
 - `BeerBottle` — ruch i pulsowanie butelki; `BeerBurst` — krótkotrwałe
@@ -101,6 +107,8 @@ dotnet run --project DUI.Tests
 Testy obejmują kolejkę i jej pojemność, zakaz zawracania, powtarzane
 kierunki, czas ruchu i interpolację, wzrost, kolizję z ciałem, świeży stan
 nowej gry, gesty i ich anulowanie, skalowanie oraz okrągłe obszary kolizji.
+Sprawdzają też wizualne falowanie, opóźnienie aut na prostej i zakrętach,
+ciągłość skrętów, pauzę, restart, niezależność od czasu klatki i wzrost kolumny.
 Program testowy zwraca kod różny od zera, jeśli dowolny test zawiedzie.
 Renderowanie, dźwięk, interakcje Gum i cykl życia aplikacji wymagają też
 sprawdzenia w uruchomionej grze; te testy nie potwierdzają działania na telefonie.

@@ -7,6 +7,8 @@
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" />
     <Compile Include="../DUI.Game/GameObjects/SnakeMovement.cs" Link="SnakeMovement.cs" />
     <Compile Include="../DUI.Game/GameObjects/SnakeSegment.cs" Link="SnakeSegment.cs" />
+    <Compile Include="../DUI.Game/GameObjects/CarSway.cs" Link="CarSway.cs" />
+    <Compile Include="../DUI.Game/Framework/Easings.cs" Link="Easings.cs" />
     <Compile Include="../DUI.Game/Input/SwipeTracker.cs" Link="SwipeTracker.cs" />
     <Compile Include="../DUI.Game/Framework/Graphics/GameDisplay.cs" Link="GameDisplay.cs" />
     <Compile Include="../DUI.Game/Framework/Circle.cs" Link="Circle.cs" />
