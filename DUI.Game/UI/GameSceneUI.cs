@@ -1,9 +1,11 @@
 using System;
+using System.Globalization;
 using Gum.DataTypes;
 using Gum.Managers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
+using Microsoft.Xna.Framework.Graphics;
 using MonoGameGum;
 using Gum.Forms.Controls;
 using Gum.GueDeriving;
@@ -18,13 +20,14 @@ public class GameSceneUI : ContainerRuntime
     public event EventHandler PauseButtonClick;
     public event EventHandler RetryButtonClick;
 
-    private static readonly string s_scoreFormat = "SCORE: {0:D6}";
+    private static readonly CultureInfo s_scoreCulture = CultureInfo.GetCultureInfo("pl-PL");
     private SoundEffect _uiSoundEffect;
     private Panel _pausePanel;
     private AnimatedButton _resumeButton;
     private Panel _gameOverPanel;
     private AnimatedButton _retryButton;
     private TextRuntime _scoreText;
+    private SpriteRuntime _perMilleSymbol;
     private AnimatedButton _pauseButton;
 
     public GameSceneUI()
@@ -38,6 +41,9 @@ public class GameSceneUI : ContainerRuntime
 
         _scoreText = CreateScoreText();
         AddChild(_scoreText);
+        _perMilleSymbol = CreatePerMilleSymbol(content.Load<Texture2D>("Images/per-mille"));
+        AddChild(_perMilleSymbol);
+        PositionPerMilleSymbol();
 
         _pauseButton = new AnimatedButton(atlas);
         _pauseButton.Text = "PAUSE";
@@ -52,9 +58,10 @@ public class GameSceneUI : ContainerRuntime
         AddChild(_gameOverPanel.Visual);
     }
 
-    public void UpdateScoreText(int score)
+    public void UpdateScoreText(decimal scorePermille)
     {
-        _scoreText.Text = string.Format(s_scoreFormat, score);
+        _scoreText.Text = FormatScore(scorePermille);
+        PositionPerMilleSymbol();
     }
 
     public void ShowPausePanel()
@@ -93,6 +100,7 @@ public class GameSceneUI : ContainerRuntime
         Vector2 margin = Core.Display.Offset / zoom;
         _scoreText.X = 20 + margin.X;
         _scoreText.Y = 5 + margin.Y;
+        PositionPerMilleSymbol();
         _pauseButton.X = -20 - margin.X;
         _pauseButton.Y = 2 + margin.Y;
         Gum.GumService.Default.Update(gameTime);
@@ -113,9 +121,38 @@ public class GameSceneUI : ContainerRuntime
         text.UseCustomFont = true;
         text.CustomFontFile = "Fonts/04b_30.fnt";
         text.FontScale = 0.25f;
-        text.Text = string.Format(s_scoreFormat, 0);
+        text.Text = FormatScore(0m);
 
         return text;
+    }
+
+    private static string FormatScore(decimal scorePermille)
+    {
+        return scorePermille.ToString("F1", s_scoreCulture);
+    }
+
+    private static SpriteRuntime CreatePerMilleSymbol(Texture2D texture)
+    {
+        // The font has no U+2030 glyph. Draw the complete sign as one sprite
+        // at the same quarter-size UI scale as the numeric text.
+        var symbol = new SpriteRuntime
+        {
+            Texture = texture,
+            WidthUnits = DimensionUnitType.Absolute,
+            HeightUnits = DimensionUnitType.Absolute,
+            Width = texture.Width * 0.25f,
+            Height = texture.Height * 0.25f
+        };
+        symbol.Anchor(Gum.Wireframe.Anchor.TopLeft);
+        return symbol;
+    }
+
+    private void PositionPerMilleSymbol()
+    {
+        // Reposition immediately when the number changes width (e.g. 9,8→10,0),
+        // and again when Update applies display margins.
+        _perMilleSymbol.X = _scoreText.X + _scoreText.AbsoluteWidth + 1;
+        _perMilleSymbol.Y = _scoreText.Y + 0.5f;
     }
 
     private Panel CreatePausePanel(TextureAtlas atlas)

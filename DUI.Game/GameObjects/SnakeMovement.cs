@@ -6,7 +6,7 @@ using Microsoft.Xna.Framework;
 namespace DUI.GameObjects;
 
 /// <summary>Owns the tutorial movement queue, grid segments and interpolation.</summary>
-public sealed class SlimeMovement
+public sealed class SnakeMovement
 {
     private const int MaxBufferSize = 2;
     private static readonly TimeSpan s_movementTime = TimeSpan.FromMilliseconds(200);
@@ -15,19 +15,20 @@ public sealed class SlimeMovement
     private float _movementProgress;
     private Vector2 _nextDirection;
     private readonly float _stride;
-    private readonly List<SlimeSegment> _segments;
+    private readonly List<SnakeSegment> _segments;
     private readonly Queue<Vector2> _inputBuffer;
 
-    public SlimeMovement(Vector2 startingPosition, float stride)
+    public SnakeMovement(Vector2 startingPosition, float stride)
     {
         _segments = [];
         Segments = _segments.AsReadOnly();
         _stride = stride;
 
-        SlimeSegment head = new();
+        SnakeSegment head = new();
         head.At = startingPosition;
         head.To = startingPosition + new Vector2(_stride, 0.0f);
         head.Direction = Vector2.UnitX;
+        head.PreviousDirection = head.Direction;
 
         _segments.Add(head);
 
@@ -39,8 +40,10 @@ public sealed class SlimeMovement
 
     public event EventHandler BodyCollision;
 
-    public IReadOnlyList<SlimeSegment> Segments { get; }
+    public IReadOnlyList<SnakeSegment> Segments { get; }
     public float MovementProgress => _movementProgress;
+    public TimeSpan ElapsedTime { get; private set; }
+    public static TimeSpan StepDuration => s_movementTime;
 
     /// <summary>
     /// Queues at most two future directions. Each grid step consumes one.
@@ -69,17 +72,20 @@ public sealed class SlimeMovement
 
     public void Grow()
     {
-        SlimeSegment tail = _segments[_segments.Count - 1];
-        SlimeSegment newTail = new();
+        SnakeSegment tail = _segments[_segments.Count - 1];
+        SnakeSegment newTail = new();
         newTail.At = tail.To + tail.ReverseDirection * _stride;
         newTail.To = tail.At;
-        newTail.Direction = Vector2.Normalize(tail.At - newTail.At);
+        // The new tail is initially stationary, so normalizing its travel would yield NaN.
+        newTail.Direction = tail.PreviousDirection;
+        newTail.PreviousDirection = newTail.Direction;
         _segments.Add(newTail);
     }
 
     public void Update(TimeSpan elapsed)
     {
         _movementTimer += elapsed;
+        ElapsedTime += elapsed;
 
         while (_movementTimer >= s_movementTime)
         {
@@ -92,7 +98,7 @@ public sealed class SlimeMovement
 
     public Vector2 GetHeadPosition()
     {
-        SlimeSegment head = _segments[0];
+        SnakeSegment head = _segments[0];
         return Vector2.Lerp(head.At, head.To, _movementProgress);
     }
 
@@ -103,7 +109,8 @@ public sealed class SlimeMovement
             _nextDirection = _inputBuffer.Dequeue();
         }
 
-        SlimeSegment head = _segments[0];
+        SnakeSegment head = _segments[0];
+        head.PreviousDirection = head.Direction;
         head.Direction = _nextDirection;
         head.At = head.To;
         head.To = head.At + head.Direction * _stride;
@@ -112,7 +119,7 @@ public sealed class SlimeMovement
 
         for (int i = 1; i < _segments.Count; ++i)
         {
-            SlimeSegment segment = _segments[i];
+            SnakeSegment segment = _segments[i];
 
             if (head.At == segment.At)
             {

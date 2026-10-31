@@ -17,7 +17,7 @@ public sealed class DuiGame : Core
 
     public DuiGame() : base("DUI — Snake", 1280, 720, false)
     {
-        // The tutorial bat moves 0.5 pixels per update; keep its 60 Hz pace
+        // The collectible moves 0.5 pixels per update; keep its 60 Hz pace
         // regardless of a phone's display refresh rate.
         IsFixedTimeStep = true;
         TargetElapsedTime = TimeSpan.FromSeconds(1.0 / 60.0);

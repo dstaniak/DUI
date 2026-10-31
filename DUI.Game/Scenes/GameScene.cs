@@ -20,17 +20,20 @@ public class GameScene : Scene
         GameOver
     }
 
-    private Slime _slime;
-    private Bat _bat;
-    private Tilemap _tilemap;
-    private Rectangle _roomBounds;
+    private CarConvoy _convoy;
+    private BeerBottle _bottle;
+    private BeerBurst _beerBurst;
+    private ParkingLot _parkingLot;
+    private Rectangle _drivingBounds;
     private SoundEffect _collectSoundEffect;
-    private int _score;
+    // Game points expressed in per mille; decimal keeps each 0.2 step exact.
+    private decimal _scorePermille;
     private GameSceneUI _ui;
     private GameState _state;
     private Effect _grayscaleEffect;
     private float _saturation = 1.0f;
     private const float FadeSpeed = 0.01f;
+    private const decimal BeerScorePermille = 0.2m;
 
     public override void Initialize()
     {
@@ -38,10 +41,9 @@ public class GameScene : Scene
 
         Core.ExitOnEscape = false;
 
-        _roomBounds = new Rectangle(0, 0, GameDisplay.Width, GameDisplay.Height);
-        _roomBounds.Inflate(-_tilemap.TileWidth, -_tilemap.TileHeight);
+        _drivingBounds = _parkingLot.DrivingBounds;
 
-        _slime.BodyCollision += OnSlimeBodyCollision;
+        _convoy.BodyCollision += OnConvoyBodyCollision;
 
         Gum.GumService.Default.Root.Children.Clear();
 
@@ -51,16 +53,11 @@ public class GameScene : Scene
 
     public override void LoadContent()
     {
-        TextureAtlas atlas = TextureAtlas.FromFile(Core.Content, "Images/atlas-definition.xml");
-        _tilemap = Tilemap.FromFile(Content, "Images/tilemap-definition.xml");
-        _tilemap.Scale = new Vector2(4.0f, 4.0f);
-        var slimeAnimation = atlas.CreateAnimatedSprite("slime-animation");
-        slimeAnimation.Scale = new Vector2(4.0f, 4.0f);
-        _slime = new(slimeAnimation);
-        var batAnimation = atlas.CreateAnimatedSprite("bat-animation");
+        _parkingLot = new ParkingLot(Content);
+        _convoy = new CarConvoy(LoadSprite("Images/car"));
         var bounceEffect = Content.Load<SoundEffect>("Audio/bounce");
-        batAnimation.Scale = new Vector2(4.0f, 4.0f);
-        _bat = new(batAnimation, bounceEffect);
+        _bottle = new BeerBottle(LoadSprite("Images/beer-bottle"), bounceEffect);
+        _beerBurst = new BeerBurst(Core.GraphicsDevice);
         _collectSoundEffect = Content.Load<SoundEffect>("Audio/collect");
         _grayscaleEffect = Content.Load<Effect>("Effects/grayscaleEffect");
     }
@@ -100,9 +97,10 @@ public class GameScene : Scene
             return;
         }
 
-        _slime.QueueDirection(GameController.ReadDirection());
-        _slime.Update(gameTime);
-        _bat.Update(gameTime);
+        _convoy.QueueDirection(GameController.ReadDirection());
+        _convoy.Update(gameTime);
+        _bottle.Update(gameTime);
+        _beerBurst.Update(gameTime);
 
         CollisionChecks();
     }
@@ -118,16 +116,17 @@ public class GameScene : Scene
             sceneEffect = _grayscaleEffect;
         }
 
-        // The atlas uses binary alpha; transparent texels must contribute no RGB.
+        // Sprite textures use straight alpha; preserve their transparent edges.
         Core.SpriteBatch.Begin(
             blendState: BlendState.NonPremultiplied,
             samplerState: SamplerState.PointClamp,
             effect: sceneEffect,
             transformMatrix: Core.Display.Transform);
 
-        _tilemap.Draw(Core.SpriteBatch);
-        _slime.Draw();
-        _bat.Draw();
+        _parkingLot.Draw(Core.SpriteBatch);
+        _convoy.Draw(_parkingLot);
+        _bottle.Draw();
+        _beerBurst.Draw(Core.SpriteBatch);
         Core.SpriteBatch.End();
         _ui.Draw();
 
@@ -146,6 +145,18 @@ public class GameScene : Scene
         GameController.ResetPointer();
     }
 
+    public override void UnloadContent()
+    {
+        _beerBurst?.Dispose();
+        base.UnloadContent();
+    }
+
+    private Sprite LoadSprite(string assetName)
+    {
+        Texture2D texture = Content.Load<Texture2D>(assetName);
+        return new Sprite(new TextureRegion(texture, 0, 0, texture.Width, texture.Height));
+    }
+
     private void TogglePause()
     {
         if (_state == GameState.Paused)
@@ -161,46 +172,48 @@ public class GameScene : Scene
 
     private void CollisionChecks()
     {
-        var slimeBounds = _slime.GetBounds();
-        var batBounds = _bat.GetBounds();
+        var convoyBounds = _convoy.GetBounds();
+        var bottleBounds = _bottle.GetBounds();
 
-        if (slimeBounds.Intersects(batBounds))
+        if (convoyBounds.Intersects(bottleBounds))
         {
-            PositionBatAwayFromSlime();
-            _bat.RandomizeVelocity();
-            _slime.Grow();
-            _score += 100;
-            _ui.UpdateScoreText(_score);
+            // Capture the pickup location before the next bottle is positioned.
+            _beerBurst.Emit(_bottle.Center);
+            PositionBottleAwayFromConvoy();
+            _bottle.RandomizeVelocity();
+            _convoy.Grow();
+            _scorePermille += BeerScorePermille;
+            _ui.UpdateScoreText(_scorePermille);
             Core.Audio.PlaySoundEffect(_collectSoundEffect);
         }
 
-        if (slimeBounds.Top < _roomBounds.Top ||
-            slimeBounds.Bottom > _roomBounds.Bottom ||
-            slimeBounds.Left < _roomBounds.Left ||
-            slimeBounds.Right > _roomBounds.Right)
+        if (convoyBounds.Top < _drivingBounds.Top ||
+            convoyBounds.Bottom > _drivingBounds.Bottom ||
+            convoyBounds.Left < _drivingBounds.Left ||
+            convoyBounds.Right > _drivingBounds.Right)
         {
             GameOver();
             return;
         }
 
-        if (batBounds.Top <= _roomBounds.Top)
+        if (bottleBounds.Top <= _drivingBounds.Top)
         {
-            _bat.Bounce(Vector2.UnitY);
+            _bottle.Bounce(Vector2.UnitY);
         }
 
-        if (batBounds.Bottom >= _roomBounds.Bottom)
+        if (bottleBounds.Bottom >= _drivingBounds.Bottom)
         {
-            _bat.Bounce(-Vector2.UnitY);
+            _bottle.Bounce(-Vector2.UnitY);
         }
 
-        if (batBounds.Left <= _roomBounds.Left)
+        if (bottleBounds.Left <= _drivingBounds.Left)
         {
-            _bat.Bounce(Vector2.UnitX);
+            _bottle.Bounce(Vector2.UnitX);
         }
 
-        if (batBounds.Right >= _roomBounds.Right)
+        if (bottleBounds.Right >= _drivingBounds.Right)
         {
-            _bat.Bounce(-Vector2.UnitX);
+            _bottle.Bounce(-Vector2.UnitX);
         }
     }
 
@@ -215,18 +228,14 @@ public class GameScene : Scene
 
     private void InitializeNewGame()
     {
-        Vector2 slimePos = new();
-        slimePos.X = (_tilemap.Columns / 2) * _tilemap.TileWidth;
-        slimePos.Y = (_tilemap.Rows / 2) * _tilemap.TileHeight;
+        _convoy.Initialize(_parkingLot.StartingPosition, ParkingLot.TileSize);
+        _beerBurst.Clear();
 
-        // TODO(dstaniak) : What if TileWidth is different than TileHeight.
-        _slime.Initialize(slimePos, _tilemap.TileWidth);
+        _bottle.RandomizeVelocity();
+        PositionBottleAwayFromConvoy();
 
-        _bat.RandomizeVelocity();
-        PositionBatAwayFromSlime();
-
-        _score = 0;
-        _ui.UpdateScoreText(_score);
+        _scorePermille = 0m;
+        _ui.UpdateScoreText(_scorePermille);
         _ui.HidePausePanel();
         _ui.HideGameOverPanel();
         GameController.ResetPointer();
@@ -239,53 +248,56 @@ public class GameScene : Scene
         }
     }
 
-    private void PositionBatAwayFromSlime()
+    private void PositionBottleAwayFromConvoy()
     {
-        float roomCenterX = _roomBounds.X + _roomBounds.Width * 0.5f;
-        float roomCenterY = _roomBounds.Y + _roomBounds.Height * 0.5f;
-        Vector2 roomCenter = new(roomCenterX, roomCenterY);
+        float parkingCenterX = _drivingBounds.X + _drivingBounds.Width * 0.5f;
+        float parkingCenterY = _drivingBounds.Y + _drivingBounds.Height * 0.5f;
+        Vector2 parkingCenter = new(parkingCenterX, parkingCenterY);
 
-        Circle slimeBounds = _slime.GetBounds();
-        Vector2 slimeCenter = new(slimeBounds.X, slimeBounds.Y);
+        Circle convoyBounds = _convoy.GetBounds();
+        Vector2 convoyCenter = new(convoyBounds.X, convoyBounds.Y);
 
-        Vector2 centerToSlime = slimeCenter - roomCenter;
+        Vector2 centerToConvoy = convoyCenter - parkingCenter;
 
-        Circle batBounds = _bat.GetBounds();
-        int padding = batBounds.Radius * 2;
+        Circle bottleBounds = _bottle.GetBounds();
+        int padding = bottleBounds.Radius * 2;
 
-        var newBatPosition = Vector2.Zero;
-        if (Math.Abs(centerToSlime.X) > Math.Abs(centerToSlime.Y))
+        // Position is the texture's top-left, so the far-side random limit
+        // must also reserve its center offset, not just the collision radius.
+        var newBottlePosition = Vector2.Zero;
+        if (Math.Abs(centerToConvoy.X) > Math.Abs(centerToConvoy.Y))
         {
-            newBatPosition.Y = Random.Shared.Next(
-                _roomBounds.Top + padding, _roomBounds.Bottom - padding
+            newBottlePosition.Y = Random.Shared.Next(
+                _drivingBounds.Top + padding, _drivingBounds.Bottom - padding * 2
             );
 
-            if (centerToSlime.X > 0)
+            if (centerToConvoy.X > 0)
             {
-                newBatPosition.X = _roomBounds.Left + padding;
+                newBottlePosition.X = _drivingBounds.Left + padding;
             }
             else
             {
-                newBatPosition.X = _roomBounds.Right - padding * 2;
+                newBottlePosition.X = _drivingBounds.Right - padding * 2;
             }
         }
         else
         {
-            newBatPosition.X = Random.Shared.Next(
-                _roomBounds.Left + padding, _roomBounds.Right - padding
+            newBottlePosition.X = Random.Shared.Next(
+                _drivingBounds.Left + padding, _drivingBounds.Right - padding * 2
             );
 
-            if (centerToSlime.Y > 0)
+            if (centerToConvoy.Y > 0)
             {
-                newBatPosition.Y = _roomBounds.Top + padding;
+                newBottlePosition.Y = _drivingBounds.Top + padding;
             }
             else
             {
-                newBatPosition.Y = _roomBounds.Bottom - padding * 2;
+                newBottlePosition.Y = _drivingBounds.Bottom - padding * 2;
             }
         }
 
-        _bat.Position = newBatPosition;
+        _bottle.Position = newBottlePosition;
+        _bottle.ResetPulse();
     }
 
     private void OnResumeButtonClicked(object sender, EventArgs e)
@@ -303,7 +315,7 @@ public class GameScene : Scene
         Pause();
     }
 
-    private void OnSlimeBodyCollision(object sender, EventArgs e)
+    private void OnConvoyBodyCollision(object sender, EventArgs e)
     {
         GameOver();
     }

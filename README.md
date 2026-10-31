@@ -1,7 +1,11 @@
 # DUI
 
-Prototyp zestawu gier. Pierwsza gra to snake przeniesiony z lokalnego
-projektu DungeonSlime opartego na tutorialu MonoGame.
+Edukacyjny prototyp dla dorosłych dotyczący jazdy pod wpływem alkoholu,
+skierowany również do osób, które faktycznie tak jeżdżą. Ton gry ma być
+przystępny i zabawny, bez zawstydzania odbiorcy.
+
+Pierwsza gra wykorzystuje mechanikę snake’a z tutorialu DungeonSlime:
+gracz prowadzi kolumnę samochodów i zbiera pulsujące butelki piwa.
 
 ## Uruchomienie
 
@@ -25,11 +29,33 @@ tak jak w projekcie źródłowym.
   Można więc zaplanować „prawo → góra → lewo”, ale nie natychmiastowy zwrot.
   Kolejny ruch przy pełnej kolejce jest pomijany, tak jak w DungeonSlime.
 - Pozycja jest płynnie interpolowana między polami, a segmenty podążają
-  za głową. Nietoperz porusza się i odbija od ścian.
-- Zebranie nietoperza dodaje segment i 100 punktów; nietoperz pojawia się
-  po przeciwnej stronie pokoju. Ściana lub własne ciało kończy grę.
+  za prowadzącym autem. Auta płynnie skręcają i falują na boki o ±5 jednostek
+  planszy, z dodatkowym obrotem ±6°. Cykl trwa 1,2 s, a każdy kolejny
+  segment powtarza falę z opóźnieniem 200 ms. Falowanie nie zmienia kolizji;
+  pauza je zatrzymuje, a RETRY zeruje jego fazę.
+- Butelka piwa pulsuje, porusza się i odbija od granic parkingu. Jej zebranie
+  wywołuje rozprysk złotych kropli i białej piany, dodaje samochód oraz
+  0,2‰ do wyniku. Licznik zaczyna od `0,0‰` i pokazuje jedną cyfrę po
+  przecinku; cały znak `‰` jest osobnym pikselowym sprite’em.
+  Kolejna butelka pojawia się po przeciwnej stronie parkingu.
+  Witryna, ogrodzenie, zamknięta brama lub własna kolumna aut kończą grę.
+- Plansza jest parkingiem pod sklepem z alkoholem i przekąskami. Witryna
+  zajmuje dwa górne rzędy; po bokach i na dole jest ogrodzenie z siatki,
+  a pośrodku dolnego ogrodzenia zamknięta brama szerokości dwóch kafelków.
+  Dolne narożniki mają kątowniki „L” łączące boczną siatkę z dolnym przęsłem.
+- Dwie symetryczne wysepki trawnika mają po 2×4 kafelki. Można po nich
+  przejechać: podczas kroku z asfaltu na trawę każde auto podskakuje o 12
+  jednostek planszy i powiększa się do około 128%. Wybicie korzysta
+  z `EaseOutCubic`, a lądowanie z `EaseInQuad`; cały podskok trwa 200 ms.
+  Po lądowaniu zostaje skala 106%, a wyjazd przywraca 100%.
+  Kolejne kafelki trawy nie uruchamiają podskoku. Pauza zatrzymuje go
+  w bieżącej fazie, a RETRY rozpoczyna nową animację ruchu.
+  Efekt jest liczony osobno dla każdego segmentu, bez zmiany
+  ruchu ani kolizji. Nad i pod trawnikami pozostaje po jednym rzędzie przejazdu.
+- Pulsowanie jest wyłącznie wizualne; rozmiar obszaru kolizji pozostaje stały.
+  Pauza zatrzymuje też rozprysk, a RETRY usuwa pozostałe cząsteczki.
 - Escape / Start / Back lub przycisk PAUSE pauzuje grę.
-  RESUME wznawia, RETRY rozpoczyna nową rozgrywkę z wynikiem 0.
+  RESUME wznawia, RETRY rozpoczyna nową rozgrywkę z wynikiem `0,0‰`.
   Przyciski obsługują także Enter / A na padzie.
 - Gest przesunięcia na planszy trafia do tej samej kolejki. Na komputerze
   można go sprawdzić przeciągnięciem lewego przycisku myszy.
@@ -45,8 +71,18 @@ się standardowym przyciskiem systemu.
 - `DUI.Game` — wspólny kod gry, UI Gum, zasoby i potrzebne części biblioteki
   tutorialowej. `DUI.Game.projitems` dołącza źródła do projektu platformowego,
   dzięki czemu przyszły host mobilny może użyć własnego backendu MonoGame.
-- `SlimeMovement` — kolejka, segmenty i interpolacja niezależne od grafiki
-  oraz urządzenia wejściowego; `Slime` odpowiada za animację i rysowanie.
+- `SnakeMovement` — kolejka, segmenty i interpolacja niezależne od grafiki
+  oraz urządzenia wejściowego; `CarConvoy` rysuje auta, a `CarSway` wyznacza
+  ich wizualne pozycje i orientację z czasu rozgrywki oraz historii kierunków.
+- `Easings` — statyczne funkcje interpolacji (30 krzywych oraz `Linear`);
+  `CarSway` korzysta z `EaseInOutSine` przy zmianie kierunku jazdy,
+  a `CarHop` z `EaseOutCubic` i `EaseInQuad` podczas podskoku.
+- `ParkingLot` — układ parkingu, granice jazdy, rysowanie witryny oraz
+  wspólna geometria kafelków trawy i płynnego efektu wysokości aut.
+  Łączy stałe powiększenie na trawie z krótkim podskokiem `CarHop`,
+  wyznaczanym z końców i postępu kroku każdego samochodu.
+- `BeerBottle` — ruch i pulsowanie butelki; `BeerBurst` — krótkotrwałe
+  krople piwa i piana, rysowane prostymi figurami pikselowymi.
 - `DUI.Tests` — testy regresji uruchamiane bez okna i urządzenia graficznego.
 - [Mapa klas](Docs/ClassMap.html) — odpowiedzialności i przepływy aplikacji.
 
@@ -79,6 +115,11 @@ dotnet run --project DUI.Tests
 Testy obejmują kolejkę i jej pojemność, zakaz zawracania, powtarzane
 kierunki, czas ruchu i interpolację, wzrost, kolizję z ciałem, świeży stan
 nowej gry, gesty i ich anulowanie, skalowanie oraz okrągłe obszary kolizji.
+Sprawdzają też wizualne falowanie, opóźnienie aut na prostej i zakrętach,
+ciągłość skrętów, pauzę, restart, niezależność od czasu klatki i wzrost kolumny.
+Testy podskoku obejmują wjazd na wyspę z czterech stron, wybicie i lądowanie,
+brak ponownych podskoków na trawie lub przy wyjeździe, opóźnienie segmentów,
+pauzę, restart i różne długości klatek.
 Program testowy zwraca kod różny od zera, jeśli dowolny test zawiedzie.
 Renderowanie, dźwięk, interakcje Gum i cykl życia aplikacji wymagają też
 sprawdzenia w uruchomionej grze; te testy nie potwierdzają działania na telefonie.
@@ -87,8 +128,33 @@ sprawdzenia w uruchomionej grze; te testy nie potwierdzają działania na telefo
 
 Kod i zasoby przeniesiono z lokalnego DungeonSlime, stan
 `ec41fb7eefb4787a652538e37bc0eb0d025998dd`. Zachowano zasady, tempo,
-grafikę i dźwięki tutorialu. Pominięto ekran tytułowy, jego opcje i zasoby,
+rozmiar planszy, UI i dźwięki tutorialu. Postacie zastępują nowe grafiki samochodu
+i butelki; efekt rozprysku piwa powstaje w kodzie. Loch zastępuje parking.
+Pominięto ekran tytułowy, jego opcje i zasoby,
 nakładkę ImGui oraz desktopowy mechanizm obserwowania shaderów.
 Efekt wygaszania kolorów podczas pauzy i końca gry pozostał.
 
 Tutorial: [Building a 2D Game — MonoGame](https://docs.monogame.net/articles/tutorials/building_2d_games/).
+
+Grafiki [samochodu](DUI.Game/Content/Images/car.png) i
+[butelki](DUI.Game/Content/Images/beer-bottle.png) wygenerowano narzędziem
+`image_gen` z przezroczystym tłem. Pełne prompty: [AssetPrompts.json](Docs/AssetPrompts.json).
+
+Nowy [atlas parkingu](DUI.Game/Content/Images/parking-atlas.png) zawiera
+16 kafelków asfaltu, linii, krawężników, trawy, siatki i bramy.
+[Witryna](DUI.Game/Content/Images/storefront.png) jest osobną panoramą.
+Oba zasoby powstały we wbudowanym `image_gen`; prompty zapisano w tym samym
+pliku AssetPrompts.json. Definicja mapy wycina wnętrza kafelków bez linii
+podziału atlasu; `ParkingLot` skaluje je do logicznych 80×80.
+Dotychczasowy atlas pozostaje źródłem fontu i elementów UI.
+Narożniki są składane z fragmentów pionowego i poziomego przęsła tego samego
+atlasu, dzięki czemu zachowują rozstaw szyn oraz wzór siatki. Na styku jest
+[kątownik](DUI.Game/Content/Images/fence-corner.png) wycięty podczas rysowania
+z grafiki wygenerowanej we wbudowanym `image_gen`. Całe połączenie jest
+odbijane lustrzanie po prawej stronie. Prompt grafiki jest w AssetPrompts.json.
+
+Cały [znak promila](DUI.Game/Content/Images/per-mille.png) jest pojedynczą
+teksturą 42×29 z przezroczystym tłem. Narysowano go jako pikselowe figury
+w [źródłowym SVG](SourceAssets/UI/per-mille.svg) i zrasteryzowano do PNG.
+UI dopasowuje go do skali fontu i przesuwa za liczbą przy zmianie jej szerokości.
+Punktacja używa `decimal`, aby przyrosty o 0,2 były dokładne.
