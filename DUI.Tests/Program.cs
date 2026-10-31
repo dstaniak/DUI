@@ -1,4 +1,5 @@
 using System;
+using DUI.Tests;
 using System.Linq;
 using DUI.GameObjects;
 using DUI.Input;
@@ -14,7 +15,7 @@ var tests = new (string Name, Action Run)[]
     ("Cancelling a swipe cannot steer after resume", CancelSwipe),
     ("Wide and portrait screens preserve geometry and input mapping", DisplayMapping),
     ("Circle contact uses the strict intersection rule", CircleCollision)
-}.ToArray();
+}.Concat(MovementTests.Cases).ToArray();
 
 int failures = 0;
 foreach (var test in tests)

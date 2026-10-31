@@ -138,9 +138,14 @@ w jednej przezroczystej teksturze 42×29. Powstał z ręcznie narysowanych figur
 a GameSceneUI wczytuje ją przez ContentManager Gum. Znak uzupełnia font 04b_30,
 który nie zawiera U+2030; nie wymaga składania kilku sprite’ów.</p>
 <h2>Weryfikacja i ograniczenia</h2>
-<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> uruchamia pięć podstawowych testów bez GPU:
-gesty, anulowanie kontaktu, marginesy, mapowanie ekranu i Circle.
-Dawne asercje kroków kafelkowych usunięto wraz z modelem ruchu po siatce.</p>
+<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> uruchamia 20 testów bez GPU.
+<a href="../DUI.Tests/MovementTests.cs">MovementTests</a> sprawdza natychmiastowy skręt,
+cztery kierunki, stałą prędkość, kolejkę, odrzucanie zwrotu i powtórzeń,
+resztę czasu, interpolację, ślad przez cztery zakręty, odstępy, wzrost,
+ograniczenie historii, ciasny nawrót, kolizje między końcami podkroku,
+granice parkingu, zatrzymanie, pauzę i restart.
+Pozostałe testy obejmują gesty,
+mapowanie ekranu oraz Circle. Testy kompilują te same źródła modelu co gra.</p>
 <p>Testy nie zastępują sprawdzenia renderowania, audio, przycisków Gum,
 łączenia kafelków parkingu, witryny, ogrodzenia i bramy, falowania aut i opóźnienia segmentów, powiększania każdego auta na trawie i podskoków przy wjeździe, pulsowania i zebrania butelki, rozprysku piwa, przyrostów wyniku o 0,2‰ i resetu do 0,0‰, położenia sprite’a przy przejściu 9,8‰ → 10,0‰ oraz utraty aktywności w uruchomionej aplikacji.
 Wersja na fizyczny telefon, safe areas i zachowanie po utracie procesu

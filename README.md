@@ -123,9 +123,12 @@ dotnet build DUI.slnx
 dotnet run --project DUI.Tests
 ```
 
-Podstawowe testy obejmują rozpoznawanie i anulowanie gestów, mapowanie
-planszy na ekran oraz okręgi kolizji. Dawne asercje kroków kafelkowych
-usunięto wraz z modelem ruchu po siatce.
+20 testów obejmuje natychmiastową reakcję między kafelkami, wszystkie
+kierunki skrętów, kolejkę, odrzucanie nieprawidłowych poleceń, stałą prędkość,
+interpolację i różne podziały czasu. Sprawdzają odtwarzanie śladu przez
+cztery zakręty, odstępy, wzrost, ograniczenie pamięci historii, ciasny nawrót,
+przecięcie ogona między podkrokami, granice parkingu, pauzę i restart.
+Pozostają też testy gestów, mapowania ekranu i kolizji z butelkami.
 Program testowy zwraca kod różny od zera, jeśli dowolny test zawiedzie.
 Renderowanie, dźwięk, interakcje Gum i cykl życia aplikacji wymagają też
 sprawdzenia w uruchomionej grze; te testy nie potwierdzają działania na telefonie.
