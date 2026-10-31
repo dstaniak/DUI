@@ -43,7 +43,8 @@ public class GameScene : Scene
 
         _drivingBounds = _parkingLot.DrivingBounds;
 
-        _convoy.BodyCollision += OnConvoyBodyCollision;
+        _convoy.BodyCollision += OnConvoyCollision;
+        _convoy.BoundaryCollision += OnConvoyCollision;
 
         Gum.GumService.Default.Root.Children.Clear();
 
@@ -54,7 +55,7 @@ public class GameScene : Scene
     public override void LoadContent()
     {
         _parkingLot = new ParkingLot(Content);
-        _convoy = new CarConvoy(LoadSprite("Images/car"));
+        _convoy = new CarConvoy(LoadSprite("Images/car"), _parkingLot);
         var bounceEffect = Content.Load<SoundEffect>("Audio/bounce");
         _bottle = new BeerBottle(LoadSprite("Images/beer-bottle"), bounceEffect);
         _beerBurst = new BeerBurst(Core.GraphicsDevice);
@@ -99,6 +100,11 @@ public class GameScene : Scene
 
         _convoy.QueueDirection(GameController.ReadDirection());
         _convoy.Update(gameTime);
+        if (_state != GameState.Playing)
+        {
+            return;
+        }
+
         _bottle.Update(gameTime);
         _beerBurst.Update(gameTime);
 
@@ -124,7 +130,7 @@ public class GameScene : Scene
             transformMatrix: Core.Display.Transform);
 
         _parkingLot.Draw(Core.SpriteBatch);
-        _convoy.Draw(_parkingLot);
+        _convoy.Draw();
         _bottle.Draw();
         _beerBurst.Draw(Core.SpriteBatch);
         Core.SpriteBatch.End();
@@ -187,15 +193,6 @@ public class GameScene : Scene
             Core.Audio.PlaySoundEffect(_collectSoundEffect);
         }
 
-        if (convoyBounds.Top < _drivingBounds.Top ||
-            convoyBounds.Bottom > _drivingBounds.Bottom ||
-            convoyBounds.Left < _drivingBounds.Left ||
-            convoyBounds.Right > _drivingBounds.Right)
-        {
-            GameOver();
-            return;
-        }
-
         if (bottleBounds.Top <= _drivingBounds.Top)
         {
             _bottle.Bounce(Vector2.UnitY);
@@ -228,7 +225,7 @@ public class GameScene : Scene
 
     private void InitializeNewGame()
     {
-        _convoy.Initialize(_parkingLot.StartingPosition, ParkingLot.TileSize);
+        _convoy.Initialize(_parkingLot.StartingPosition);
         _beerBurst.Clear();
 
         _bottle.RandomizeVelocity();
@@ -315,7 +312,7 @@ public class GameScene : Scene
         Pause();
     }
 
-    private void OnConvoyBodyCollision(object sender, EventArgs e)
+    private void OnConvoyCollision(object sender, EventArgs e)
     {
         GameOver();
     }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using MonoGameLibrary;
 using MonoGameLibrary.Graphics;
@@ -12,22 +13,32 @@ public sealed class CarConvoy
 
     private readonly Sprite _sprite;
     private readonly Vector2 _baseScale;
-    private SnakeMovement _movement;
+    private readonly ParkingLot _parkingLot;
+    private readonly List<CarHop> _hops = [];
+    private readonly List<CarPose> _previousPoses = [];
+    private ConvoyMovement _movement;
 
     public event EventHandler BodyCollision;
+    public event EventHandler BoundaryCollision;
 
-    public CarConvoy(Sprite sprite)
+    public CarConvoy(Sprite sprite, ParkingLot parkingLot)
     {
+        _parkingLot = parkingLot;
         _sprite = sprite;
         _sprite.CenterOrigin();
         _baseScale = new Vector2(Size / sprite.Region.Width, Size / sprite.Region.Height);
         _sprite.Scale = _baseScale;
     }
 
-    public void Initialize(Vector2 startingPosition, float stride)
+    public void Initialize(Vector2 startingPosition)
     {
-        _movement = new SnakeMovement(startingPosition, stride);
+        // Parking placement uses tile origins; the movement model always uses car centers.
+        _movement = new ConvoyMovement(startingPosition + new Vector2(Size * 0.5f));
         _movement.BodyCollision += OnBodyCollision;
+        _movement.Stepped += OnMovementStepped;
+        _hops.Clear();
+        _previousPoses.Clear();
+        AddCarAnimation();
     }
 
     public void QueueDirection(Vector2 direction)
@@ -38,6 +49,7 @@ public sealed class CarConvoy
     public void Grow()
     {
         _movement.Grow();
+        AddCarAnimation();
     }
 
     public void Update(GameTime gameTime)
@@ -45,29 +57,51 @@ public sealed class CarConvoy
         _movement.Update(gameTime.ElapsedGameTime);
     }
 
-    public void Draw(ParkingLot parkingLot)
+    public void Draw()
     {
-        for (int i = 0; i < _movement.Segments.Count; i++)
+        for (int i = 0; i < _movement.Cars.Count; i++)
         {
-            var segment = _movement.Segments[i];
-            var pose = CarSway.GetPose(_movement, i);
-            var terrain = parkingLot.GetCarTransform(segment, _movement.MovementProgress);
-            Vector2 center = pose.Position + new Vector2(Size * 0.5f);
+            CarPose logicalPose = _movement.GetRenderPose(i);
+            CarPose pose = CarSway.GetPose(logicalPose);
+            var hop = _hops[i].GetTransform(_movement.RenderTime);
+            float terrainScale = _parkingLot.GetCarScale(logicalPose.Center);
 
             // Apply lift in screen-up board space, independently of the car's heading.
             _sprite.Rotation = pose.Rotation;
-            _sprite.Scale = _baseScale * terrain.Scale;
-            _sprite.Draw(Core.SpriteBatch, center - Vector2.UnitY * terrain.Lift);
+            _sprite.Scale = _baseScale * terrainScale * hop.Scale;
+            _sprite.Draw(Core.SpriteBatch, pose.Center - Vector2.UnitY * hop.Lift);
         }
     }
 
     public Circle GetBounds()
     {
-        Vector2 position = _movement.GetHeadPosition();
+        Vector2 center = _movement.Cars[0].Center;
         return new Circle(
-            (int)(position.X + Size * 0.5f),
-            (int)(position.Y + Size * 0.5f),
+            (int)center.X,
+            (int)center.Y,
             (int)(Size * 0.5f));
+    }
+
+    private void AddCarAnimation()
+    {
+        _hops.Add(new CarHop());
+        _previousPoses.Add(_movement.Cars[_movement.Cars.Count - 1]);
+    }
+
+    private void OnMovementStepped(object sender, EventArgs args)
+    {
+        for (int i = 0; i < _movement.Cars.Count; i++)
+        {
+            CarPose pose = _movement.Cars[i];
+            _hops[i].Advance(_previousPoses[i], pose, _movement.ElapsedTime, _parkingLot.GrassIslands);
+            _previousPoses[i] = pose;
+        }
+
+        if (ConvoyCollision.IsOutsideParking(_movement.Cars[0].Center, _parkingLot.DrivingBounds))
+        {
+            _movement.Stop();
+            BoundaryCollision?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private void OnBodyCollision(object sender, EventArgs args)

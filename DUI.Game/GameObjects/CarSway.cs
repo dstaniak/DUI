@@ -1,40 +1,26 @@
 using System;
 using Microsoft.Xna.Framework;
-using MonoGameLibrary;
 
 namespace DUI.GameObjects;
 
-/// <summary>Computes visual car positions and headings without changing the grid path.</summary>
+/// <summary>Adds a small visual sway at the same distance along each car's trail.</summary>
 internal static class CarSway
 {
     private const double PeriodSeconds = 1.2;
-    private const float OffsetPixels = 5f;
-    private const float RotationRadians = MathF.PI / 30f;
+    private const float OffsetPixels = 1.5f;
+    private const float RotationRadians = MathF.PI / 90f;
 
     /// <summary>
-    /// Returns the shifted top-left grid anchor and rotation in radians.
-    /// Add half the car size when drawing a sprite with a centered origin.
+    /// Returns a shifted center and rotation without changing collision geometry.
     /// </summary>
-    public static (Vector2 Position, float Rotation) GetPose(SnakeMovement movement, int segmentIndex)
+    public static CarPose GetPose(CarPose pose)
     {
-        SnakeSegment segment = movement.Segments[segmentIndex];
-        float progress = movement.MovementProgress;
-
-        float incomingAngle = MathF.Atan2(segment.PreviousDirection.Y, segment.PreviousDirection.X);
-        float outgoingAngle = MathF.Atan2(segment.Direction.Y, segment.Direction.X);
-        float turnAngle = MathHelper.WrapAngle(outgoingAngle - incomingAngle);
-        float heading = incomingAngle + turnAngle * Easings.EaseInOutSine(progress);
-
-        // Each car repeats the head's wave one grid step later than its predecessor.
-        double delayedTime = movement.ElapsedTime.TotalSeconds
-            - segmentIndex * SnakeMovement.StepDuration.TotalSeconds;
-        double phase = delayedTime * Math.Tau / PeriodSeconds;
+        double phase = pose.Distance / (ConvoyMovement.Speed * PeriodSeconds) * Math.Tau;
         float offset = (float)Math.Sin(phase) * OffsetPixels;
-        Vector2 lateral = new(-MathF.Sin(heading), MathF.Cos(heading));
-        Vector2 position = Vector2.Lerp(segment.At, segment.To, progress) + lateral * offset;
+        Vector2 lateral = new(-MathF.Sin(pose.Rotation), MathF.Cos(pose.Rotation));
 
         // Steering leads sideways displacement by a quarter cycle.
-        float rotation = heading + (float)Math.Cos(phase) * RotationRadians;
-        return (position, rotation);
+        float rotation = pose.Rotation + (float)Math.Cos(phase) * RotationRadians;
+        return new CarPose(pose.Center + lateral * offset, rotation, pose.Distance);
     }
 }

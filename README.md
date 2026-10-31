@@ -24,15 +24,22 @@ tak jak w projekcie źródłowym.
 ## Zasady i sterowanie
 
 - Strzałki / WASD lub D-pad / lewy drążek pada zmieniają kierunek.
-- Kolejka przechowuje dwa przyszłe ruchy, wykonywane po jednym co 200 ms.
-  Kierunek jest sprawdzany względem ostatniego ruchu w kolejce.
-  Można więc zaplanować „prawo → góra → lewo”, ale nie natychmiastowy zwrot.
-  Kolejny ruch przy pełnej kolejce jest pomijany, tak jak w DungeonSlime.
-- Pozycja jest płynnie interpolowana między polami, a segmenty podążają
-  za prowadzącym autem. Auta płynnie skręcają i falują na boki o ±5 jednostek
-  planszy, z dodatkowym obrotem ±6°. Cykl trwa 1,2 s, a każdy kolejny
-  segment powtarza falę z opóźnieniem 200 ms. Falowanie nie zmienia kolizji;
-  pauza je zatrzymuje, a RETRY zeruje jego fazę.
+- Auto jedzie ze stałą prędkością 400 jednostek planszy na sekundę.
+  Skręt zaczyna się bez czekania na kafelek, trwa 160 ms i zmienia kierunek
+  o 90° przez `EaseInOutSine`. Samochód porusza się po rzeczywistej krzywej.
+- Kolejka przechowuje dwa oczekujące skręty. Rozpoczęty manewr zawsze
+  kończy się przed następnym. Kierunek jest sprawdzany względem ostatniego
+  zaplanowanego celu; natychmiastowy zwrot, powtórzenie celu i przepełnienie
+  są pomijane. Sekwencja „prawo → dół → lewo” wykonuje płynny nawrót.
+- Segmenty odtwarzają pozycje i obroty głowy z jej śladu, w odstępach 80
+  jednostek wzdłuż drogi. Nowe auto pojawia się za ogonem, bez przesuwania
+  pozostałych. Symulacja używa podkroków 5 ms i interpolacji obrazu.
+- Delikatne falowanie ma amplitudę ±1,5 jednostki i ±2°, z okresem 1,2 s.
+  Faza zależy od przebytej drogi, więc każdy segment powtarza ruch głowy.
+  To efekt wizualny; pauza go zatrzymuje, a RETRY zeruje fazę.
+- Kolizje z ogonem używają ruchomych okręgów o promieniu 32, z pominięciem
+  bezpośredniego sąsiada głowy. Są sprawdzane także pomiędzy końcami podkroku.
+  Granice parkingu i zbieranie butelek zachowują promień głowy 40.
 - Butelka piwa pulsuje, porusza się i odbija od granic parkingu. Jej zebranie
   wywołuje rozprysk złotych kropli i białej piany, dodaje samochód oraz
   0,2‰ do wyniku. Licznik zaczyna od `0,0‰` i pokazuje jedną cyfrę po
@@ -44,11 +51,12 @@ tak jak w projekcie źródłowym.
   a pośrodku dolnego ogrodzenia zamknięta brama szerokości dwóch kafelków.
   Dolne narożniki mają kątowniki „L” łączące boczną siatkę z dolnym przęsłem.
 - Dwie symetryczne wysepki trawnika mają po 2×4 kafelki. Można po nich
-  przejechać: podczas kroku z asfaltu na trawę każde auto podskakuje o 12
+  przejechać: gdy przód auta przekracza krawężnik z asfaltu na trawę,
+  auto podskakuje o 12
   jednostek planszy i powiększa się do około 128%. Wybicie korzysta
   z `EaseOutCubic`, a lądowanie z `EaseInQuad`; cały podskok trwa 200 ms.
   Po lądowaniu zostaje skala 106%, a wyjazd przywraca 100%.
-  Kolejne kafelki trawy nie uruchamiają podskoku. Pauza zatrzymuje go
+  Jazda po trawie, wyjazd i aktywna animacja nie uruchamiają nowego podskoku. Pauza zatrzymuje go
   w bieżącej fazie, a RETRY rozpoczyna nową animację ruchu.
   Efekt jest liczony osobno dla każdego segmentu, bez zmiany
   ruchu ani kolizji. Nad i pod trawnikami pozostaje po jednym rzędzie przejazdu.
@@ -71,16 +79,19 @@ się standardowym przyciskiem systemu.
 - `DUI.Game` — wspólny kod gry, UI Gum, zasoby i potrzebne części biblioteki
   tutorialowej. `DUI.Game.projitems` dołącza źródła do projektu platformowego,
   dzięki czemu przyszły host mobilny może użyć własnego backendu MonoGame.
-- `SnakeMovement` — kolejka, segmenty i interpolacja niezależne od grafiki
-  oraz urządzenia wejściowego; `CarConvoy` rysuje auta, a `CarSway` wyznacza
-  ich wizualne pozycje i orientację z czasu rozgrywki oraz historii kierunków.
+- `ConvoyMovement` — kolejka, skręty, stały podkrok oraz kolizje z ogonem.
+  `CarPose` przechowuje środek, obrót i drogę auta; `ConvoyTrail` ogranicza
+  historię do długości kolumny i zapasu na nowy segment.
+  `ConvoyCollision` sprawdza ruchome okręgi oraz granice parkingu.
+- `CarConvoy` — łączy model z rysowaniem, aktualizuje podskoki i sprawdza
+  granice po każdym podkroku. `CarSway` dodaje małe wizualne falowanie.
 - `Easings` — statyczne funkcje interpolacji (30 krzywych oraz `Linear`);
-  `CarSway` korzysta z `EaseInOutSine` przy zmianie kierunku jazdy,
-  a `CarHop` z `EaseOutCubic` i `EaseInQuad` podczas podskoku.
+  `ConvoyMovement` używa `EaseInOutSine` do skrętów, a `CarHop` używa
+  `EaseOutCubic` i `EaseInQuad` do wybicia oraz lądowania.
 - `ParkingLot` — układ parkingu, granice jazdy, rysowanie witryny oraz
-  wspólna geometria kafelków trawy i płynnego efektu wysokości aut.
-  Łączy stałe powiększenie na trawie z krótkim podskokiem `CarHop`,
-  wyznaczanym z końców i postępu kroku każdego samochodu.
+  wspólna geometria kafelków trawy i płynnego powiększania aut do 106%.
+  `CarHop` ma osobny stan dla każdego auta i wykrywa przekroczenie
+  krawężnika przez jego przód; renderowanie korzysta z czasu modelu ruchu.
 - `BeerBottle` — ruch i pulsowanie butelki; `BeerBurst` — krótkotrwałe
   krople piwa i piana, rysowane prostymi figurami pikselowymi.
 - `DUI.Tests` — testy regresji uruchamiane bez okna i urządzenia graficznego.
@@ -112,14 +123,9 @@ dotnet build DUI.slnx
 dotnet run --project DUI.Tests
 ```
 
-Testy obejmują kolejkę i jej pojemność, zakaz zawracania, powtarzane
-kierunki, czas ruchu i interpolację, wzrost, kolizję z ciałem, świeży stan
-nowej gry, gesty i ich anulowanie, skalowanie oraz okrągłe obszary kolizji.
-Sprawdzają też wizualne falowanie, opóźnienie aut na prostej i zakrętach,
-ciągłość skrętów, pauzę, restart, niezależność od czasu klatki i wzrost kolumny.
-Testy podskoku obejmują wjazd na wyspę z czterech stron, wybicie i lądowanie,
-brak ponownych podskoków na trawie lub przy wyjeździe, opóźnienie segmentów,
-pauzę, restart i różne długości klatek.
+Podstawowe testy obejmują rozpoznawanie i anulowanie gestów, mapowanie
+planszy na ekran oraz okręgi kolizji. Dawne asercje kroków kafelkowych
+usunięto wraz z modelem ruchu po siatce.
 Program testowy zwraca kod różny od zera, jeśli dowolny test zawiedzie.
 Renderowanie, dźwięk, interakcje Gum i cykl życia aplikacji wymagają też
 sprawdzenia w uruchomionej grze; te testy nie potwierdzają działania na telefonie.
@@ -127,8 +133,8 @@ sprawdzenia w uruchomionej grze; te testy nie potwierdzają działania na telefo
 ## Pochodzenie
 
 Kod i zasoby przeniesiono z lokalnego DungeonSlime, stan
-`ec41fb7eefb4787a652538e37bc0eb0d025998dd`. Zachowano zasady, tempo,
-rozmiar planszy, UI i dźwięki tutorialu. Postacie zastępują nowe grafiki samochodu
+`ec41fb7eefb4787a652538e37bc0eb0d025998dd`. Zachowano tempo,
+rozmiar planszy, UI i dźwięki tutorialu; ruch po siatce zastąpiły płynne skręty. Postacie zastępują nowe grafiki samochodu
 i butelki; efekt rozprysku piwa powstaje w kodzie. Loch zastępuje parking.
 Pominięto ekran tytułowy, jego opcje i zasoby,
 nakładkę ImGui oraz desktopowy mechanizm obserwowania shaderów.

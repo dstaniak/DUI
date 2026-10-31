@@ -20,6 +20,7 @@ public sealed class ParkingLot
 
     public Rectangle DrivingBounds { get; }
     public Vector2 StartingPosition { get; }
+    internal ReadOnlySpan<Rectangle> GrassIslands => _grassIslands;
 
     public ParkingLot(ContentManager content)
     {
@@ -80,17 +81,6 @@ public sealed class ParkingLot
         }
 
         return 1.0f;
-    }
-
-    public (float Scale, float Lift) GetCarTransform(SnakeSegment segment, float progress)
-    {
-        Vector2 centerOffset = new(CarConvoy.Size * 0.5f);
-        Vector2 fromCenter = segment.At + centerOffset;
-        Vector2 toCenter = segment.To + centerOffset;
-        Vector2 center = Vector2.Lerp(fromCenter, toCenter, progress);
-        var hop = CarHop.GetTransform(fromCenter, toCenter, progress, _grassIslands);
-
-        return (GetCarScale(center) * hop.Scale, hop.Lift);
     }
 
     public void Draw(SpriteBatch spriteBatch)
