@@ -126,6 +126,8 @@ Oba zasoby powstały we wbudowanym `image_gen`; prompty zapisano w tym samym
 pliku AssetPrompts.json. Definicja mapy wycina wnętrza kafelków bez linii
 podziału atlasu; `ParkingLot` skaluje je do logicznych 80×80.
 Dotychczasowy atlas pozostaje źródłem fontu i elementów UI.
-Uzupełnia go przezroczysty [kafelek narożnika](DUI.Game/Content/Images/fence-corner.png),
-wygenerowany we wbudowanym `image_gen` i odbijany lustrzanie po prawej stronie.
-Jego prompt również znajduje się w AssetPrompts.json.
+Narożniki są składane z fragmentów pionowego i poziomego przęsła tego samego
+atlasu, dzięki czemu zachowują rozstaw szyn oraz wzór siatki. Na styku jest
+[kątownik](DUI.Game/Content/Images/fence-corner.png) wycięty podczas rysowania
+z grafiki wygenerowanej we wbudowanym `image_gen`. Całe połączenie jest
+odbijane lustrzanie po prawej stronie. Prompt grafiki jest w AssetPrompts.json.

@@ -13,7 +13,9 @@ public sealed class ParkingLot
 
     private readonly Tilemap _tilemap;
     private readonly Texture2D _storefront;
-    private readonly Texture2D _fenceCorner;
+    private readonly TextureRegion _cornerUpright;
+    private readonly TextureRegion _cornerRail;
+    private readonly TextureRegion _cornerBracket;
     private readonly Rectangle[] _grassIslands;
 
     public Rectangle DrivingBounds { get; }
@@ -24,7 +26,21 @@ public sealed class ParkingLot
         _tilemap = Tilemap.FromFile(content, "Images/tilemap-definition.xml");
         _tilemap.Scale = new Vector2(TileSize / _tilemap.TileWidth, TileSize / _tilemap.TileHeight);
         _storefront = content.Load<Texture2D>("Images/storefront");
-        _fenceCorner = content.Load<Texture2D>("Images/fence-corner");
+        TextureRegion upright = _tilemap.GetTile(10);
+        TextureRegion rail = _tilemap.GetTile(12);
+
+        // Stop the upright at the horizontal rail's top edge (atlas row 100).
+        // Both legs keep the atlas scale, including the diamond mesh pattern.
+        _cornerUpright = new TextureRegion(upright.Texture,
+            upright.SourceRectangle.X, upright.SourceRectangle.Y, upright.Width, 100);
+        _cornerRail = new TextureRegion(rail.Texture,
+            rail.SourceRectangle.X + rail.Width / 2, rail.SourceRectangle.Y,
+            rail.Width / 2, rail.Height);
+
+        // Only the bolted bracket is needed from the separate corner artwork;
+        // its generated fence legs have a different rail spacing.
+        Texture2D corner = content.Load<Texture2D>("Images/fence-corner");
+        _cornerBracket = new TextureRegion(corner, 544, 510, 205, 245);
 
         // The shop occupies two rows. The closed gate stays outside the same
         // driving bounds as the rest of the bottom fence.
@@ -77,14 +93,28 @@ public sealed class ParkingLot
     private void DrawFenceCorners(SpriteBatch spriteBatch)
     {
         int bottom = (_tilemap.Rows - 1) * TileSize;
-        var leftCorner = new Rectangle(0, bottom, TileSize, TileSize);
-        var rightCorner = new Rectangle((_tilemap.Columns - 1) * TileSize, bottom, TileSize, TileSize);
+        DrawFenceCorner(spriteBatch, new Vector2(0, bottom), false);
+        DrawFenceCorner(spriteBatch,
+            new Vector2((_tilemap.Columns - 1) * TileSize, bottom), true);
+    }
 
-        // One L-shaped tile joins the side fence to the bottom rail. Mirroring
-        // the same artwork keeps the two corner posts exactly symmetrical.
-        spriteBatch.Draw(_fenceCorner, leftCorner, Color.White);
-        spriteBatch.Draw(_fenceCorner, rightCorner, null, Color.White,
-            0, Vector2.Zero, SpriteEffects.FlipHorizontally, 0);
+    private void DrawFenceCorner(SpriteBatch spriteBatch, Vector2 origin, bool mirrored)
+    {
+        SpriteEffects effects = mirrored ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
+
+        // Draw the rail first: its opaque asphalt must not cover the upright.
+        // The source half and its destination share the exact regular-tile scale.
+        float railOffset = mirrored ? 0 : TileSize * 0.5f;
+        _cornerRail.Draw(spriteBatch, origin + new Vector2(railOffset, 0),
+            Color.White, 0, Vector2.Zero, _tilemap.Scale, effects, 0);
+        _cornerUpright.Draw(spriteBatch, origin,
+            Color.White, 0, Vector2.Zero, _tilemap.Scale, effects, 0);
+
+        const float bracketWidth = 14;
+        float bracketLeft = mirrored ? TileSize - 34 - bracketWidth : 34;
+        var bracketScale = new Vector2(bracketWidth / _cornerBracket.Width, 23.0f / _cornerBracket.Height);
+        _cornerBracket.Draw(spriteBatch, origin + new Vector2(bracketLeft, 25),
+            Color.White, 0, Vector2.Zero, bracketScale, effects, 0);
     }
 
     private void PlaceGrassTiles(Rectangle island)
