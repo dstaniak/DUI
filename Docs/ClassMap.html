@@ -49,7 +49,7 @@ a potem przenosi kolejną butelkę na przeciwną stronę parkingu, resetuje puls
 wywołuje CarConvoy.Grow, dodaje dokładnie 0,2‰ do wyniku decimal, aktualizuje GameSceneUI i gra dźwięk.
 Licznik pokazuje 0,0‰ → 0,2‰ → 0,4‰, zawsze z przecinkiem i jedną cyfrą ułamkową.
 GameSceneUI.UpdateScoreText formatuje liczbę w kulturze pl-PL i ustawia pojedynczy sprite całego znaku ‰ za jej prawą krawędzią.</li>
-<li><strong>Przegrana:</strong> wyjście okręgu głowy poza ParkingLot.DrivingBounds albo zdarzenie
+<li><strong>Przegrana:</strong> wyjście obróconego obrysu głowy poza ParkingLot.DrivingBounds albo zdarzenie
 ConvoyMovement.BodyCollision → CarConvoy.BodyCollision → GameScene.GameOver →
 panel GAME OVER. ConvoyCollision bada ruchome okręgi 32 px także pomiędzy końcami podkroku,
 z pominięciem bezpośredniego sąsiada głowy. CarConvoy przekazuje aktualne CarPose do sprawdzenia granic po każdym podkroku
