@@ -37,6 +37,7 @@ tak jak w projekcie źródłowym.
 - Plansza jest parkingiem pod sklepem z alkoholem i przekąskami. Witryna
   zajmuje dwa górne rzędy; po bokach i na dole jest ogrodzenie z siatki,
   a pośrodku dolnego ogrodzenia zamknięta brama szerokości dwóch kafelków.
+  Dolne narożniki mają kątowniki „L” łączące boczną siatkę z dolnym przęsłem.
 - Dwie symetryczne wysepki trawnika mają po 2×4 kafelki. Można po nich
   przejechać: każde auto płynnie powiększa się do 106% i wraca do 100%
   na asfalcie. Efekt jest liczony osobno dla każdego segmentu, bez zmiany
@@ -125,3 +126,6 @@ Oba zasoby powstały we wbudowanym `image_gen`; prompty zapisano w tym samym
 pliku AssetPrompts.json. Definicja mapy wycina wnętrza kafelków bez linii
 podziału atlasu; `ParkingLot` skaluje je do logicznych 80×80.
 Dotychczasowy atlas pozostaje źródłem fontu i elementów UI.
+Uzupełnia go przezroczysty [kafelek narożnika](DUI.Game/Content/Images/fence-corner.png),
+wygenerowany we wbudowanym `image_gen` i odbijany lustrzanie po prawej stronie.
+Jego prompt również znajduje się w AssetPrompts.json.

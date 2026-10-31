@@ -13,6 +13,7 @@ public sealed class ParkingLot
 
     private readonly Tilemap _tilemap;
     private readonly Texture2D _storefront;
+    private readonly Texture2D _fenceCorner;
     private readonly Rectangle[] _grassIslands;
 
     public Rectangle DrivingBounds { get; }
@@ -23,6 +24,7 @@ public sealed class ParkingLot
         _tilemap = Tilemap.FromFile(content, "Images/tilemap-definition.xml");
         _tilemap.Scale = new Vector2(TileSize / _tilemap.TileWidth, TileSize / _tilemap.TileHeight);
         _storefront = content.Load<Texture2D>("Images/storefront");
+        _fenceCorner = content.Load<Texture2D>("Images/fence-corner");
 
         // The shop occupies two rows. The closed gate stays outside the same
         // driving bounds as the rest of the bottom fence.
@@ -67,8 +69,22 @@ public sealed class ParkingLot
     public void Draw(SpriteBatch spriteBatch)
     {
         _tilemap.Draw(spriteBatch);
+        DrawFenceCorners(spriteBatch);
         var shopBounds = new Rectangle(0, 0, _tilemap.Columns * TileSize, TileSize * 2);
         spriteBatch.Draw(_storefront, shopBounds, Color.White);
+    }
+
+    private void DrawFenceCorners(SpriteBatch spriteBatch)
+    {
+        int bottom = (_tilemap.Rows - 1) * TileSize;
+        var leftCorner = new Rectangle(0, bottom, TileSize, TileSize);
+        var rightCorner = new Rectangle((_tilemap.Columns - 1) * TileSize, bottom, TileSize, TileSize);
+
+        // One L-shaped tile joins the side fence to the bottom rail. Mirroring
+        // the same artwork keeps the two corner posts exactly symmetrical.
+        spriteBatch.Draw(_fenceCorner, leftCorner, Color.White);
+        spriteBatch.Draw(_fenceCorner, rightCorner, null, Color.White,
+            0, Vector2.Zero, SpriteEffects.FlipHorizontally, 0);
     }
 
     private void PlaceGrassTiles(Rectangle island)
