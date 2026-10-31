@@ -25,7 +25,7 @@ tak jak w projekcie źródłowym.
 ## Oprawa retro
 
 Cała klatka, łącznie z UI, ma **1280×720 pikseli**. Kafelek zajmuje
-80×80 pikseli, a witryna 1280×160, dzięki czemu widać kształty samochodów,
+80×80 pikseli, a pas witryny 1280×160, dzięki czemu widać kształty samochodów,
 butelki, przekąski i cieniowanie grafik. `PointClamp` zachowuje ostre
 piksele przy skalowaniu. Obraz wypełnia całe okno bez ramki i pasów.
 Przy innych proporcjach okna każda oś jest dopasowywana osobno; dla
@@ -34,15 +34,22 @@ kolizji pozostają w jednostkach planszy.
 
 Retro wygląd tworzą same grafiki: uproszczone kształty, pikselowy font,
 kolory inspirowane C64 i wybrane dwukolorowe wzory w cieniach.
-W witrynie stoi po 12 smukłych butelek na każdej z czterech półek.
-Ich boki mają naprzemienne ciemniejsze odcienie tego samego koloru,
-bez czarnych wcięć; środki pozostają jednolite. Auta mają duże plamy
-koloru, proste szyby i pojedyncze refleksy, bez drobnych napisów i detali.
+Każdy segment wystawy zawiera 12 smukłych butelek. Ich boki mają
+naprzemienne, zbliżone ciemniejsze odcienie własnego koloru — na czerwonych
+ciemniejszą czerwień, bez czarnych wcięć. Środki pozostają jednolite.
+Auta i zbierana butelka piwa są przerysowane jako proste ikony z dużych
+bloków koloru, z pojedynczym cieniem, bez połysku, odbić i drobnych obwódek.
+To uproszczenie kompozycji sprite’ów, bez filtra zmniejszającego rozdzielczość.
 Wzory są częścią tekstur; ekran nie nakłada
 ditheringu ani nie ogranicza całej klatki do 16 kolorów. Oryginalne odcienie
 tekstur, przezroczystość i wygaszanie podczas pauzy zachowują szczegóły.
 `C64Palette` dostarcza czerń oprawy i biel małych refleksów belki z palety
 [Pepto PAL używanej przez VICE](https://raw.githubusercontent.com/VICE-Team/svn-mirror/main/vice/data/C64/pepto-pal.vpl).
+
+Witryna jest składana z elementów skalowanych jednakowo w obu osiach.
+Oryginał 2172×724 tworzy środkową fasadę 480×160 z wejściem i szyldem;
+powtarzane segmenty boczne wypełniają pozostałą szerokość. Drzwi, litery
+i towary zachowują proporcje, a pas sklepu nadal zajmuje dwa górne kafelki.
 
 UI ma układ logiczny 320×180 i zoom 4, rysowany bezpośrednio w buforze
 720p. Napisy zachowują czytelną wielkość i szczegóły fontu bez pośredniego
@@ -129,7 +136,8 @@ się standardowym przyciskiem systemu.
 - `Easings` — statyczne funkcje interpolacji (30 krzywych oraz `Linear`);
   `ConvoyMovement` używa `EaseInOutSine` do skrętów, a `CarHop` używa
   `EaseOutCubic` i `EaseInQuad` do wybicia oraz lądowania.
-- `ParkingLot` — układ parkingu, granice jazdy, rysowanie witryny oraz
+- `ParkingLot` — układ parkingu, granice jazdy, składanie proporcjonalnej
+  witryny z centralnej fasady i powtarzanych segmentów wystawy oraz
   wspólna geometria kafelków trawy i płynnego powiększania aut do 106%.
   `ParkingGeometry` wyznacza krawędzie ogrodzenia, osobny obrys bramy
   i prostokątny obszar ruchu butelek, który mieści się przed bramą.
@@ -211,7 +219,9 @@ Grafiki [samochodu](DUI.Game/Content/Images/car.png) i
 [Grafika radiowozu](DUI.Game/Content/Images/police-car.png) to wariant
 uproszczonego auta wygenerowany wbudowanym `image_gen`, z zachowaniem
 sylwetki, orientacji i przezroczystości. Oba auta mają mniej detali,
-większe bloki koloru oraz prostsze szyby w klimacie C64. Dach jest pusty w teksturze; światła rysuje kod gry.
+większe bloki koloru i jednolite szyby bez refleksów w klimacie C64.
+Dach radiowozu jest pusty w teksturze; światła rysuje kod gry.
+Zbierana butelka ma płaskie szkło, pojedynczy cień i prostą etykietę.
 
 Aktywny [atlas parkingu C64](DUI.Game/Content/Images/c64-parking-atlas.png) zawiera
 16 kafelków asfaltu, linii, krawężników, trawy, siatki i bramy.
