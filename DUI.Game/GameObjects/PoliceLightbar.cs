@@ -24,23 +24,22 @@ internal sealed class PoliceLightbar : IDisposable
         // the lights, while retry resets them. There are exactly two frames.
         const long frameTicks = 250 * TimeSpan.TicksPerMillisecond;
         bool blueFrame = renderTime.Ticks / frameTicks % 2 == 0;
-        Color lightColor = blueFrame ? C64Palette.LightBlue : C64Palette.LightRed;
+        // Saturated, opaque blocks keep the two frames distinct at gameplay size.
+        // Pale palette colors and large white cores made the old lamps look static.
+        Color lightColor = blueFrame ? new(32, 104, 255) : new(255, 48, 48);
         Vector2 forward = new(MathF.Cos(rotation), MathF.Sin(rotation));
         Vector2 side = new(-forward.Y, forward.X);
 
-        DrawBlock(s_roofCenter, new(8, 24), new(12, 22, 40));
-        DrawBlock(s_roofCenter, new(6, 22), new(150, 179, 200));
+        DrawBlock(s_roofCenter, new(10, 28), C64Palette.Black);
+        DrawBlock(s_roofCenter, new(8, 26), new(68, 68, 68));
         DrawLamp(-7f);
         DrawLamp(7f);
 
         void DrawLamp(float offsetY)
         {
             Vector2 position = s_roofCenter + new Vector2(0, offsetY);
-            // Straight alpha matches GameScene's NonPremultiplied blend.
-            DrawBlock(position, new(13, 14), new(lightColor, 45));
-            DrawBlock(position, new(9, 10), new(lightColor, 100));
-            DrawBlock(position, new(5, 8), lightColor);
-            DrawBlock(position, new(2, 5), C64Palette.White);
+            DrawBlock(position, new(8, 12), lightColor);
+            DrawBlock(position + new Vector2(-2, -3), new(2, 2), C64Palette.White);
         }
 
         void DrawBlock(Vector2 localPosition, Vector2 size, Color color)

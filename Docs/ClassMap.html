@@ -30,7 +30,9 @@ przedłuża wstecz po najstarszej stycznej, bez przesuwania istniejących aut.</
 <li><strong>Radiowozy:</strong> GameScene.LoadContent wczytuje car.png i police-car.png.
 CarConvoy.Draw wybiera czerwone auto dla indeksu 0, a radiowóz dla każdego segmentu ogona.
 PoliceLightbar rysuje belkę na dachu radiowozu, w lokalnym punkcie (−6, 0).
-Dwa stany świateł — niebieski i czerwony — zmieniają się co 250 ms według RenderTime.
+Dwa stany świateł — jaskrawoniebieski (#2068FF) i czerwony (#FF3030) — zmieniają się
+co 250 ms według RenderTime. Dwie nieprzezroczyste lampy 8×12 mają małe refleksy 2×2,
+a czarna oprawa 10×28 oddziela je od jasnego dachu. Kolor nie ginie w białych środkach i półprzezroczystej poświacie.
 Światła używają środka po uniesieniu, obrotu z falowaniem oraz wspólnej skali terenu i podskoku.
 Pauza i koniec gry zamrażają klatkę, a RETRY resetuje czas do niebieskiej.
 Zmiana wyglądu ogona nie zmienia śladu ruchu, odstępów ani kolizji.</li>
@@ -113,7 +115,7 @@ które zwalnia teksturę PoliceLightbar; DuiGame zwalnia bufor RetroRenderer, a 
 <tr id="AnimatedSprite"><td><a href="../DUI.Game/Framework/Graphics/AnimatedSprite.cs">AnimatedSprite</a></td><td>Przesuwa aktualną klatkę animacji na podstawie GameTime.</td></tr>
 <tr id="Animation"><td><a href="../DUI.Game/Framework/Graphics/Animation.cs">Animation</a></td><td>Lista klatek atlasu i czas każdej klatki.</td></tr>
 <tr id="GameDisplay"><td><a href="../DUI.Game/Framework/Graphics/GameDisplay.cs">GameDisplay</a></td><td>Określa planszę i raster 1280×720 oraz logiczny układ UI 320×180 przy zoomie 4. Resize dopasowuje OutputBounds do całego okna, osobno w obu osiach; ScreenToRaster mapuje kursor Gum, a ToGamePosition gesty na planszę. Małe okna są pomniejszane.</td></tr>
-<tr id="C64Palette"><td><a href="../DUI.Game/Framework/Graphics/C64Palette.cs">C64Palette</a></td><td>16 kolorów Pepto PAL w kolejności VIC-II. Udostępnia kolory świateł PoliceLightbar; inspiruje barwy grafik, lecz nie ogranicza kolorów całej klatki.</td></tr>
+<tr id="C64Palette"><td><a href="../DUI.Game/Framework/Graphics/C64Palette.cs">C64Palette</a></td><td>16 kolorów Pepto PAL w kolejności VIC-II. Udostępnia czerń oprawy i biel małych refleksów PoliceLightbar; inspiruje barwy grafik, lecz nie ogranicza kolorów całej klatki ani jaskrawych kolorów błysku.</td></tr>
 <tr id="RetroRenderer"><td><a href="../DUI.Game/Framework/Graphics/RetroRenderer.cs">RetroRenderer</a></td><td>Posiada jeden RenderTarget2D 1280×720. BeginFrame czyści bufor sceny; Present skaluje kompletną scenę i UI przez PointClamp. Zachowuje kolory i szczegóły grafik bez shadera palety lub ditheringu. Dispose zwalnia bufor.</td></tr>
 <tr id="Sprite"><td><a href="../DUI.Game/Framework/Graphics/Sprite.cs">Sprite</a></td><td>Parametry rysowania regionu tekstury: pozycja, skala, obrót, kolor i warstwa.</td></tr>
 <tr id="TextureAtlas"><td><a href="../DUI.Game/Framework/Graphics/TextureAtlas.cs">TextureAtlas</a></td><td>Wczytuje definicję XML, teksturę, regiony i animacje; tworzy sprite’y.</td></tr>
@@ -133,7 +135,7 @@ które zwalnia teksturę PoliceLightbar; DuiGame zwalnia bufor RetroRenderer, a 
 <tr id="CarSway"><td><a href="../DUI.Game/GameObjects/CarSway.cs">CarSway</a></td><td>Czysta funkcja CarPose → CarPose dodająca wizualne przesunięcie ±1,5 px i obrót ±2°. Faza zależy od drogi, więc segment powtarza falowanie głowy; okres odpowiada 1,2 s. Nie zmienia modelu ani kolizji.</td></tr>
 <tr id="Easings"><td><a href="../DUI.Game/Framework/Easings.cs">Easings</a></td><td>31 statycznych funkcji float → float: Linear i 30 krzywych z easings.net. Postęp wejściowy 0–1; Back i Elastic zachowują wychylenia poza ten zakres. EaseInOutSine wygładza orientację aut, a EaseOutCubic i EaseInQuad sterują wybiciem i lądowaniem.</td></tr>
 <tr id="CarConvoy"><td><a href="../DUI.Game/GameObjects/CarConvoy.cs">CarConvoy</a></td><td>Łączy ConvoyMovement z renderowaniem i ParkingLot. Posiada stan CarHop oraz poprzednią pozę każdego auta. Po każdym podkroku aktualizuje podskoki i sprawdza ogrodzenie i bramę przez ParkingGeometry na podstawie środka oraz obrotu głowy. Draw pobiera interpolowaną pozę, dodaje CarSway, skalę trawnika i podskok. Indeks 0 rysuje autem gracza, pozostałe radiowozem ze światłami PoliceLightbar. Dispose zwalnia zasób belki; tekstury samochodów należą do ContentManager. Przekazuje BodyCollision i BoundaryCollision do sceny; GetBounds zachowuje promień 40 px dla zbierania butelek.</td></tr>
-<tr id="PoliceLightbar"><td><a href="../DUI.Game/GameObjects/PoliceLightbar.cs">PoliceLightbar</a></td><td>Rysuje pikselową belkę świetlną w lokalnych współrzędnych radiowozu. Dokładnie dwie klatki w kolorach C64Palette.LightBlue i LightRed po 250 ms, wyznaczane z RenderTime modelu. Współdzieli obrót, skalę i uniesienie auta. Posiada teksturę jednego białego piksela; CarConvoy.Dispose ją zwalnia.</td></tr>
+<tr id="PoliceLightbar"><td><a href="../DUI.Game/GameObjects/PoliceLightbar.cs">PoliceLightbar</a></td><td>Rysuje pikselową belkę świetlną w lokalnych współrzędnych radiowozu. Dokładnie dwie klatki po 250 ms: nieprzezroczyste lampy 8×12 w jaskrawym niebieskim lub czerwonym kolorze, z refleksem 2×2. C64Palette dostarcza czerń oprawy i biel refleksu. Klatka zależy od RenderTime modelu. Współdzieli obrót, skalę i uniesienie auta. Posiada teksturę jednego białego piksela; CarConvoy.Dispose ją zwalnia.</td></tr>
 <tr id="ParkingLot"><td><a href="../DUI.Game/GameObjects/ParkingLot.cs">ParkingLot</a></td><td>Posiada Tilemap z c64-parking-atlas, witrynę c64-storefront, regiony ogrodzenia i geometrię dwóch wysp trawy. DrawFenceCorners składa lustrzane narożniki z poziomego półprzęsła, pionowego odcinka i kątownika. Ustala kafelek 80×80, początek gry oraz ParkingGeometry; udostępnia DrivingBounds i BottleBounds. GrassIslands udostępnia nieedytowalny widok prostokątów dla CarHop; GetCarScale oblicza powiększenie terenu do 106%.</td></tr>
 <tr id="ParkingGeometry"><td><a href="../DUI.Game/GameObjects/ParkingGeometry.cs">ParkingGeometry</a></td><td>Geometria kolizji zgodna z grafiką parkingu w skali kafelka 80×80. DrivingBounds sięga do wewnętrznych krawędzi płotu; GateBounds opisuje wysuniętą zamkniętą bramę. IntersectsBoundary sprawdza oba obszary przez ConvoyCollision. BottleBounds wyznacza prostokątny obszar odbić i odrodzeń butelek, kończący się przed bramą.</td></tr>
 <tr id="ConvoyMovement"><td><a href="../DUI.Game/GameObjects/ConvoyMovement.cs">ConvoyMovement</a></td><td>Model płynnej jazdy: 400 px/s, skręt 90° w 160 ms przez EaseInOutSine, dwa oczekujące kierunki. Podkroki 5 ms, zachowanie reszty czasu i interpolacja obrazu. Cars udostępnia aktualne CarPose, GetRenderPose pozy do rysowania. Auta odtwarzają ślad w odstępach 80 px. Stepped synchronizuje teren i granice, BodyCollision zatrzymuje symulację. Stop przerywa także pozostałą część aktualizacji.</td></tr>
@@ -148,8 +150,9 @@ które zwalnia teksturę PoliceLightbar; DuiGame zwalnia bufor RetroRenderer, a 
 <h2>Zasoby samochodów</h2>
 <p>Gracz używa <a href="../DUI.Game/Content/Images/car.png">car.png</a>, a ogon
 <a href="../DUI.Game/Content/Images/police-car.png">police-car.png</a>.
-Wariant radiowozu powstał przez edycję oryginalnego sprite’a wbudowanym image_gen;
-zachowuje rozmiar, orientację i przezroczyste tło. Światła nie są zapisane w teksturze:
+Oba sprite’y uproszczono wbudowanym image_gen do dużych plam koloru, prostych szyb
+i pojedynczych refleksów w klimacie C64. Radiowóz ma srebrno-niebieskie panele
+bez drobnego napisu. Zachowują rozmiar, orientację w prawo i przezroczyste tło. Światła nie są zapisane w teksturze:
 PoliceLightbar nakłada na pusty dach animację z dwóch stanów.
 Pełny prompt i źródło referencyjne są w <a href="AssetPrompts.json">AssetPrompts.json</a>.</p>
 <h2>Zasoby parkingu</h2>
@@ -161,8 +164,10 @@ odstęp 8 i początek (4,4), co pomija linie podziału arkusza.
 <a href="../DUI.Game/Content/Images/c64-storefront.png">Witryna C64</a> pokrywa dwa górne rzędy,
 a atlas.png nadal obsługuje font i UI. Kafelki są widoczne jako 80×80 pikseli,
 a witryna jako 1280×160. Tekstury zachowują swoje kolory bez redukcji palety. Szachownice 2×2 z dwóch kolorów oraz rzadsze pikselowe akcenty
-stanowią część materiałów i cieni w teksturach. Boczne krawędzie butelek w witrynie
-mają co drugi piksel ciemniejszy; środek sylwetki pozostaje jednolity. Oba warianty powstały przez edycję
+stanowią część materiałów i cieni w teksturach. Na każdej z czterech półek stoi 12 smukłych butelek, łącznie 48. Ich boczne krawędzie
+mają co drugi piksel w ciemniejszym odcieniu tego samego koloru, bez czarnych wcięć;
+środek sylwetki pozostaje jednolity. Wąskie sylwetki w źródle uwzględniają
+różne skale poziomą i pionową witryny w grze. Oba warianty powstały przez edycję
 wbudowanym image_gen; oryginały pozostają materiałem źródłowym.
 Narożniki korzystają z górnych 100 wierszy kafelka 10 i prawej połowy
 kafelka 12. Oba fragmenty zachowują skalę atlasu, więc szyny i wzór siatki

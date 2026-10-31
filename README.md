@@ -34,12 +34,15 @@ kolizji pozostają w jednostkach planszy.
 
 Retro wygląd tworzą same grafiki: uproszczone kształty, pikselowy font,
 kolory inspirowane C64 i wybrane dwukolorowe wzory w cieniach.
-Boki butelek w witrynie mają naprzemienne ciemniejsze piksele, a ich
-środki pozostają jednolite. Wzory są częścią tekstur; ekran nie nakłada
+W witrynie stoi po 12 smukłych butelek na każdej z czterech półek.
+Ich boki mają naprzemienne ciemniejsze odcienie tego samego koloru,
+bez czarnych wcięć; środki pozostają jednolite. Auta mają duże plamy
+koloru, proste szyby i pojedyncze refleksy, bez drobnych napisów i detali.
+Wzory są częścią tekstur; ekran nie nakłada
 ditheringu ani nie ogranicza całej klatki do 16 kolorów. Oryginalne odcienie
 tekstur, przezroczystość i wygaszanie podczas pauzy zachowują szczegóły.
-`C64Palette` pozostaje zestawem kolorów świateł radiowozów, opartym na
-[Pepto PAL używanym przez VICE](https://raw.githubusercontent.com/VICE-Team/svn-mirror/main/vice/data/C64/pepto-pal.vpl).
+`C64Palette` dostarcza czerń oprawy i biel małych refleksów belki z palety
+[Pepto PAL używanej przez VICE](https://raw.githubusercontent.com/VICE-Team/svn-mirror/main/vice/data/C64/pepto-pal.vpl).
 
 UI ma układ logiczny 320×180 i zoom 4, rysowany bezpośrednio w buforze
 720p. Napisy zachowują czytelną wielkość i szczegóły fontu bez pośredniego
@@ -59,7 +62,9 @@ pomniejszania do 200 wierszy.
   jednostek wzdłuż drogi. Nowe auto pojawia się za ogonem, bez przesuwania
   pozostałych. Symulacja używa podkroków 5 ms i interpolacji obrazu.
 - Każdy segment ogona jest srebrno-niebieskim radiowozem. Światła na dachu
-  mają dwa stany: niebieski i czerwony, zmieniane co 250 ms. Belka obraca się,
+  mają dwa stany: jaskrawoniebieski i czerwony, zmieniane co 250 ms.
+  Lampy są nieprzezroczystymi blokami 8×12 z małym białym refleksem,
+  więc kolor błysku pozostaje wyraźny. Belka obraca się,
   skaluje i podskakuje razem z autem. Pauza i koniec gry zamrażają światła,
   a RETRY zaczyna od stanu niebieskiego. Auto gracza pozostaje czerwone.
 - Delikatne falowanie ma amplitudę ±1,5 jednostki i ±2°, z okresem 1,2 s.
@@ -204,8 +209,9 @@ Grafiki [samochodu](DUI.Game/Content/Images/car.png) i
 [butelki](DUI.Game/Content/Images/beer-bottle.png) wygenerowano narzędziem
 `image_gen` z przezroczystym tłem. Pełne prompty: [AssetPrompts.json](Docs/AssetPrompts.json).
 [Grafika radiowozu](DUI.Game/Content/Images/police-car.png) to wariant
-oryginalnego auta wygenerowany wbudowanym `image_gen`, z zachowaniem sylwetki
-i przezroczystości. Dach jest pusty w teksturze; światła rysuje kod gry.
+uproszczonego auta wygenerowany wbudowanym `image_gen`, z zachowaniem
+sylwetki, orientacji i przezroczystości. Oba auta mają mniej detali,
+większe bloki koloru oraz prostsze szyby w klimacie C64. Dach jest pusty w teksturze; światła rysuje kod gry.
 
 Aktywny [atlas parkingu C64](DUI.Game/Content/Images/c64-parking-atlas.png) zawiera
 16 kafelków asfaltu, linii, krawężników, trawy, siatki i bramy.
