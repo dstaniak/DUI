@@ -123,11 +123,14 @@ dotnet build DUI.slnx
 dotnet run --project DUI.Tests
 ```
 
-20 testów obejmuje natychmiastową reakcję między kafelkami, wszystkie
+27 testów obejmuje natychmiastową reakcję między kafelkami, wszystkie
 kierunki skrętów, kolejkę, odrzucanie nieprawidłowych poleceń, stałą prędkość,
 interpolację i różne podziały czasu. Sprawdzają odtwarzanie śladu przez
 cztery zakręty, odstępy, wzrost, ograniczenie pamięci historii, ciasny nawrót,
 przecięcie ogona między podkrokami, granice parkingu, pauzę i restart.
+Testy animacji obejmują ograniczone falowanie, wjazd z czterech stron
+oraz po skosie, wybicie i lądowanie, brak ponownego podskoku podczas
+animacji i jazdy po trawie, ponowny wjazd oraz opóźnienie segmentów.
 Pozostają też testy gestów, mapowania ekranu i kolizji z butelkami.
 Program testowy zwraca kod różny od zera, jeśli dowolny test zawiedzie.
 Renderowanie, dźwięk, interakcje Gum i cykl życia aplikacji wymagają też
