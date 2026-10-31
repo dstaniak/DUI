@@ -32,7 +32,9 @@ tak jak w projekcie źródłowym.
   za prowadzącym autem. Każde auto obraca się zgodnie z aktualnym krokiem.
 - Butelka piwa pulsuje, porusza się i odbija od granic parkingu. Jej zebranie
   wywołuje rozprysk złotych kropli i białej piany, dodaje samochód oraz
-  100 punktów. Kolejna butelka pojawia się po przeciwnej stronie parkingu.
+  0,2‰ do wyniku. Licznik zaczyna od `0,0‰` i pokazuje jedną cyfrę po
+  przecinku; cały znak `‰` jest osobnym pikselowym sprite’em.
+  Kolejna butelka pojawia się po przeciwnej stronie parkingu.
   Witryna, ogrodzenie, zamknięta brama lub własna kolumna aut kończą grę.
 - Plansza jest parkingiem pod sklepem z alkoholem i przekąskami. Witryna
   zajmuje dwa górne rzędy; po bokach i na dole jest ogrodzenie z siatki,
@@ -45,7 +47,7 @@ tak jak w projekcie źródłowym.
 - Pulsowanie jest wyłącznie wizualne; rozmiar obszaru kolizji pozostaje stały.
   Pauza zatrzymuje też rozprysk, a RETRY usuwa pozostałe cząsteczki.
 - Escape / Start / Back lub przycisk PAUSE pauzuje grę.
-  RESUME wznawia, RETRY rozpoczyna nową rozgrywkę z wynikiem 0.
+  RESUME wznawia, RETRY rozpoczyna nową rozgrywkę z wynikiem `0,0‰`.
   Przyciski obsługują także Enter / A na padzie.
 - Gest przesunięcia na planszy trafia do tej samej kolejki. Na komputerze
   można go sprawdzić przeciągnięciem lewego przycisku myszy.
@@ -131,3 +133,9 @@ atlasu, dzięki czemu zachowują rozstaw szyn oraz wzór siatki. Na styku jest
 [kątownik](DUI.Game/Content/Images/fence-corner.png) wycięty podczas rysowania
 z grafiki wygenerowanej we wbudowanym `image_gen`. Całe połączenie jest
 odbijane lustrzanie po prawej stronie. Prompt grafiki jest w AssetPrompts.json.
+
+Cały [znak promila](DUI.Game/Content/Images/per-mille.png) jest pojedynczą
+teksturą 42×29 z przezroczystym tłem. Narysowano go jako pikselowe figury
+w [źródłowym SVG](SourceAssets/UI/per-mille.svg) i zrasteryzowano do PNG.
+UI dopasowuje go do skali fontu i przesuwa za liczbą przy zmianie jej szerokości.
+Punktacja używa `decimal`, aby przyrosty o 0,2 były dokładne.

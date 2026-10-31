@@ -26,12 +26,14 @@ public class GameScene : Scene
     private ParkingLot _parkingLot;
     private Rectangle _drivingBounds;
     private SoundEffect _collectSoundEffect;
-    private int _score;
+    // Game points expressed in per mille; decimal keeps each 0.2 step exact.
+    private decimal _scorePermille;
     private GameSceneUI _ui;
     private GameState _state;
     private Effect _grayscaleEffect;
     private float _saturation = 1.0f;
     private const float FadeSpeed = 0.01f;
+    private const decimal BeerScorePermille = 0.2m;
 
     public override void Initialize()
     {
@@ -180,8 +182,8 @@ public class GameScene : Scene
             PositionBottleAwayFromConvoy();
             _bottle.RandomizeVelocity();
             _convoy.Grow();
-            _score += 100;
-            _ui.UpdateScoreText(_score);
+            _scorePermille += BeerScorePermille;
+            _ui.UpdateScoreText(_scorePermille);
             Core.Audio.PlaySoundEffect(_collectSoundEffect);
         }
 
@@ -232,8 +234,8 @@ public class GameScene : Scene
         _bottle.RandomizeVelocity();
         PositionBottleAwayFromConvoy();
 
-        _score = 0;
-        _ui.UpdateScoreText(_score);
+        _scorePermille = 0m;
+        _ui.UpdateScoreText(_scorePermille);
         _ui.HidePausePanel();
         _ui.HideGameOverPanel();
         GameController.ResetPointer();

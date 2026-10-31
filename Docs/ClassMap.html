@@ -11,7 +11,7 @@ wspólne źródła i zasoby, podstawy wejścia dotykowego. Hosty Android/iOS nie
 <a href="#GameScene">GameScene.Initialize</a> → plansza i rozgrywka.</p>
 <p>Host wybiera backend MonoGame. <code>DUI.Game.projitems</code> włącza wspólne źródła
 oraz content do hosta. Core posiada scenę i usługi. GameScene posiada stan sesji,
-wynik, ParkingLot, CarConvoy, BeerBottle, BeerBurst i UI. ParkingLot posiada mapę kafelkową, witrynę i geometrię trawników; tekstury zwalnia ContentManager sceny. SnakeMovement posiada kolejkę i segmenty; UI tylko emituje intencje.</p>
+wynik gry w promilach (decimal), ParkingLot, CarConvoy, BeerBottle, BeerBurst i UI. ParkingLot posiada mapę kafelkową, witrynę i geometrię trawników; tekstury zwalnia ContentManager sceny. SnakeMovement posiada kolejkę i segmenty; UI prezentuje wynik i emituje intencje.</p>
 <h2>Przepływy użytkownika i relacje</h2>
 <ol>
 <li><strong>Skręt:</strong> Core → InputManager (aktualizacja urządzeń); GameScene →
@@ -33,7 +33,9 @@ auta, butelkę, rozprysk i UI.</li>
 <li><strong>Zebranie:</strong> GameScene.CollisionChecks porównuje Circle prowadzącego auta i butelki.
 Przecięcie najpierw wywołuje BeerBurst.Emit w dotychczasowym środku butelki,
 a potem przenosi kolejną butelkę na przeciwną stronę parkingu, resetuje puls i losuje prędkość,
-wywołuje CarConvoy.Grow, dodaje 100 punktów, aktualizuje GameSceneUI i gra dźwięk.</li>
+wywołuje CarConvoy.Grow, dodaje dokładnie 0,2‰ do wyniku decimal, aktualizuje GameSceneUI i gra dźwięk.
+Licznik pokazuje 0,0‰ → 0,2‰ → 0,4‰, zawsze z przecinkiem i jedną cyfrą ułamkową.
+GameSceneUI.UpdateScoreText formatuje liczbę w kulturze pl-PL i ustawia pojedynczy sprite całego znaku ‰ za jej prawą krawędzią.</li>
 <li><strong>Przegrana:</strong> wyjście okręgu głowy poza ParkingLot.DrivingBounds albo zdarzenie
 SnakeMovement.BodyCollision → CarConvoy.BodyCollision → GameScene.GameOver →
 panel GAME OVER. Granice jazdy to x=80–1200, y=160–640:
@@ -41,10 +43,10 @@ witryna zajmuje dwa górne rzędy, ogrodzenie boczne kolumny 0 i 15,
 a dolne wiersz 8. W narożnikach (kolumny 0 i 15, wiersz 8) kątowniki „L” łączą boczne ogrodzenie z dolnym przęsłem. Dwukafelkowa brama (kolumny 7–8) pozostaje zamknięta
 i podlega tej samej granicy co dolne ogrodzenie. Trawniki są przejezdne.
 RETRY → GameSceneUI.RetryButtonClick → InitializeNewGame:
-nowe segmenty i pusta kolejka, pozycja butelki, wynik 0, BeerBurst.Clear.</li>
+nowe segmenty i pusta kolejka, pozycja butelki, wynik 0,0‰, BeerBurst.Clear.</li>
 <li><strong>Pauza:</strong> Escape/Start/Back lub PAUSE → GameScene.Pause.
 RESUME → ResumeButtonClick → stan Playing; Escape również wznawia.
-Pauza zachowuje zaakceptowane ruchy i zeruje rozpoczęty gest. Kliknięcie
+Pauza zachowuje wynik i zaakceptowane ruchy, a zeruje rozpoczęty gest. Kliknięcie
 RESUME lub RETRY nie jest interpretowane jako skręt. Butelka i cząsteczki
 są aktualizowane tylko podczas Playing, więc pauza zatrzymuje puls i rozprysk.</li>
 <li><strong>Tło aplikacji:</strong> DuiGame.OnDeactivated → GameScene.Pause i AudioController.PauseAudio.
@@ -52,6 +54,8 @@ Core nie aktualizuje sceny bez aktywności. OnActivated resetuje licznik czasu i
 rozgrywka czeka na RESUME. To nie zapis stanu po zabiciu procesu przez system.</li>
 <li><strong>Ekran:</strong> DuiGame aktualizuje GameDisplay i skalę Gum.
 SpriteBatch stosuje GameDisplay.Transform; UI uwzględnia marginesy.
+GameSceneUI.PositionPerMilleSymbol ustawia znak bezpośrednio po zmianie wyniku
+oraz przy aktualizacji marginesów; liczba i sprite mają tę samą skalę 0,25 przed zoomem Gum.
 GameController mapuje pozycje myszy/dotyku przez ToGamePosition.
 Kolizje używają zawsze układu 1280 × 720. Rozmiar logiczny aut i butelki to 80;
 obroty i powiększenie aut na trawie oraz puls skali butelki ±13% co 0,8 s nie zmieniają promieni kolizji 40 i 20.</li>
@@ -86,9 +90,9 @@ GameScene.UnloadContent zwalnia teksturę BeerBurst; Core zwalnia scenę, conten
 <tr id="SnakeMovement"><td><a href="../DUI.Game/GameObjects/SnakeMovement.cs">SnakeMovement</a></td><td>Właściciel kolejki dwóch ruchów, segmentów i timera 200 ms. Zgłasza kolizję z ciałem.</td></tr>
 <tr id="SnakeSegment"><td><a href="../DUI.Game/GameObjects/SnakeSegment.cs">SnakeSegment</a></td><td>Przechowuje początek i koniec interpolowanego kroku oraz kierunek segmentu w układzie planszy.</td></tr>
 <tr id="SwipeTracker"><td><a href="../DUI.Game/Input/SwipeTracker.cs">SwipeTracker</a></td><td>Rozpoznaje jeden kierunek na kontakt po przesunięciu o 32 jednostki planszy; pomija marginesy i pasek wyniku.</td></tr>
-<tr id="GameScene"><td><a href="../DUI.Game/Scenes/GameScene.cs">GameScene</a></td><td>Zarządza stanem Playing/Paused/GameOver, zderzeniami, punktami, odrodzeniem butelki wewnątrz granic parkingu, wybuchem piwa i panelami UI. Łączy ParkingLot z rysowaniem CarConvoy i kontrolą kolizji.</td></tr>
+<tr id="GameScene"><td><a href="../DUI.Game/Scenes/GameScene.cs">GameScene</a></td><td>Zarządza stanem Playing/Paused/GameOver, zderzeniami, wynikiem decimal w promilach (0,2 za butelkę, reset do 0), odrodzeniem butelki wewnątrz granic parkingu, wybuchem piwa i panelami UI. Łączy ParkingLot z rysowaniem CarConvoy i kontrolą kolizji.</td></tr>
 <tr id="AnimatedButton"><td><a href="../DUI.Game/UI/AnimatedButton.cs">AnimatedButton</a></td><td>Przycisk Gum z animowanym fokusem i grafiką atlasu, obsługujący mysz, dotyk, klawiaturę i pada.</td></tr>
-<tr id="GameSceneUI"><td><a href="../DUI.Game/UI/GameSceneUI.cs">GameSceneUI</a></td><td>Rysuje wynik, PAUSE, panel pauzy z RESUME i koniec gry z RETRY. Zdarzenia trafiają do GameScene.</td></tr>
+<tr id="GameSceneUI"><td><a href="../DUI.Game/UI/GameSceneUI.cs">GameSceneUI</a></td><td>Formatuje wynik z jedną cyfrą po przecinku (pl-PL), rysuje liczbę przez TextRuntime i cały znak ‰ przez jeden SpriteRuntime z per-mille.png. Dopasowuje pozycję znaku do szerokości liczby i marginesów ekranu. Rysuje PAUSE, panel pauzy z RESUME i koniec gry z RETRY. Zdarzenia trafiają do GameScene.</td></tr>
 </tbody></table>
 <h2>Zasoby parkingu</h2>
 <p><a href="../DUI.Game/Content/Images/tilemap-definition.xml">Definicja mapy</a>
@@ -106,6 +110,12 @@ region (544,510,205,245) jest rysowany jako 14×23 przy pozycji (34,25)
 wewnątrz lewego kafelka narożnego. Prawy narożnik jest odbiciem poziomym
 całego połączenia. Granice jazdy pozostają niezmienione. Prompty nowych grafik są w
 <a href="AssetPrompts.json">AssetPrompts.json</a>.</p>
+<h2>Zasób licznika</h2>
+<p><a href="../DUI.Game/Content/Images/per-mille.png">per-mille.png</a> to cały znak ‰
+w jednej przezroczystej teksturze 42×29. Powstał z ręcznie narysowanych figur w
+<a href="../SourceAssets/UI/per-mille.svg">źródłowym SVG</a>. Content.mgcb buduje teksturę,
+a GameSceneUI wczytuje ją przez ContentManager Gum. Znak uzupełnia font 04b_30,
+który nie zawiera U+2030; nie wymaga składania kilku sprite’ów.</p>
 <h2>Weryfikacja i ograniczenia</h2>
 <p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> zawiera 14 wykonywalnych testów:
 interpolacja i krok 200 ms, dwa skręty, przepełnienie kolejki, zakaz zawracania,
@@ -113,7 +123,7 @@ powtórzenie kierunku, reszta czasu, wzrost, kolizja z ciałem, nowa sesja,
 rozpoznawanie i anulowanie gestu, pomijanie marginesów, mapowanie szerokiego
 oraz pionowego ekranu i okrągłe kolizje. Testy kompilują ten sam model ruchu bez GPU.</p>
 <p>Testy nie zastępują sprawdzenia renderowania, audio, przycisków Gum,
-łączenia kafelków parkingu, witryny, ogrodzenia i bramy, powiększania każdego auta na trawie, pulsowania i zebrania butelki, rozprysku piwa oraz utraty aktywności w uruchomionej aplikacji.
+łączenia kafelków parkingu, witryny, ogrodzenia i bramy, powiększania każdego auta na trawie, pulsowania i zebrania butelki, rozprysku piwa, przyrostów wyniku o 0,2‰ i resetu do 0,0‰, położenia sprite’a przy przejściu 9,8‰ → 10,0‰ oraz utraty aktywności w uruchomionej aplikacji.
 Wersja na fizyczny telefon, safe areas i zachowanie po utracie procesu
 pozostają do zweryfikowania po dodaniu hosta mobilnego.</p>
 <p><a href="../README.md">Uruchamianie, sterowanie i dalsze kroki mobilne</a></p>
