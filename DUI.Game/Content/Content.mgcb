@@ -82,6 +82,17 @@
 /processorParam:TextureFormat=Color
 /build:Images/car.png
 
+#begin Images/police-car.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=False
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Images/police-car.png
+
 #begin Images/beer-bottle.png
 /importer:TextureImporter
 /processor:TextureProcessor

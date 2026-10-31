@@ -9,7 +9,7 @@ namespace DUI.GameObjects;
 /// <summary>Owns the parking layout, lawn height and car hops over its curbs.</summary>
 public sealed class ParkingLot
 {
-    public const int TileSize = 80;
+    public const int TileSize = ParkingGeometry.TileSize;
 
     private readonly Tilemap _tilemap;
     private readonly Texture2D _storefront;
@@ -18,8 +18,11 @@ public sealed class ParkingLot
     private readonly TextureRegion _cornerBracket;
     private readonly Rectangle[] _grassIslands;
 
-    public Rectangle DrivingBounds { get; }
+    public Rectangle DrivingBounds => Geometry.DrivingBounds;
+    public Rectangle BottleBounds => Geometry.BottleBounds;
     public Vector2 StartingPosition { get; }
+    internal ParkingGeometry Geometry { get; }
+    internal ReadOnlySpan<Rectangle> GrassIslands => _grassIslands;
 
     public ParkingLot(ContentManager content)
     {
@@ -42,11 +45,7 @@ public sealed class ParkingLot
         Texture2D corner = content.Load<Texture2D>("Images/fence-corner");
         _cornerBracket = new TextureRegion(corner, 544, 510, 205, 245);
 
-        // The shop occupies two rows. The closed gate stays outside the same
-        // driving bounds as the rest of the bottom fence.
-        DrivingBounds = new Rectangle(
-            TileSize, TileSize * 2,
-            (_tilemap.Columns - 2) * TileSize, (_tilemap.Rows - 3) * TileSize);
+        Geometry = new ParkingGeometry(_tilemap.Columns, _tilemap.Rows);
         StartingPosition = new Vector2(
             _tilemap.Columns / 2 * TileSize, _tilemap.Rows / 2 * TileSize);
 
@@ -80,17 +79,6 @@ public sealed class ParkingLot
         }
 
         return 1.0f;
-    }
-
-    public (float Scale, float Lift) GetCarTransform(SnakeSegment segment, float progress)
-    {
-        Vector2 centerOffset = new(CarConvoy.Size * 0.5f);
-        Vector2 fromCenter = segment.At + centerOffset;
-        Vector2 toCenter = segment.To + centerOffset;
-        Vector2 center = Vector2.Lerp(fromCenter, toCenter, progress);
-        var hop = CarHop.GetTransform(fromCenter, toCenter, progress, _grassIslands);
-
-        return (GetCarScale(center) * hop.Scale, hop.Lift);
     }
 
     public void Draw(SpriteBatch spriteBatch)

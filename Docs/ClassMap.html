@@ -3,7 +3,7 @@
 <title>DUI — mapa klas</title>
 <style>body{font:16px/1.6 system-ui;max-width:1080px;margin:48px auto;padding:0 24px;color:#172338;background:#f6f8fa}a{color:#174ca0}table{border-collapse:collapse;width:100%;background:white}th,td{text-align:left;vertical-align:top;padding:12px 16px;border:1px solid #d9e0e8}code{background:#e6edf4;padding:2px 5px}h1,h2{line-height:1.25}.flow{background:#e6edf4;padding:20px;border-radius:8px}</style>
 <h1>DUI — mapa klas i przepływów</h1>
-<p>Aktualny stan: edukacyjny snake z falującą kolumną aut podskakujących na krawężnikach, pulsującymi butelkami piwa i rozpryskiem piany na parkingu pod sklepem, bez menu głównego. Działający host DesktopGL,
+<p>Aktualny stan: edukacyjna gra z płynnie skręcającą kolumną radiowozów za czerwonym autem gracza, podskakujących na krawężnikach, pulsującymi butelkami piwa i rozpryskiem piany na parkingu pod sklepem, bez menu głównego. Działający host DesktopGL,
 wspólne źródła i zasoby, podstawy wejścia dotykowego. Hosty Android/iOS nie są jeszcze dodane.</p>
 <h2>Start i własność stanu</h2>
 <p class="flow"><a href="../DUI.Desktop/Program.cs">Program</a> →
@@ -11,56 +11,73 @@ wspólne źródła i zasoby, podstawy wejścia dotykowego. Hosty Android/iOS nie
 <a href="#GameScene">GameScene.Initialize</a> → plansza i rozgrywka.</p>
 <p>Host wybiera backend MonoGame. <code>DUI.Game.projitems</code> włącza wspólne źródła
 oraz content do hosta. Core posiada scenę i usługi. GameScene posiada stan sesji,
-wynik gry w promilach (decimal), ParkingLot, CarConvoy, BeerBottle, BeerBurst i UI. ParkingLot posiada mapę kafelkową, witrynę i geometrię trawników; tekstury zwalnia ContentManager sceny. SnakeMovement posiada kolejkę, segmenty i czas rozgrywki; CarSway oblicza wizualne pozycje i orientację aut, a CarHop oblicza chwilową skalę i uniesienie na wjeździe na wyspę; UI prezentuje wynik i emituje intencje.</p>
+wynik gry w promilach (decimal), ParkingLot, CarConvoy, BeerBottle, BeerBurst i UI. ParkingLot posiada mapę kafelkową, witrynę, ParkingGeometry i geometrię trawników; tekstury zwalnia ContentManager sceny. ConvoyMovement posiada kolejkę, pozy aut i czas symulacji; ConvoyTrail przechowuje ograniczoną historię drogi. CarConvoy posiada model, sprite gracza i radiowozu, PoliceLightbar oraz stan CarHop dla każdego auta; CarSway dodaje delikatne falowanie. CarHop wykrywa wjazd przodu na wyspę i oblicza skalę oraz uniesienie; UI prezentuje wynik i emituje intencje.</p>
 <h2>Przepływy użytkownika i relacje</h2>
 <ol>
-<li><strong>Skręt:</strong> Core → InputManager (aktualizacja urządzeń); GameScene →
-GameController.Update/ReadDirection (odczyt klawiatury, pada i SwipeTracker) →
-CarConvoy.QueueDirection → SnakeMovement.QueueDirection (walidacja i przyjęcie).
-Dopiero kolejny krok 200 ms wykonuje ruch. Przykład: podczas jazdy w prawo
-kolejka „góra, lewo” daje dwa skręty na kolejnych polach. SnakeMovement zachowuje
-poprzedni kierunek w każdym segmencie. CarConvoy.Draw → CarSway.GetPose:
-EaseInOutSine wygładza obrót między kierunkami najkrótszym łukiem, sinus
-przesuwa auto o ±5 jednostek w bok, a cosinus dodaje obrót ±6°.
-Cykl trwa 1,2 s; czas segmentu jest opóźniony o jego indeks × 200 ms,
-więc kolejne auta powtarzają falowanie głowy. Nowy, nieruchomy jeszcze ogon
-ma prawidłowy kierunek wejściowy zamiast normalizacji zerowego wektora.
-Przy rysowaniu CarConvoy pyta ParkingLot.GetCarTransform osobno o krok
-każdego auta. ParkingLot łączy skalę trawnika z CarHop.GetTransform;
-sprawdza logiczne środki końców kroku, przed dodaniem falowania i uniesienia.</li>
+<li><strong>Skręt:</strong> Core → InputManager; GameScene → GameController.Update/ReadDirection
+(klawiatura, pad i SwipeTracker) → CarConvoy.QueueDirection → ConvoyMovement.QueueDirection.
+Pierwszy oczekujący skręt rozpoczyna się w następnym podkroku 5 ms, niezależnie od kafelka.
+Auto jedzie 400 px/s; kąt zmienia się o 90° w 160 ms przez EaseInOutSine,
+a pozycja jest całkowana według bieżącego kierunku. Rozpoczęty skręt zawsze się kończy.
+Kolejka mieści dwa oczekujące skręty; kierunek porównuje się z ostatnim celem.
+Powtórzenie, zwrot o 180°, nieprawidłowy kierunek i przepełnienie są odrzucane.
+Sekwencja „prawo → dół → lewo” daje dwa kolejne łuki. ConvoyTrail zapisuje CarPose głowy;
+każdy segment próbkuje ten sam ślad o kolejne 80 px wcześniej.
+CarConvoy.Draw → ConvoyMovement.GetRenderPose interpoluje pozę pomiędzy stanami.
+CarSway.GetPose dodaje ±1,5 px przesunięcia i ±2° obrotu; faza zależy od drogi,
+cykl odpowiada 1,2 s jazdy. Wzrost pobiera starszą pozę, a brakującą historię
+przedłuża wstecz po najstarszej stycznej, bez przesuwania istniejących aut.</li>
+<li><strong>Radiowozy:</strong> GameScene.LoadContent wczytuje car.png i police-car.png.
+CarConvoy.Draw wybiera czerwone auto dla indeksu 0, a radiowóz dla każdego segmentu ogona.
+PoliceLightbar rysuje belkę na dachu radiowozu, w lokalnym punkcie (−6, 0).
+Dwa stany świateł — niebieski i czerwony — zmieniają się co 250 ms według RenderTime.
+Światła używają środka po uniesieniu, obrotu z falowaniem oraz wspólnej skali terenu i podskoku.
+Pauza i koniec gry zamrażają klatkę, a RETRY resetuje czas do niebieskiej.
+Zmiana wyglądu ogona nie zmienia śladu ruchu, odstępów ani kolizji.</li>
 <li><strong>Parking i trawa:</strong> ParkingLot wczytuje tilemap-definition.xml
-z atlasem parking-atlas.png. Nakłada dwie wysepki 2×4 na kolumny 2–3 i 12–13,
-wiersze 3–6 (indeksy od zera). Te same prostokąty służą do ustawiania kafelków
-i obliczania skali. Od krawędzi do połowy kafelka SmoothStep zwiększa skalę
-od 1 do 1,06; wyjazd przywraca ją do 1. Krok z asfaltu na trawę dodatkowo
-uruchamia CarHop: pierwsza połowa kroku podnosi auto przez EaseOutCubic,
-a druga opuszcza je przez EaseInQuad. Szczyt na krawężniku to mnożnik
-1,28 i uniesienie o 12 jednostek planszy; lądowanie następuje po 200 ms
-na środku pierwszego kafelka wyspy. CarConvoy mnoży skalę bazową przez
-skalę terenu i podskoku oraz odejmuje uniesienie od ekranowego Y.
-Kolejne segmenty powtarzają podskok na swoim kroku wjazdowym. Przejazd
-po trawie, wyjazd i nieruchomy ogon nie uruchamiają podskoku.
-Efekt nie zmienia kroku, kolejki ani kolizji; pauza zachowuje fazę i skalę. ParkingLot.Draw rysuje mapę, dwa lustrzane narożniki siatki i witrynę; potem scena rysuje
-auta, butelkę, rozprysk i UI.</li>
+z atlasem parking-atlas.png. Dwie wysepki 2×4 zajmują kolumny 2–3 i 12–13,
+wiersze 3–6. Te same prostokąty układają kafle, wyznaczają skalę przez GetCarScale
+i są udostępniane jako GrassIslands dla animacji. SmoothStep zwiększa skalę
+od 1 do 1,06 na dystansie połowy kafelka od krawędzi.
+Po każdym ConvoyMovement.Stepped, CarConvoy aktualizuje CarHop każdego auta.
+Przód leży 40 px od logicznego środka w kierunku jazdy. Przekroczenie krawężnika
+z asfaltu na trawę rozpoczyna podskok; czas wejścia jest interpolowany wewnątrz podkroku.
+Animacja trwa 200 ms: EaseOutCubic podnosi auto, EaseInQuad opuszcza;
+szczyt to mnożnik skali 1,28 i uniesienie 12 px. CarHop.GetTransform używa
+RenderTime, więc pozostaje zsynchronizowany z rysowaną pozycją.
+Aktywny podskok, jazda po trawie i wyjazd nie uruchamiają kolejnego wybicia;
+opuszczenie wyspy pozwala na następny wjazd. Segmenty podskakują kolejno na własnym przekroczeniu.
+CarConvoy mnoży skalę bazową przez skalę terenu i podskoku oraz odejmuje uniesienie od Y.
+Efekty wizualne nie zmieniają kolizji; pauza zatrzymuje je w bieżącej fazie.
+ParkingLot.Draw rysuje mapę, narożniki i witrynę; scena dodaje auta, butelkę, rozprysk i UI.</li>
 <li><strong>Zebranie:</strong> GameScene.CollisionChecks porównuje Circle prowadzącego auta i butelki.
 Przecięcie najpierw wywołuje BeerBurst.Emit w dotychczasowym środku butelki,
 a potem przenosi kolejną butelkę na przeciwną stronę parkingu, resetuje puls i losuje prędkość,
-wywołuje CarConvoy.Grow, dodaje dokładnie 0,2‰ do wyniku decimal, aktualizuje GameSceneUI i gra dźwięk.
+wywołuje CarConvoy.Grow (nowy radiowóz za ogonem), dodaje dokładnie 0,2‰ do wyniku decimal, aktualizuje GameSceneUI i gra dźwięk.
 Licznik pokazuje 0,0‰ → 0,2‰ → 0,4‰, zawsze z przecinkiem i jedną cyfrą ułamkową.
 GameSceneUI.UpdateScoreText formatuje liczbę w kulturze pl-PL i ustawia pojedynczy sprite całego znaku ‰ za jej prawą krawędzią.</li>
-<li><strong>Przegrana:</strong> wyjście okręgu głowy poza ParkingLot.DrivingBounds albo zdarzenie
-SnakeMovement.BodyCollision → CarConvoy.BodyCollision → GameScene.GameOver →
-panel GAME OVER. Granice jazdy to x=80–1200, y=160–640:
+<li><strong>Przegrana:</strong> kontakt obróconego obrysu głowy z ogrodzeniem, bramą lub witryną albo zdarzenie
+ConvoyMovement.BodyCollision → CarConvoy.BodyCollision → GameScene.GameOver →
+panel GAME OVER. ConvoyCollision bada ruchome okręgi 32 px także pomiędzy końcami podkroku,
+z pominięciem bezpośredniego sąsiada głowy. CarConvoy przekazuje aktualne CarPose do ParkingGeometry.IntersectsBoundary po każdym podkroku
+i zgłasza BoundaryCollision. Obrys auta 74×36 px obraca się razem z kierunkiem;
+jego skrajne punkty są porównywane z granicami ogrodzenia. Osobny prostokąt bramy
+jest sprawdzany na czterech osiach przez ConvoyCollision.IntersectsObstacle,
+aby puste narożniki ramki ukośnego auta nie wywoływały zderzenia. Przezroczyste marginesy tekstury
+nie powiększają kolizji, więc wąski bok po skręcie może bezpiecznie minąć ścianę. Obie kolizje zatrzymują model;
+GameScene przerywa aktualizację przed ruchem butelki, zbieraniem i punktacją. ParkingGeometry dopasowuje granice do metalowych krawędzi grafiki, nie do brzegów kafelków: x=46–1234, y=160–666;
 witryna zajmuje dwa górne rzędy, ogrodzenie boczne kolumny 0 i 15,
 a dolne wiersz 8. W narożnikach (kolumny 0 i 15, wiersz 8) kątowniki „L” łączą boczne ogrodzenie z dolnym przęsłem. Dwukafelkowa brama (kolumny 7–8) pozostaje zamknięta
-i podlega tej samej granicy co dolne ogrodzenie. Trawniki są przejezdne.
+i ma osobny obrys x=560–720, y=654–720. Dzięki temu asfalt przed płotem jest przejezdny,
+a wysunięcie bramy nie blokuje pozostałej części dolnej krawędzi.
+BottleBounds ogranicza prostokątny ruch i odrodzenie butelek do y=654, przed bramą. Trawniki są przejezdne.
 RETRY → GameSceneUI.RetryButtonClick → InitializeNewGame:
-nowe segmenty i pusta kolejka, wyzerowany czas, faza falowania i postęp podskoku, pozycja butelki, wynik 0,0‰, BeerBurst.Clear.</li>
+nowe segmenty i pusta kolejka, wyzerowany czas, niebieska klatka świateł, faza falowania i postęp podskoku, pozycja butelki, wynik 0,0‰, BeerBurst.Clear.</li>
 <li><strong>Pauza:</strong> Escape/Start/Back lub PAUSE → GameScene.Pause.
 RESUME → ResumeButtonClick → stan Playing; Escape również wznawia.
 Pauza zachowuje wynik i zaakceptowane ruchy, a zeruje rozpoczęty gest. Kliknięcie
 RESUME lub RETRY nie jest interpretowane jako skręt. Butelka i cząsteczki
-oraz SnakeMovement są aktualizowane tylko podczas Playing, więc pauza zatrzymuje puls, rozprysk, falowanie i podskoki aut.</li>
+oraz ConvoyMovement są aktualizowane tylko podczas Playing, więc pauza zatrzymuje puls, rozprysk, falowanie, podskoki i światła radiowozów.</li>
 <li><strong>Tło aplikacji:</strong> DuiGame.OnDeactivated → GameScene.Pause i AudioController.PauseAudio.
 Core nie aktualizuje sceny bez aktywności. OnActivated resetuje licznik czasu i wznawia audio;
 rozgrywka czeka na RESUME. To nie zapis stanu po zabiciu procesu przez system.</li>
@@ -70,9 +87,10 @@ GameSceneUI.PositionPerMilleSymbol ustawia znak bezpośrednio po zmianie wyniku
 oraz przy aktualizacji marginesów; liczba i sprite mają tę samą skalę 0,25 przed zoomem Gum.
 GameController mapuje pozycje myszy/dotyku przez ToGamePosition.
 Kolizje używają zawsze układu 1280 × 720. Rozmiar logiczny aut i butelki to 80;
-falowanie, obroty, podskoki i powiększenie aut na trawie oraz puls skali butelki ±13% co 0,8 s nie zmieniają promieni kolizji 40 i 20.</li>
+falowanie, podskoki, powiększenie aut i puls butelki nie zmieniają geometrii kolizji. Ściany używają obróconego obrysu auta 74×36 px; promienie to 40 dla głowy przy zbieraniu, 20 dla butelki oraz 32 dla kolizji aut z ogonem.</li>
 <li><strong>Wyjście:</strong> systemowy przycisk zamyka okno desktopowe.
-GameScene.UnloadContent zwalnia teksturę BeerBurst; Core zwalnia scenę, content, audio i SpriteBatch. Brak powrotu do ekranu tytułowego.</li>
+GameScene.UnloadContent zwalnia teksturę BeerBurst i wywołuje CarConvoy.Dispose,
+które zwalnia teksturę PoliceLightbar; Core zwalnia scenę, content, audio i SpriteBatch. Brak powrotu do ekranu tytułowego.</li>
 </ol>
 <h2>Klasy i typy</h2>
 <table><thead><tr><th>Typ i źródło</th><th>Odpowiedzialność</th></tr></thead><tbody>
@@ -97,18 +115,29 @@ GameScene.UnloadContent zwalnia teksturę BeerBurst; Core zwalnia scenę, conten
 <tr id="GameController"><td><a href="../DUI.Game/GameController.cs">GameController</a></td><td>Łączy klawiaturę, pada i gesty w jeden kierunek przekazywany do kolejki; obsługuje pauzę.</td></tr>
 <tr id="BeerBurst"><td><a href="../DUI.Game/GameObjects/BeerBurst.cs">BeerBurst</a></td><td>Emituje 44 krople i kłęby piany w miejscu zebrania butelki. Cząsteczki zanikają po 0,5–0,75 s; limit to 176. Posiada i zwalnia teksturę jednego piksela. Stan Particle zawiera pozycję, prędkość, wiek, czas życia, rozmiar, kolor i rodzaj cząsteczki.</td></tr>
 <tr id="BeerBottle"><td><a href="../DUI.Game/GameObjects/BeerBottle.cs">BeerBottle</a></td><td>Porusza butelkę o 0,5 jednostki na aktualizację, odbija ją i pulsuje skalą wokół środka. Kolizje mają stały promień 20.</td></tr>
-<tr id="CarHop"><td><a href="../DUI.Game/GameObjects/CarHop.cs">CarHop</a></td><td>Oblicza pojedynczy podskok na kroku z asfaltu na wyspę. Porównuje środki pól z prostokątami trawy, a z postępu kroku wyznacza mnożnik skali 1–1,28 oraz uniesienie 0–12 jednostek. EaseOutCubic steruje wybiciem, EaseInQuad lądowaniem. Brak własnego timera: pauza, restart i opóźnienie segmentów wynikają z modelu ruchu.</td></tr>
-<tr id="CarSway"><td><a href="../DUI.Game/GameObjects/CarSway.cs">CarSway</a></td><td>Czyste obliczenie wizualnej pozycji i obrotu auta. Korzysta z czasu i kroku SnakeMovement oraz poprzedniego i aktualnego kierunku segmentu. Sinus daje przesunięcie ±5 px, cosinus obrót ±6°, a opóźnienie wynosi indeks segmentu × 200 ms. EaseInOutSine wygładza skręty. Nie zmienia modelu ruchu ani kolizji.</td></tr>
+<tr id="CarHop"><td><a href="../DUI.Game/GameObjects/CarHop.cs">CarHop</a></td><td>Stan pojedynczego podskoku auta. Advance wykrywa przekroczenie krawężnika przez przód na podstawie dwóch kolejnych CarPose i prostokątów trawy. Zapamiętuje czas startu oraz gotowość do ponownego wjazdu. GetTransform(RenderTime) zwraca mnożnik 1–1,28 i uniesienie 0–12 px przez 200 ms. EaseOutCubic steruje wybiciem, EaseInQuad lądowaniem.</td></tr>
+<tr id="CarSway"><td><a href="../DUI.Game/GameObjects/CarSway.cs">CarSway</a></td><td>Czysta funkcja CarPose → CarPose dodająca wizualne przesunięcie ±1,5 px i obrót ±2°. Faza zależy od drogi, więc segment powtarza falowanie głowy; okres odpowiada 1,2 s. Nie zmienia modelu ani kolizji.</td></tr>
 <tr id="Easings"><td><a href="../DUI.Game/Framework/Easings.cs">Easings</a></td><td>31 statycznych funkcji float → float: Linear i 30 krzywych z easings.net. Postęp wejściowy 0–1; Back i Elastic zachowują wychylenia poza ten zakres. EaseInOutSine wygładza orientację aut, a EaseOutCubic i EaseInQuad sterują wybiciem i lądowaniem.</td></tr>
-<tr id="CarConvoy"><td><a href="../DUI.Game/GameObjects/CarConvoy.cs">CarConvoy</a></td><td>Rysuje segmenty jako samochody z pozycji i obrotów wyznaczonych przez CarSway; pobiera skalę i uniesienie z ParkingLot.GetCarTransform. Łączy falowanie z pionowym podskokiem, niezależnym od kierunku jazdy. Przy każdym rysowaniu mnoży skalę bazową, więc efekt się nie kumuluje. Korzysta ze SnakeMovement i stałego okręgu kolizji prowadzącego auta.</td></tr>
-<tr id="ParkingLot"><td><a href="../DUI.Game/GameObjects/ParkingLot.cs">ParkingLot</a></td><td>Posiada Tilemap, witrynę, regiony pionowego i poziomego przęsła oraz kątownika, a także dwa symetryczne prostokąty trawy. DrawFenceCorners składa oba połączenia z tych samych fragmentów, z odbiciem poziomym po prawej. DrawFenceCorner najpierw rysuje poziome półprzęsło, potem górny odcinek pionowy, a na końcu kątownik; tło kafelków nie zasłania wtedy siatki. Ustala logiczny kafelek 80×80, punkt startu i granice jazdy. Te same prostokąty układają kafle wysepek, wyznaczają stałe powiększenie auta do 106% i wykrywają wjazd dla CarHop. GetCarTransform łączy skalę terenu z mnożnikiem podskoku oraz zwraca uniesienie; GetCarScale oblicza samą skalę terenu.</td></tr>
-<tr id="SnakeMovement"><td><a href="../DUI.Game/GameObjects/SnakeMovement.cs">SnakeMovement</a></td><td>Właściciel kolejki dwóch ruchów, segmentów, timera kroku 200 ms oraz czasu rozgrywki. Przenosi poprzedni kierunek wraz z historią kroku, udostępnia czas dla CarSway i zgłasza kolizję z ciałem.</td></tr>
-<tr id="SnakeSegment"><td><a href="../DUI.Game/GameObjects/SnakeSegment.cs">SnakeSegment</a></td><td>Przechowuje początek i koniec interpolowanego kroku oraz poprzedni i aktualny kierunek segmentu w układzie planszy.</td></tr>
+<tr id="CarConvoy"><td><a href="../DUI.Game/GameObjects/CarConvoy.cs">CarConvoy</a></td><td>Łączy ConvoyMovement z renderowaniem i ParkingLot. Posiada stan CarHop oraz poprzednią pozę każdego auta. Po każdym podkroku aktualizuje podskoki i sprawdza ogrodzenie i bramę przez ParkingGeometry na podstawie środka oraz obrotu głowy. Draw pobiera interpolowaną pozę, dodaje CarSway, skalę trawnika i podskok. Indeks 0 rysuje autem gracza, pozostałe radiowozem ze światłami PoliceLightbar. Dispose zwalnia zasób belki; tekstury samochodów należą do ContentManager. Przekazuje BodyCollision i BoundaryCollision do sceny; GetBounds zachowuje promień 40 px dla zbierania butelek.</td></tr>
+<tr id="PoliceLightbar"><td><a href="../DUI.Game/GameObjects/PoliceLightbar.cs">PoliceLightbar</a></td><td>Rysuje pikselową belkę świetlną w lokalnych współrzędnych radiowozu. Dokładnie dwie klatki: niebieska i czerwona po 250 ms, wyznaczane z RenderTime modelu. Współdzieli obrót, skalę i uniesienie auta. Posiada teksturę jednego białego piksela; CarConvoy.Dispose ją zwalnia.</td></tr>
+<tr id="ParkingLot"><td><a href="../DUI.Game/GameObjects/ParkingLot.cs">ParkingLot</a></td><td>Posiada Tilemap, witrynę, regiony ogrodzenia i geometrię dwóch wysp trawy. DrawFenceCorners składa lustrzane narożniki z poziomego półprzęsła, pionowego odcinka i kątownika. Ustala kafelek 80×80, początek gry oraz ParkingGeometry; udostępnia DrivingBounds i BottleBounds. GrassIslands udostępnia nieedytowalny widok prostokątów dla CarHop; GetCarScale oblicza powiększenie terenu do 106%.</td></tr>
+<tr id="ParkingGeometry"><td><a href="../DUI.Game/GameObjects/ParkingGeometry.cs">ParkingGeometry</a></td><td>Geometria kolizji zgodna z grafiką parkingu w skali kafelka 80×80. DrivingBounds sięga do wewnętrznych krawędzi płotu; GateBounds opisuje wysuniętą zamkniętą bramę. IntersectsBoundary sprawdza oba obszary przez ConvoyCollision. BottleBounds wyznacza prostokątny obszar odbić i odrodzeń butelek, kończący się przed bramą.</td></tr>
+<tr id="ConvoyMovement"><td><a href="../DUI.Game/GameObjects/ConvoyMovement.cs">ConvoyMovement</a></td><td>Model płynnej jazdy: 400 px/s, skręt 90° w 160 ms przez EaseInOutSine, dwa oczekujące kierunki. Podkroki 5 ms, zachowanie reszty czasu i interpolacja obrazu. Cars udostępnia aktualne CarPose, GetRenderPose pozy do rysowania. Auta odtwarzają ślad w odstępach 80 px. Stepped synchronizuje teren i granice, BodyCollision zatrzymuje symulację. Stop przerywa także pozostałą część aktualizacji.</td></tr>
+<tr id="CarPose"><td><a href="../DUI.Game/GameObjects/CarPose.cs">CarPose</a></td><td>Niezmienny środek auta w pikselach planszy, obrót w radianach oraz droga wzdłuż śladu głowy. Interpolacja uwzględnia zawijanie kąta.</td></tr>
+<tr id="ConvoyTrail"><td><a href="../DUI.Game/GameObjects/ConvoyTrail.cs">ConvoyTrail</a></td><td>Historia pozycji głowy indeksowana odległością. Wyszukiwanie binarne i interpolacja dla segmentów; zachowuje długość kolumny oraz zapas dla nowego auta. Kompaktuje bufor partiami. Brakujący początek historii przedłuża wstecz wzdłuż najstarszego kierunku.</td></tr>
+<tr id="ConvoyCollision"><td><a href="../DUI.Game/GameObjects/ConvoyCollision.cs">ConvoyCollision</a></td><td>Przecięcie ruchomych okręgów aut o promieniu 32 px w przestrzeni względnej, także między końcami podkroku. Granice parkingu sprawdza dla obróconego obrysu auta 74×36 px. IsOutsideParking przyjmuje CarPose, a skrajne współrzędne zależą od długości, szerokości oraz aktualnego kąta auta. IntersectsObstacle sprawdza obrócone auto i prostokąt bramy na czterech osiach separacji.</td></tr>
 <tr id="SwipeTracker"><td><a href="../DUI.Game/Input/SwipeTracker.cs">SwipeTracker</a></td><td>Rozpoznaje jeden kierunek na kontakt po przesunięciu o 32 jednostki planszy; pomija marginesy i pasek wyniku.</td></tr>
-<tr id="GameScene"><td><a href="../DUI.Game/Scenes/GameScene.cs">GameScene</a></td><td>Zarządza stanem Playing/Paused/GameOver, zderzeniami, wynikiem decimal w promilach (0,2 za butelkę, reset do 0), odrodzeniem butelki wewnątrz granic parkingu, wybuchem piwa i panelami UI. Łączy ParkingLot z rysowaniem CarConvoy i kontrolą kolizji.</td></tr>
+<tr id="GameScene"><td><a href="../DUI.Game/Scenes/GameScene.cs">GameScene</a></td><td>Zarządza stanem Playing/Paused/GameOver, zderzeniami, wynikiem decimal w promilach (0,2 za butelkę, reset do 0), odrodzeniem i odbiciami butelki wewnątrz ParkingLot.BottleBounds, wybuchem piwa i panelami UI. Łączy ParkingLot z rysowaniem CarConvoy i kontrolą kolizji.</td></tr>
 <tr id="AnimatedButton"><td><a href="../DUI.Game/UI/AnimatedButton.cs">AnimatedButton</a></td><td>Przycisk Gum z animowanym fokusem i grafiką atlasu, obsługujący mysz, dotyk, klawiaturę i pada.</td></tr>
 <tr id="GameSceneUI"><td><a href="../DUI.Game/UI/GameSceneUI.cs">GameSceneUI</a></td><td>Formatuje wynik z jedną cyfrą po przecinku (pl-PL), rysuje liczbę przez TextRuntime i cały znak ‰ przez jeden SpriteRuntime z per-mille.png. Dopasowuje pozycję znaku do szerokości liczby i marginesów ekranu. Rysuje PAUSE, panel pauzy z RESUME i koniec gry z RETRY. Zdarzenia trafiają do GameScene.</td></tr>
 </tbody></table>
+<h2>Zasoby samochodów</h2>
+<p>Gracz używa <a href="../DUI.Game/Content/Images/car.png">car.png</a>, a ogon
+<a href="../DUI.Game/Content/Images/police-car.png">police-car.png</a>.
+Wariant radiowozu powstał przez edycję oryginalnego sprite’a wbudowanym image_gen;
+zachowuje rozmiar, orientację i przezroczyste tło. Światła nie są zapisane w teksturze:
+PoliceLightbar nakłada na pusty dach animację z dwóch stanów.
+Pełny prompt i źródło referencyjne są w <a href="AssetPrompts.json">AssetPrompts.json</a>.</p>
 <h2>Zasoby parkingu</h2>
 <p><a href="../DUI.Game/Content/Images/tilemap-definition.xml">Definicja mapy</a>
 wykorzystuje <a href="../DUI.Game/Content/Images/parking-atlas.png">atlas 4×4</a>:
@@ -123,7 +152,9 @@ pasują do prostych przęseł. Tylko metalowy kątownik pochodzi z
 <a href="../DUI.Game/Content/Images/fence-corner.png">osobnej grafiki</a>:
 region (544,510,205,245) jest rysowany jako 14×23 przy pozycji (34,25)
 wewnątrz lewego kafelka narożnego. Prawy narożnik jest odbiciem poziomym
-całego połączenia. Granice jazdy pozostają niezmienione. Prompty nowych grafik są w
+całego połączenia. ParkingGeometry uwzględnia położenie metalu wewnątrz kafelków:
+boczne krawędzie są odsunięte o 46 px od boków planszy, poziome przęsło
+zaczyna się 26 px poniżej początku dolnego rzędu, a brama 14 px poniżej. Prompty nowych grafik są w
 <a href="AssetPrompts.json">AssetPrompts.json</a>.</p>
 <h2>Zasób licznika</h2>
 <p><a href="../DUI.Game/Content/Images/per-mille.png">per-mille.png</a> to cały znak ‰
@@ -132,13 +163,28 @@ w jednej przezroczystej teksturze 42×29. Powstał z ręcznie narysowanych figur
 a GameSceneUI wczytuje ją przez ContentManager Gum. Znak uzupełnia font 04b_30,
 który nie zawiera U+2030; nie wymaga składania kilku sprite’ów.</p>
 <h2>Weryfikacja i ograniczenia</h2>
-<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> zawiera 23 wykonywalne testy:
-interpolacja i krok 200 ms, dwa skręty, przepełnienie kolejki, zakaz zawracania,
-powtórzenie kierunku, reszta czasu, wzrost, kolizja z ciałem, nowa sesja,
-rozpoznawanie i anulowanie gestu, pomijanie marginesów, mapowanie szerokiego
-oraz pionowego ekranu i okrągłe kolizje. Pięć testów falowania sprawdza rzeczywiste pozycje i obroty CarSway, opóźnienie segmentów przez cztery zakręty, ciągłość skrętów, pauzę, restart, niezależność od czasu klatki oraz skończone wartości po wzroście. Cztery testy podskoku obejmują wejście z każdej strony, granice skali i wysokości, brak podskoków wewnątrz wyspy i na wyjeździe, kolejność segmentów, pauzę, restart oraz niezależność od długości klatki. Testy kompilują ten sam model ruchu, CarSway, CarHop i Easings bez GPU.</p>
+<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> uruchamia 34 testy bez GPU.
+<a href="../DUI.Tests/MovementTests.cs">MovementTests</a> sprawdza natychmiastowy skręt,
+cztery kierunki, stałą prędkość, kolejkę, odrzucanie zwrotu i powtórzeń,
+resztę czasu, interpolację, ślad przez cztery zakręty, odstępy, wzrost,
+ograniczenie historii, ciasny nawrót, kolizje między końcami podkroku,
+granice parkingu, zatrzymanie, pauzę i restart.
+<a href="../DUI.Tests/CarAnimationTests.cs">CarAnimationTests</a> sprawdza granice falowania,
+podskok z czterech stron i po skosie, aktywną animację, jazdę po trawie i wyjazd,
+ponowne uzbrojenie po opuszczeniu wyspy, opóźnienie segmentów na zakręcie,
+pauzę, restart i niezależność od podziału czasu. Pozostałe testy obejmują gesty,
+mapowanie ekranu oraz Circle. Trzy testy w <a href="../DUI.Tests/WallCollisionTests.cs">WallCollisionTests</a>
+odtwarzają fałszywe zderzenie przy ciasnym skręcie i sprawdzają przejazd kolumny
+przy wszystkich czterech ścianach, skrajne boki i narożniki obróconego auta
+oraz zatrzymanie przy rzeczywistym kontakcie podczas skrętu.
+Korzystają z tych samych granic ParkingGeometry co gra. Cztery testy w
+<a href="../DUI.Tests/ParkingGeometryTests.cs">ParkingGeometryTests</a>
+sprawdzają jazdę po asfalcie wewnątrz kafelków płotu, brak fałszywej kolizji
+przy mijaniu narożników bramy ukośnym autem, osobne krawędzie bramy i przęsła
+oraz obszar odbić i odrodzenia butelek przed zamkniętą bramą.
+Testy kompilują te same źródła modelu co gra.</p>
 <p>Testy nie zastępują sprawdzenia renderowania, audio, przycisków Gum,
-łączenia kafelków parkingu, witryny, ogrodzenia i bramy, falowania aut i opóźnienia segmentów, powiększania każdego auta na trawie i podskoków przy wjeździe, pulsowania i zebrania butelki, rozprysku piwa, przyrostów wyniku o 0,2‰ i resetu do 0,0‰, położenia sprite’a przy przejściu 9,8‰ → 10,0‰ oraz utraty aktywności w uruchomionej aplikacji.
+łączenia kafelków parkingu, witryny, ogrodzenia i bramy, falowania aut i opóźnienia segmentów, radiowozów w ogonie i dwóch kolorów świateł na obracającym się dachu, powiększania każdego auta na trawie i podskoków przy wjeździe, pulsowania i zebrania butelki, rozprysku piwa, przyrostów wyniku o 0,2‰ i resetu do 0,0‰, położenia sprite’a przy przejściu 9,8‰ → 10,0‰ oraz utraty aktywności w uruchomionej aplikacji.
 Wersja na fizyczny telefon, safe areas i zachowanie po utracie procesu
 pozostają do zweryfikowania po dodaniu hosta mobilnego.</p>
 <p><a href="../README.md">Uruchamianie, sterowanie i dalsze kroki mobilne</a></p>
