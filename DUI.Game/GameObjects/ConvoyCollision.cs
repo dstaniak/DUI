@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 
 namespace DUI.GameObjects;
@@ -19,10 +20,20 @@ internal static class ConvoyCollision
         return separation.LengthSquared() < combinedRadius * combinedRadius;
     }
 
-    public static bool IsOutsideParking(Vector2 center, Rectangle bounds)
+    /// <summary>Tests the rotated car footprint against the playable area.</summary>
+    public static bool IsOutsideParking(CarPose pose, Rectangle bounds)
     {
-        const float radius = 40f;
-        return center.X - radius < bounds.Left || center.X + radius > bounds.Right ||
-            center.Y - radius < bounds.Top || center.Y + radius > bounds.Bottom;
+        // The 80x80 texture includes transparent padding: the body is about 74x36 pixels.
+        // A fixed circle leaves invisible sides after a turn and catches a cleared wall.
+        const float halfLength = 37f;
+        const float halfWidth = 18f;
+        Vector2 direction = pose.Direction;
+        float forwardX = MathF.Abs(direction.X);
+        float forwardY = MathF.Abs(direction.Y);
+        float extentX = forwardX * halfLength + forwardY * halfWidth;
+        float extentY = forwardY * halfLength + forwardX * halfWidth;
+
+        return pose.Center.X - extentX < bounds.Left || pose.Center.X + extentX > bounds.Right ||
+            pose.Center.Y - extentY < bounds.Top || pose.Center.Y + extentY > bounds.Bottom;
     }
 }

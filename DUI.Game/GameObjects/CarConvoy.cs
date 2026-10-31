@@ -97,7 +97,7 @@ public sealed class CarConvoy
             _previousPoses[i] = pose;
         }
 
-        if (ConvoyCollision.IsOutsideParking(_movement.Cars[0].Center, _parkingLot.DrivingBounds))
+        if (ConvoyCollision.IsOutsideParking(_movement.Cars[0], _parkingLot.DrivingBounds))
         {
             _movement.Stop();
             BoundaryCollision?.Invoke(this, EventArgs.Empty);

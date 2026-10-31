@@ -39,7 +39,9 @@ tak jak w projekcie źródłowym.
   To efekt wizualny; pauza go zatrzymuje, a RETRY zeruje fazę.
 - Kolizje z ogonem używają ruchomych okręgów o promieniu 32, z pominięciem
   bezpośredniego sąsiada głowy. Są sprawdzane także pomiędzy końcami podkroku.
-  Granice parkingu i zbieranie butelek zachowują promień głowy 40.
+  Przy ścianach sprawdzany jest obrys auta 74×36, obracany razem z jego
+  kierunkiem, bez przezroczystego marginesu tekstury. Zbieranie butelek
+  zachowuje promień głowy 40.
 - Butelka piwa pulsuje, porusza się i odbija od granic parkingu. Jej zebranie
   wywołuje rozprysk złotych kropli i białej piany, dodaje samochód oraz
   0,2‰ do wyniku. Licznik zaczyna od `0,0‰` i pokazuje jedną cyfrę po

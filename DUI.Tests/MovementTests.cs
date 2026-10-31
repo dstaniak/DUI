@@ -21,7 +21,7 @@ internal static class MovementTests
         ("A tight two-turn reversal does not collide with connected cars", TightReversal),
         ("Crossing the tail stops once and discards remaining simulation time", BodyCollision),
         ("Moving circles detect crossings between separated endpoints", SweptCollision),
-        ("Parking boundaries retain the head's 40 pixel radius", ParkingBounds),
+        ("Parking boundaries use the car footprint and stop the current update", ParkingBounds),
         ("Pause and restart preserve or clear the complete movement state", PauseAndRestart)
     ];
 
@@ -262,19 +262,19 @@ internal static class MovementTests
     private static void ParkingBounds()
     {
         Rectangle bounds = new(80, 160, 1120, 480);
-        foreach (Vector2 center in new[] { new Vector2(120, 200), new Vector2(1160, 600) })
+        foreach (Vector2 center in new[] { new Vector2(117, 178), new Vector2(1163, 622) })
         {
-            Check(!ConvoyCollision.IsOutsideParking(center, bounds));
+            Check(!ConvoyCollision.IsOutsideParking(new CarPose(center, 0f, 0), bounds));
         }
-        foreach (Vector2 center in new[] { new Vector2(119.9f, 300), new Vector2(1160.1f, 300),
-            new Vector2(500, 199.9f), new Vector2(500, 600.1f) })
+        foreach (Vector2 center in new[] { new Vector2(116.9f, 300), new Vector2(1163.1f, 300),
+            new Vector2(500, 177.9f), new Vector2(500, 622.1f) })
         {
-            Check(ConvoyCollision.IsOutsideParking(center, bounds));
+            Check(ConvoyCollision.IsOutsideParking(new CarPose(center, 0f, 0), bounds));
         }
-        var movement = new ConvoyMovement(new Vector2(1159, 300));
+        var movement = new ConvoyMovement(new Vector2(1162, 300));
         movement.Stepped += (_, _) =>
         {
-            if (ConvoyCollision.IsOutsideParking(movement.Cars[0].Center, bounds))
+            if (ConvoyCollision.IsOutsideParking(movement.Cars[0], bounds))
             {
                 movement.Stop();
             }
