@@ -8,6 +8,7 @@
     <Compile Include="../DUI.Game/GameObjects/ConvoyMovement.cs" Link="ConvoyMovement.cs" />
     <Compile Include="../DUI.Game/GameObjects/ConvoyTrail.cs" Link="ConvoyTrail.cs" />
     <Compile Include="../DUI.Game/GameObjects/ConvoyCollision.cs" Link="ConvoyCollision.cs" />
+    <Compile Include="../DUI.Game/GameObjects/ParkingGeometry.cs" Link="ParkingGeometry.cs" />
     <Compile Include="../DUI.Game/GameObjects/CarPose.cs" Link="CarPose.cs" />
     <Compile Include="../DUI.Game/GameObjects/CarSway.cs" Link="CarSway.cs" />
     <Compile Include="../DUI.Game/GameObjects/CarHop.cs" Link="CarHop.cs" />

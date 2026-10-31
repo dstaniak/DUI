@@ -7,7 +7,8 @@ namespace DUI.Tests;
 
 internal static class WallCollisionTests
 {
-    private static readonly Rectangle s_bounds = new(80, 160, 1120, 480);
+    private static readonly ParkingGeometry s_parking = new(16, 9);
+    private static readonly Rectangle s_bounds = s_parking.DrivingBounds;
 
     public static readonly (string Name, Action Run)[] Cases =
     [
@@ -20,10 +21,10 @@ internal static class WallCollisionTests
     {
         var cases = new (Vector2 Start, Vector2 Approach, Vector2 Turn)[]
         {
-            (new(155, 500), -Vector2.UnitX, -Vector2.UnitY),
-            (new(1125, 500), Vector2.UnitX, -Vector2.UnitY),
-            (new(500, 235), -Vector2.UnitY, Vector2.UnitX),
-            (new(500, 565), Vector2.UnitY, Vector2.UnitX)
+            (new(s_bounds.Left + 75, 500), -Vector2.UnitX, -Vector2.UnitY),
+            (new(s_bounds.Right - 75, 500), Vector2.UnitX, -Vector2.UnitY),
+            (new(500, s_bounds.Top + 75), -Vector2.UnitY, Vector2.UnitX),
+            (new(200, s_bounds.Bottom - 75), Vector2.UnitY, Vector2.UnitX)
         };
         foreach (var scenario in cases)
         {
@@ -34,7 +35,7 @@ internal static class WallCollisionTests
             }
             movement.Stepped += (_, _) =>
             {
-                if (ConvoyCollision.IsOutsideParking(movement.Cars[0], s_bounds))
+                if (s_parking.IntersectsBoundary(movement.Cars[0]))
                 {
                     movement.Stop();
                 }
@@ -88,8 +89,8 @@ internal static class WallCollisionTests
             {
                 CarPose inside = new(contact.Center - contact.Outward * 0.01f, orientation.Angle, 0);
                 CarPose outside = new(contact.Center + contact.Outward * 0.1f, orientation.Angle, 0);
-                Assert.Check(!ConvoyCollision.IsOutsideParking(inside, s_bounds));
-                Assert.Check(ConvoyCollision.IsOutsideParking(outside, s_bounds));
+                Assert.Check(!s_parking.IntersectsBoundary(inside));
+                Assert.Check(s_parking.IntersectsBoundary(outside));
             }
         }
     }
@@ -98,18 +99,18 @@ internal static class WallCollisionTests
     {
         var cases = new (Vector2 Start, Vector2 Approach, Vector2 Turn)[]
         {
-            (new(99, 400), -Vector2.UnitY, -Vector2.UnitX),
-            (new(1181, 400), -Vector2.UnitY, Vector2.UnitX),
-            (new(500, 179), Vector2.UnitX, -Vector2.UnitY),
-            (new(500, 621), Vector2.UnitX, Vector2.UnitY)
+            (new(s_bounds.Left + 19, 400), -Vector2.UnitY, -Vector2.UnitX),
+            (new(s_bounds.Right - 19, 400), -Vector2.UnitY, Vector2.UnitX),
+            (new(500, s_bounds.Top + 19), Vector2.UnitX, -Vector2.UnitY),
+            (new(500, s_bounds.Bottom - 19), Vector2.UnitX, Vector2.UnitY)
         };
         foreach (var scenario in cases)
         {
             ConvoyMovement movement = CreateApproach(scenario.Start, scenario.Approach);
-            Assert.Check(!ConvoyCollision.IsOutsideParking(movement.Cars[0], s_bounds));
+            Assert.Check(!s_parking.IntersectsBoundary(movement.Cars[0]));
             movement.Stepped += (_, _) =>
             {
-                if (ConvoyCollision.IsOutsideParking(movement.Cars[0], s_bounds))
+                if (s_parking.IntersectsBoundary(movement.Cars[0]))
                 {
                     movement.Stop();
                 }
@@ -119,7 +120,7 @@ internal static class WallCollisionTests
             movement.Update(ConvoyMovement.TurnDuration);
             Assert.Check(movement.HasStopped);
             Assert.Check(movement.ElapsedTime - startTime < ConvoyMovement.TurnDuration);
-            Assert.Check(ConvoyCollision.IsOutsideParking(movement.Cars[0], s_bounds));
+            Assert.Check(s_parking.IntersectsBoundary(movement.Cars[0]));
         }
     }
 

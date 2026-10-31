@@ -15,7 +15,11 @@ var tests = new (string Name, Action Run)[]
     ("Cancelling a swipe cannot steer after resume", CancelSwipe),
     ("Wide and portrait screens preserve geometry and input mapping", DisplayMapping),
     ("Circle contact uses the strict intersection rule", CircleCollision)
-}.Concat(MovementTests.Cases).Concat(CarAnimationTests.Cases).Concat(WallCollisionTests.Cases).ToArray();
+}.Concat(MovementTests.Cases)
+    .Concat(CarAnimationTests.Cases)
+    .Concat(WallCollisionTests.Cases)
+    .Concat(ParkingGeometryTests.Cases)
+    .ToArray();
 
 int failures = 0;
 foreach (var test in tests)
