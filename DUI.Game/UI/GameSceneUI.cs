@@ -47,6 +47,8 @@ public class GameSceneUI : ContainerRuntime
 
         _pauseButton = new AnimatedButton(atlas);
         _pauseButton.Text = "PAUSE";
+        // Fit the 48-pixel shop fascia at the UI camera's 4x zoom.
+        _pauseButton.Visual.Height = 10;
         _pauseButton.Anchor(Gum.Wireframe.Anchor.TopRight);
         _pauseButton.Click += OnPauseButtonClicked;
         AddChild(_pauseButton);
@@ -96,13 +98,11 @@ public class GameSceneUI : ContainerRuntime
 
     public void Update(GameTime gameTime)
     {
-        float zoom = Core.Display.Scale * 4.0f;
-        Vector2 margin = Core.Display.Offset / zoom;
-        _scoreText.X = 20 + margin.X;
-        _scoreText.Y = 5 + margin.Y;
+        _scoreText.X = 20;
+        _scoreText.Y = 4;
         PositionPerMilleSymbol();
-        _pauseButton.X = -20 - margin.X;
-        _pauseButton.Y = 2 + margin.Y;
+        _pauseButton.X = -20;
+        _pauseButton.Y = 1;
         Gum.GumService.Default.Update(gameTime);
     }
 
@@ -117,7 +117,7 @@ public class GameSceneUI : ContainerRuntime
         text.Anchor(Gum.Wireframe.Anchor.TopLeft);
         text.WidthUnits = DimensionUnitType.RelativeToChildren;
         text.X = 20.0f;
-        text.Y = 5.0f;
+        text.Y = 4.0f;
         text.UseCustomFont = true;
         text.CustomFontFile = "Fonts/04b_30.fnt";
         text.FontScale = 0.25f;
@@ -150,7 +150,7 @@ public class GameSceneUI : ContainerRuntime
     private void PositionPerMilleSymbol()
     {
         // Reposition immediately when the number changes width (e.g. 9,8→10,0),
-        // and again when Update applies display margins.
+        // and again when Update applies the logical HUD position.
         _perMilleSymbol.X = _scoreText.X + _scoreText.AbsoluteWidth + 1;
         _perMilleSymbol.Y = _scoreText.Y + 0.5f;
     }

@@ -14,7 +14,7 @@ internal sealed class ParkingGeometry
     public ParkingGeometry(int columns, int rows)
     {
         // The fence occupies only part of its tile. These offsets follow the
-        // inner metal edges in parking-atlas.png at the 80x80 drawing scale.
+        // inner metal edges in c64-parking-atlas.png at the 80x80 drawing scale.
         const int sideFenceInset = 46;
         const int bottomRailOffset = 26;
         const int gateOffset = 14;

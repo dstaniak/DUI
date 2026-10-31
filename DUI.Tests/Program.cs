@@ -13,12 +13,13 @@ var tests = new (string Name, Action Run)[]
     ("Swipe emits once at the threshold and accepts the next contact", Swipe),
     ("Swipe ignores the score bar and margins", SwipeMargins),
     ("Cancelling a swipe cannot steer after resume", CancelSwipe),
-    ("Wide and portrait screens preserve geometry and input mapping", DisplayMapping),
+    ("Wide and portrait screens keep the board visible and map input", DisplayMapping),
     ("Circle contact uses the strict intersection rule", CircleCollision)
 }.Concat(MovementTests.Cases)
     .Concat(CarAnimationTests.Cases)
     .Concat(WallCollisionTests.Cases)
     .Concat(ParkingGeometryTests.Cases)
+    .Concat(GameDisplayTests.Cases)
     .ToArray();
 
 int failures = 0;
@@ -78,12 +79,11 @@ static void DisplayMapping()
         Vector2 gamePosition = new(200, 300);
         Vector2 screenPosition = Vector2.Transform(gamePosition, display.Transform);
         Equal(gamePosition, display.ToGamePosition(screenPosition));
-        Check(GameDisplay.Width * display.Scale <= size.X);
-        Check(GameDisplay.Height * display.Scale <= size.Y);
+        Check(display.OutputBounds == new Rectangle(0, 0, size.X, size.Y));
     }
 
     display.Resize(0, 0);
-    Check(display.Scale > 0);
+    Check(display.OutputBounds == new Rectangle(0, 0, 1280, 720));
 }
 
 static void CircleCollision()

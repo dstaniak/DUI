@@ -28,7 +28,7 @@ public sealed class ParkingLot
     {
         _tilemap = Tilemap.FromFile(content, "Images/tilemap-definition.xml");
         _tilemap.Scale = new Vector2(TileSize / _tilemap.TileWidth, TileSize / _tilemap.TileHeight);
-        _storefront = content.Load<Texture2D>("Images/storefront");
+        _storefront = content.Load<Texture2D>("Images/c64-storefront");
         TextureRegion upright = _tilemap.GetTile(10);
         TextureRegion rail = _tilemap.GetTile(12);
 

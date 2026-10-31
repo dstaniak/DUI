@@ -104,7 +104,7 @@
 /processorParam:TextureFormat=Color
 /build:Images/beer-bottle.png
 
-#begin Images/parking-atlas.png
+#begin Images/c64-parking-atlas.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyEnabled=False
@@ -113,9 +113,9 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:Images/parking-atlas.png
+/build:Images/c64-parking-atlas.png
 
-#begin Images/storefront.png
+#begin Images/c64-storefront.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyEnabled=False
@@ -124,7 +124,7 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:Images/storefront.png
+/build:Images/c64-storefront.png
 
 #begin Images/fence-corner.png
 /importer:TextureImporter

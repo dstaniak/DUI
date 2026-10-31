@@ -1,20 +1,25 @@
-using System;
 using Microsoft.Xna.Framework;
 
 namespace MonoGameLibrary.Graphics;
 
 /// <summary>
-/// Maps the fixed tutorial board to the screen without changing its geometry.
+/// Maps the fixed 720p frame onto the whole window, without borders.
 /// Positions and collision bounds remain in 1280 by 720 game coordinates.
 /// </summary>
 public sealed class GameDisplay
 {
     public const int Width = 1280;
     public const int Height = 720;
+    public const int RasterWidth = Width;
+    public const int RasterHeight = Height;
+    // Keep the compact UI layout while drawing its pixel font at full detail.
+    public const int UiScale = 4;
+    public const int UiWidth = RasterWidth / UiScale;
+    public const int UiHeight = RasterHeight / UiScale;
 
-    public float Scale { get; private set; } = 1.0f;
-    public Vector2 Offset { get; private set; }
     public Matrix Transform { get; private set; } = Matrix.Identity;
+    public Rectangle OutputBounds { get; private set; } = new(0, 0, RasterWidth, RasterHeight);
+    public Matrix ScreenToRaster { get; private set; } = Matrix.Identity;
 
     public void Resize(int width, int height)
     {
@@ -23,13 +28,16 @@ public sealed class GameDisplay
             return;
         }
 
-        Scale = Math.Min(width / (float)Width, height / (float)Height);
-        Offset = new Vector2((width - Width * Scale) / 2, (height - Height * Scale) / 2);
-        Transform = Matrix.CreateScale(Scale) * Matrix.CreateTranslation(Offset.X, Offset.Y, 0);
+        // The whole board stays visible without decorative borders or bars.
+        // Map each axis independently so drawing and input agree at any size.
+        OutputBounds = new Rectangle(0, 0, width, height);
+        ScreenToRaster = Matrix.CreateScale(
+            RasterWidth / (float)width, RasterHeight / (float)height, 1);
+        Transform = Matrix.CreateScale(width / (float)Width, height / (float)Height, 1);
     }
 
     public Vector2 ToGamePosition(Vector2 screenPosition)
     {
-        return (screenPosition - Offset) / Scale;
+        return Vector2.Transform(screenPosition, ScreenToRaster);
     }
 }
