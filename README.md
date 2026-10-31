@@ -41,7 +41,10 @@ tak jak w projekcie źródłowym.
   bezpośredniego sąsiada głowy. Są sprawdzane także pomiędzy końcami podkroku.
   Przy ścianach sprawdzany jest obrys auta 74×36, obracany razem z jego
   kierunkiem, bez przezroczystego marginesu tekstury. Zbieranie butelek
-  zachowuje promień głowy 40.
+  zachowuje promień głowy 40. Granica kolizji biegnie przy widocznym
+  ogrodzeniu (x=46–1234, dół y=666), a nie na krawędzi jego kafelków.
+  Zamknięta brama zajmuje x=560–720 i wystaje do y=654; jej narożniki
+  są sprawdzane względem obróconego auta. Witryna kończy się na y=160.
 - Butelka piwa pulsuje, porusza się i odbija od granic parkingu. Jej zebranie
   wywołuje rozprysk złotych kropli i białej piany, dodaje samochód oraz
   0,2‰ do wyniku. Licznik zaczyna od `0,0‰` i pokazuje jedną cyfrę po
@@ -92,6 +95,8 @@ się standardowym przyciskiem systemu.
   `EaseOutCubic` i `EaseInQuad` do wybicia oraz lądowania.
 - `ParkingLot` — układ parkingu, granice jazdy, rysowanie witryny oraz
   wspólna geometria kafelków trawy i płynnego powiększania aut do 106%.
+  `ParkingGeometry` wyznacza krawędzie ogrodzenia, osobny obrys bramy
+  i prostokątny obszar ruchu butelek, który mieści się przed bramą.
   `CarHop` ma osobny stan dla każdego auta i wykrywa przekroczenie
   krawężnika przez jego przód; renderowanie korzysta z czasu modelu ruchu.
 - `BeerBottle` — ruch i pulsowanie butelki; `BeerBurst` — krótkotrwałe

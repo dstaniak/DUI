@@ -24,7 +24,7 @@ public class GameScene : Scene
     private BeerBottle _bottle;
     private BeerBurst _beerBurst;
     private ParkingLot _parkingLot;
-    private Rectangle _drivingBounds;
+    private Rectangle _bottleArea;
     private SoundEffect _collectSoundEffect;
     // Game points expressed in per mille; decimal keeps each 0.2 step exact.
     private decimal _scorePermille;
@@ -41,7 +41,7 @@ public class GameScene : Scene
 
         Core.ExitOnEscape = false;
 
-        _drivingBounds = _parkingLot.DrivingBounds;
+        _bottleArea = _parkingLot.BottleBounds;
 
         _convoy.BodyCollision += OnConvoyCollision;
         _convoy.BoundaryCollision += OnConvoyCollision;
@@ -193,22 +193,22 @@ public class GameScene : Scene
             Core.Audio.PlaySoundEffect(_collectSoundEffect);
         }
 
-        if (bottleBounds.Top <= _drivingBounds.Top)
+        if (bottleBounds.Top <= _bottleArea.Top)
         {
             _bottle.Bounce(Vector2.UnitY);
         }
 
-        if (bottleBounds.Bottom >= _drivingBounds.Bottom)
+        if (bottleBounds.Bottom >= _bottleArea.Bottom)
         {
             _bottle.Bounce(-Vector2.UnitY);
         }
 
-        if (bottleBounds.Left <= _drivingBounds.Left)
+        if (bottleBounds.Left <= _bottleArea.Left)
         {
             _bottle.Bounce(Vector2.UnitX);
         }
 
-        if (bottleBounds.Right >= _drivingBounds.Right)
+        if (bottleBounds.Right >= _bottleArea.Right)
         {
             _bottle.Bounce(-Vector2.UnitX);
         }
@@ -247,8 +247,8 @@ public class GameScene : Scene
 
     private void PositionBottleAwayFromConvoy()
     {
-        float parkingCenterX = _drivingBounds.X + _drivingBounds.Width * 0.5f;
-        float parkingCenterY = _drivingBounds.Y + _drivingBounds.Height * 0.5f;
+        float parkingCenterX = _bottleArea.X + _bottleArea.Width * 0.5f;
+        float parkingCenterY = _bottleArea.Y + _bottleArea.Height * 0.5f;
         Vector2 parkingCenter = new(parkingCenterX, parkingCenterY);
 
         Circle convoyBounds = _convoy.GetBounds();
@@ -265,31 +265,31 @@ public class GameScene : Scene
         if (Math.Abs(centerToConvoy.X) > Math.Abs(centerToConvoy.Y))
         {
             newBottlePosition.Y = Random.Shared.Next(
-                _drivingBounds.Top + padding, _drivingBounds.Bottom - padding * 2
+                _bottleArea.Top + padding, _bottleArea.Bottom - padding * 2
             );
 
             if (centerToConvoy.X > 0)
             {
-                newBottlePosition.X = _drivingBounds.Left + padding;
+                newBottlePosition.X = _bottleArea.Left + padding;
             }
             else
             {
-                newBottlePosition.X = _drivingBounds.Right - padding * 2;
+                newBottlePosition.X = _bottleArea.Right - padding * 2;
             }
         }
         else
         {
             newBottlePosition.X = Random.Shared.Next(
-                _drivingBounds.Left + padding, _drivingBounds.Right - padding * 2
+                _bottleArea.Left + padding, _bottleArea.Right - padding * 2
             );
 
             if (centerToConvoy.Y > 0)
             {
-                newBottlePosition.Y = _drivingBounds.Top + padding;
+                newBottlePosition.Y = _bottleArea.Top + padding;
             }
             else
             {
-                newBottlePosition.Y = _drivingBounds.Bottom - padding * 2;
+                newBottlePosition.Y = _bottleArea.Bottom - padding * 2;
             }
         }
 
