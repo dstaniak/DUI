@@ -28,6 +28,7 @@ public sealed class SnakeMovement
         head.At = startingPosition;
         head.To = startingPosition + new Vector2(_stride, 0.0f);
         head.Direction = Vector2.UnitX;
+        head.PreviousDirection = head.Direction;
 
         _segments.Add(head);
 
@@ -41,6 +42,8 @@ public sealed class SnakeMovement
 
     public IReadOnlyList<SnakeSegment> Segments { get; }
     public float MovementProgress => _movementProgress;
+    public TimeSpan ElapsedTime { get; private set; }
+    public static TimeSpan StepDuration => s_movementTime;
 
     /// <summary>
     /// Queues at most two future directions. Each grid step consumes one.
@@ -73,13 +76,16 @@ public sealed class SnakeMovement
         SnakeSegment newTail = new();
         newTail.At = tail.To + tail.ReverseDirection * _stride;
         newTail.To = tail.At;
-        newTail.Direction = Vector2.Normalize(tail.At - newTail.At);
+        // The new tail is initially stationary, so normalizing its travel would yield NaN.
+        newTail.Direction = tail.PreviousDirection;
+        newTail.PreviousDirection = newTail.Direction;
         _segments.Add(newTail);
     }
 
     public void Update(TimeSpan elapsed)
     {
         _movementTimer += elapsed;
+        ElapsedTime += elapsed;
 
         while (_movementTimer >= s_movementTime)
         {
@@ -104,6 +110,7 @@ public sealed class SnakeMovement
         }
 
         SnakeSegment head = _segments[0];
+        head.PreviousDirection = head.Direction;
         head.Direction = _nextDirection;
         head.At = head.To;
         head.To = head.At + head.Direction * _stride;

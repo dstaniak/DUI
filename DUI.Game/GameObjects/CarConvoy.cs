@@ -5,7 +5,7 @@ using MonoGameLibrary.Graphics;
 
 namespace DUI.GameObjects;
 
-/// <summary>Renders each snake segment as a car facing along its current grid step.</summary>
+/// <summary>Renders the convoy with delayed sideways sway and smooth car headings.</summary>
 public sealed class CarConvoy
 {
     public const float Size = 80.0f;
@@ -47,22 +47,17 @@ public sealed class CarConvoy
 
     public void Draw(ParkingLot parkingLot)
     {
-        float rotation = 0.0f;
-        foreach (var segment in _movement.Segments)
+        for (int i = 0; i < _movement.Segments.Count; i++)
         {
+            var segment = _movement.Segments[i];
+            var pose = CarSway.GetPose(_movement, i);
             Vector2 position = Vector2.Lerp(segment.At, segment.To, _movement.MovementProgress);
-            Vector2 travel = segment.To - segment.At;
-            if (travel != Vector2.Zero)
-            {
-                rotation = MathF.Atan2(travel.Y, travel.X);
-            }
+            Vector2 gridCenter = position + new Vector2(Size * 0.5f);
 
-            // A newly grown tail overlaps its predecessor until the next step.
-            // Reuse that car's heading while the new segment has no travel yet.
-            _sprite.Rotation = rotation;
-            Vector2 center = position + new Vector2(Size * 0.5f);
-            _sprite.Scale = _baseScale * parkingLot.GetCarScale(center);
-            _sprite.Draw(Core.SpriteBatch, center);
+            // Lawn height and collision geometry continue to use the logical grid path.
+            _sprite.Rotation = pose.Rotation;
+            _sprite.Scale = _baseScale * parkingLot.GetCarScale(gridCenter);
+            _sprite.Draw(Core.SpriteBatch, pose.Position + new Vector2(Size * 0.5f));
         }
     }
 
