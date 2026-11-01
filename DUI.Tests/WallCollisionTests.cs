@@ -51,6 +51,9 @@ internal static class WallCollisionTests
         {
             Assert.Check(movement.QueueDirection(Vector2.UnitY));
             AdvanceUntilFacing(movement, Vector2.UnitY);
+            // Start this setup turn beyond the grace window, retaining the
+            // approach lane and room for all followers to clear the final turn.
+            movement.Update(TimeSpan.FromMilliseconds(55));
         }
         if (direction != Vector2.UnitX)
         {
@@ -58,7 +61,7 @@ internal static class WallCollisionTests
             AdvanceUntilFacing(movement, direction);
         }
 
-        float target = Vector2.Dot(new Vector2(edge), direction) + (late ? 4 : -4);
+        float target = Vector2.Dot(new Vector2(edge), direction) + (late ? ConvoyMovement.TurnGraceDistance + 4 : -4);
         int steps = 0;
         while (Vector2.Dot(movement.Cars[0].Center, direction) < target)
         {

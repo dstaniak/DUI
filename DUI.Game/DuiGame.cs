@@ -29,6 +29,7 @@ public sealed class DuiGame : Core
     protected override void Initialize()
     {
         base.Initialize();
+        GameController.Initialize(Window);
         InitializeGum();
         _renderer = new RetroRenderer(GraphicsDevice,
             Content.Load<Effect>("Effects/doubleVisionEffect"),
@@ -62,6 +63,7 @@ public sealed class DuiGame : Core
 
     protected override void UnloadContent()
     {
+        GameController.Shutdown();
         _renderer?.Dispose();
         base.UnloadContent();
     }
@@ -77,6 +79,7 @@ public sealed class DuiGame : Core
     {
         // Returning to the app leaves gameplay paused until the player resumes.
         ResetElapsedTime();
+        GameController.ResetInput();
         Audio?.ResumeAudio();
         base.OnActivated(sender, args);
     }

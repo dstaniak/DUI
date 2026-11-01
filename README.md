@@ -84,15 +84,20 @@ a nagłówki paneli 64×64 px przy obrazie 720p.
 ## Zasady i sterowanie
 
 - Strzałki / WASD lub D-pad / lewy drążek pada zmieniają kierunek.
+  Naciśnięcia klawiatury są buforowane ze zdarzeń okna w kolejności nadejścia,
+  również gdy klawisz zostanie puszczony przed następną klatką. Wszystkie
+  trafiają do kolejki skrętów przed ruchem; trzymanie klawisza nie powtarza polecenia.
 - Auto jedzie z prędkością 400 jednostek planszy na sekundę; proszek
   zwiększa ją na 10 sekund do 480 (1,2×), grzybek zmniejsza do 200 (0,5×),
   a oba efekty razem dają 240 (0,6×).
   Proste odcinki przechodzą przez środki kafelków 80×80. Skręt czeka na
   najbliższą krawędź kafelka, po czym łączy osie rzędów i kolumn łukiem
   o promieniu 40 px. Zmiana kierunku o 90° trwa około 157 ms czasu symulacji
-  przy stałej prędkości. Późne polecenie czeka na kolejną krawędź; auto
-  nie cofa się ani nie przeskakuje na sąsiedni tor. Dwa łuki nawrotu
-  zmieniają rząd dokładnie o 80 px, bez narastającego przesunięcia.
+  przy stałej prędkości. Polecenie do 20 px za krawędzią (50 ms przy 400 px/s)
+  rozpoczyna skręt od razu: promień maleje o przekroczony dystans, do minimum 20 px,
+  a łuk kończy się stycznie na właściwej osi. Auto nie cofa się ani nie przeskakuje.
+  Po przekroczeniu tej tolerancji skręt czeka na kolejną krawędź. Nawrót nadal
+  zmienia rząd dokładnie o 80 px; ciaśniejsze łuki łączy krótki prosty odcinek.
 - Kolejka przechowuje dwa oczekujące skręty. Rozpoczęty manewr zawsze
   kończy się przed następnym. Kierunek jest sprawdzany względem ostatniego
   zaplanowanego celu; natychmiastowy zwrot, powtórzenie celu i przepełnienie
@@ -193,7 +198,9 @@ a nagłówki paneli 64×64 px przy obrazie 720p.
   Pauza zatrzymuje też rozprysk, a RETRY usuwa pozostałe cząsteczki.
 - Escape / Start / Back lub przycisk PAUSE pauzuje grę.
   RESUME wznawia, RETRY rozpoczyna nową rozgrywkę z 1 punktem i `0,0‰`.
-  Przyciski obsługują także Enter / A na padzie.
+  Przyciski obsługują także Enter / A na padzie. Pauza, wznowienie i RETRY
+  czyszczą nieprzekazane naciśnięcia oraz gesty. Powrót do okna synchronizuje
+  stan trzymanych klawiszy, aby zwolnienie klawisza poza oknem go nie blokowało.
 - Gest przesunięcia na planszy trafia do tej samej kolejki. Na komputerze
   można go sprawdzić przeciągnięciem lewego przycisku myszy.
   Jeden kontakt oznacza jeden ruch; kolejny kontakt pozwala zaplanować następny.
@@ -208,7 +215,10 @@ się standardowym przyciskiem systemu.
 - `DUI.Game` — wspólny kod gry, UI Gum, zasoby i potrzebne części biblioteki
   tutorialowej. `DUI.Game.projitems` dołącza źródła do projektu platformowego,
   dzięki czemu przyszły host mobilny może użyć własnego backendu MonoGame.
-- `ConvoyMovement` — kolejka, skręty, stały podkrok oraz kolizje z ogonem.
+- `KeyboardSteering` — kolejność naciśnięć strzałek/WASD, pomijanie automatycznych
+  powtórzeń i reset wejścia. Bufor mieści osiem zdarzeń; model ruchu nadal przyjmuje
+  najwyżej dwa oczekujące skręty i odrzuca przepełnienie oraz nieprawidłowe kierunki.
+- `ConvoyMovement` — kolejka, skręty z tolerancją 20 px, stały podkrok oraz kolizje z ogonem.
   `CarPose` przechowuje środek, obrót i drogę auta; `ConvoyTrail` ogranicza
   historię do długości kolumny i zapasu na nowy segment.
   `ConvoyCollision` sprawdza ruchome okręgi oraz granice parkingu.
@@ -279,7 +289,7 @@ dotnet build DUI.slnx
 dotnet run --project DUI.Tests
 ```
 
-57 testów obejmuje oczekiwanie na krawędź kafelka i spóźnione polecenie,
+57 testów obejmuje oczekiwanie na krawędź kafelka i polecenie poza tolerancją,
 500 kolejnych skrętów bez zejścia z osi siatki, wszystkie kierunki skrętów,
 kolejkę, odrzucanie nieprawidłowych poleceń, stałą prędkość,
 interpolację i różne podziały czasu. Sprawdzają odtwarzanie śladu przez
@@ -290,7 +300,7 @@ oraz po skosie, wybicie i lądowanie, brak ponownego podskoku podczas
 animacji i jazdy po trawie, ponowny wjazd oraz opóźnienie segmentów.
 Trzy regresje ścian sprawdzają ciasne skręty przy czterech krawędziach,
 obrócone boki i narożniki auta oraz uderzenia po minięciu ostatniego
-bezpiecznego miejsca rozpoczęcia skrętu.
+bezpiecznego miejsca rozpoczęcia skrętu i tolerancji 20 px.
 Cztery testy geometrii parkingu obejmują asfalt wewnątrz kafelków płotu,
 mijanie narożników bramy ukośnym autem, osobne krawędzie bramy i przęsła
 oraz bezpieczny obszar ruchu przedmiotów.

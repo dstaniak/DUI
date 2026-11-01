@@ -10,13 +10,74 @@ namespace DUI;
 public static class GameController
 {
     private static readonly SwipeTracker s_swipe = new();
+    private static readonly KeyboardSteering s_steering = new();
+    private static GameWindow s_window;
+    private static Vector2 s_fallbackDirection;
     private static int? s_touchId;
     private static Vector2 s_swipeDirection;
 
     private static KeyboardInfo s_keyboard => Core.Input.Keyboard;
     private static GamePadInfo s_gamepad => Core.Input.GamePads[(int)PlayerIndex.One];
 
+    public static void Initialize(GameWindow window)
+    {
+        Shutdown();
+        s_window = window;
+        s_window.KeyDown += OnKeyDown;
+        s_window.KeyUp += OnKeyUp;
+        ResetInput();
+    }
+
+    public static void Shutdown()
+    {
+        if (s_window != null)
+        {
+            s_window.KeyDown -= OnKeyDown;
+            s_window.KeyUp -= OnKeyUp;
+            s_window = null;
+        }
+    }
+
     public static void Update()
+    {
+        UpdatePointer();
+        s_fallbackDirection = ReadPadDirection();
+        if (s_fallbackDirection == Vector2.Zero)
+        {
+            s_fallbackDirection = s_swipeDirection;
+        }
+    }
+
+    public static bool TryReadDirection(out Vector2 direction)
+    {
+        if (s_steering.TryReadDirection(out direction))
+        {
+            return true;
+        }
+
+        direction = s_fallbackDirection;
+        s_fallbackDirection = Vector2.Zero;
+        return direction != Vector2.Zero;
+    }
+
+    public static void ResetInput()
+    {
+        s_steering.Reset(Keyboard.GetState());
+        s_fallbackDirection = Vector2.Zero;
+        ResetPointer();
+    }
+
+    private static void OnKeyDown(object sender, InputKeyEventArgs args)
+    {
+        s_steering.KeyDown(args.Key);
+    }
+
+    private static void OnKeyUp(object sender, InputKeyEventArgs args)
+    {
+        s_steering.KeyUp(args.Key);
+    }
+
+    private static void UpdatePointer()
     {
         s_swipeDirection = Vector2.Zero;
         TouchCollection touches = TouchPanel.GetState();
@@ -49,7 +110,7 @@ public static class GameController
         }
     }
 
-    public static Vector2 ReadDirection()
+    private static Vector2 ReadPadDirection()
     {
         if (MoveUp())
         {
@@ -71,10 +132,10 @@ public static class GameController
             return Vector2.UnitX;
         }
 
-        return s_swipeDirection;
+        return Vector2.Zero;
     }
 
-    public static void ResetPointer()
+    private static void ResetPointer()
     {
         s_swipe.Reset();
         s_touchId = null;
@@ -106,38 +167,30 @@ public static class GameController
         }
     }
 
-    public static bool MoveUp()
+    private static bool MoveUp()
     {
         return
-            s_keyboard.WasKeyJustPressed(Keys.Up) ||
-            s_keyboard.WasKeyJustPressed(Keys.W) ||
             s_gamepad.WasButtonJustPressed(Buttons.DPadUp) ||
             s_gamepad.WasButtonJustPressed(Buttons.LeftThumbstickUp);
     }
 
-    public static bool MoveDown()
+    private static bool MoveDown()
     {
         return
-            s_keyboard.WasKeyJustPressed(Keys.Down) ||
-            s_keyboard.WasKeyJustPressed(Keys.S) ||
             s_gamepad.WasButtonJustPressed(Buttons.DPadDown) ||
             s_gamepad.WasButtonJustPressed(Buttons.LeftThumbstickDown);
     }
 
-    public static bool MoveLeft()
+    private static bool MoveLeft()
     {
         return
-            s_keyboard.WasKeyJustPressed(Keys.Left) ||
-            s_keyboard.WasKeyJustPressed(Keys.A) ||
             s_gamepad.WasButtonJustPressed(Buttons.DPadLeft) ||
             s_gamepad.WasButtonJustPressed(Buttons.LeftThumbstickLeft);
     }
 
-    public static bool MoveRight()
+    private static bool MoveRight()
     {
         return
-            s_keyboard.WasKeyJustPressed(Keys.Right) ||
-            s_keyboard.WasKeyJustPressed(Keys.D) ||
             s_gamepad.WasButtonJustPressed(Buttons.DPadRight) ||
             s_gamepad.WasButtonJustPressed(Buttons.LeftThumbstickRight);
     }

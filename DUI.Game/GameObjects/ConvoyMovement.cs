@@ -10,6 +10,8 @@ public sealed class ConvoyMovement
 {
     public const float Speed = 400f;
     public const float Spacing = ParkingGeometry.TileSize;
+    // A late turn may tighten its radius, but must still end on the intended lane.
+    public const float TurnGraceDistance = 20f;
     public static readonly TimeSpan StepDuration = TimeSpan.FromMilliseconds(5);
     public static readonly TimeSpan TurnDuration = TimeSpan.FromSeconds(TurnLength / Speed);
 
@@ -22,6 +24,8 @@ public sealed class ConvoyMovement
     private Vector2 _direction = Vector2.UnitX;
     private Vector2 _targetDirection = Vector2.UnitX;
     private Vector2 _turnEntry;
+    private float _turnRadius;
+    private double _turnLength;
     private double _turnDistance;
     private long _remainingTicks;
     private bool _turning;
@@ -51,7 +55,7 @@ public sealed class ConvoyMovement
         _trail = new ConvoyTrail(head);
     }
 
-    /// <summary>Queues up to two quarter turns, starting at the next tile edge on the current lane.</summary>
+    /// <summary>Queues two quarter turns; accepts late entry within TurnGraceDistance of a tile edge.</summary>
     public bool QueueDirection(Vector2 direction)
     {
         bool cardinal = direction == Vector2.UnitX || direction == -Vector2.UnitX ||
@@ -136,7 +140,7 @@ public sealed class ConvoyMovement
         {
             if (_turning)
             {
-                double distance = Math.Min(remainingDistance, TurnLength - _turnDistance);
+                double distance = Math.Min(remainingDistance, _turnLength - _turnDistance);
                 head = AdvanceTurn(head, distance);
                 remainingDistance -= distance;
             }
@@ -146,16 +150,23 @@ public sealed class ConvoyMovement
                 if (_directions.Count > 0)
                 {
                     double coordinate = Vector2.Dot(head.Center, _direction);
-                    double nextEdge = Math.Ceiling(coordinate / Spacing) * Spacing;
-                    distance = Math.Min(distance, nextEdge - coordinate);
-                    if (distance == 0)
+                    double previousEdge = Math.Floor(coordinate / Spacing) * Spacing;
+                    double overshoot = coordinate - previousEdge;
+                    if (overshoot <= TurnGraceDistance)
                     {
                         _targetDirection = _directions.Dequeue();
                         _turnEntry = head.Center;
+                        // Begin at the actual position, without rewinding the trail.
+                        // A smaller circle reaches the same outgoing lane tangentially.
+                        _turnRadius = TurnRadius - (float)overshoot;
+                        _turnLength = Math.PI * _turnRadius * 0.5;
                         _turnDistance = 0;
                         _turning = true;
                         continue;
                     }
+
+                    double nextEdge = previousEdge + Spacing;
+                    distance = Math.Min(distance, nextEdge - coordinate);
                 }
 
                 head = new CarPose(head.Center + _direction * (float)distance,
@@ -174,22 +185,22 @@ public sealed class ConvoyMovement
         _turnDistance += distance;
         Vector2 center;
         Vector2 tangent;
-        if (_turnDistance >= TurnLength)
+        if (_turnDistance >= _turnLength)
         {
             // Use the exact endpoint instead of accumulated trigonometry.
             // A pair of turns therefore moves to the next lane exactly 80 px away.
-            center = _turnEntry + (_direction + _targetDirection) * TurnRadius;
+            center = _turnEntry + (_direction + _targetDirection) * _turnRadius;
             tangent = _targetDirection;
             _direction = _targetDirection;
             _turning = false;
         }
         else
         {
-            double angle = _turnDistance / TurnRadius;
+            double angle = _turnDistance / _turnRadius;
             float sine = (float)Math.Sin(angle);
             float cosine = (float)Math.Cos(angle);
-            center = _turnEntry + _direction * (TurnRadius * sine) +
-                _targetDirection * (TurnRadius * (1f - cosine));
+            center = _turnEntry + _direction * (_turnRadius * sine) +
+                _targetDirection * (_turnRadius * (1f - cosine));
             tangent = _direction * cosine + _targetDirection * sine;
         }
 

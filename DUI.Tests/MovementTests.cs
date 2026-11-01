@@ -72,7 +72,7 @@ internal static class MovementTests
                 // A 2 px arc chord is slightly shorter than the distance travelled.
                 Near(2f, Vector2.Distance(before.Center, movement.Cars[0].Center));
                 float angle = MathHelper.WrapAngle(movement.Cars[0].Rotation - before.Rotation);
-                Check(angle >= -0.0001f && angle <= 0.0501f);
+                Check(angle >= -0.0001f && angle <= 0.1001f);
                 Check(++steps < 100);
             } while (Vector2.Distance(direction, movement.Cars[0].Direction) > 0.0001f);
         }
@@ -110,9 +110,9 @@ internal static class MovementTests
     private static void LateTurn()
     {
         var movement = new ConvoyMovement(new Vector2(40));
-        movement.Update(TimeSpan.FromMilliseconds(105));
+        movement.Update(TimeSpan.FromMilliseconds(155));
         Check(movement.QueueDirection(Vector2.UnitY));
-        movement.Update(TimeSpan.FromMilliseconds(195));
+        movement.Update(TimeSpan.FromMilliseconds(145));
         Equal(new Vector2(160, 40), movement.Cars[0].Center);
         Equal(Vector2.UnitX, movement.Cars[0].Direction);
         movement.Update(TimeSpan.FromMilliseconds(200));
