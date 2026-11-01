@@ -85,8 +85,38 @@ public sealed class ParkingLot
     {
         _tilemap.Draw(spriteBatch);
         DrawFenceCorners(spriteBatch);
-        var shopBounds = new Rectangle(0, 0, _tilemap.Columns * TileSize, TileSize * 2);
-        spriteBatch.Draw(_storefront, shopBounds, Color.White);
+        DrawStorefront(spriteBatch);
+    }
+
+    private void DrawStorefront(SpriteBatch spriteBatch)
+    {
+        float width = _tilemap.Columns * TileSize;
+        float scale = TileSize * 2f / _storefront.Height;
+
+        // Repeat a complete left display bay, cut through its gray pillars.
+        // It has no sign or doorway, so the central facade remains unique.
+        var displayBay = new Rectangle(26, 0, 432, _storefront.Height);
+        float bayWidth = displayBay.Width * scale;
+        float sideWidth = (width - _storefront.Width * scale) * 0.5f;
+        for (float offset = 0; offset < sideWidth; offset += bayWidth)
+        {
+            // Any partial bay is clipped at the outer screen edge, not beside
+            // the entrance. Work outwards from the complete central facade.
+            DrawBay(sideWidth - offset - bayWidth);
+            DrawBay(width - sideWidth + offset);
+        }
+
+        // One uniform scale keeps doors, lettering and bottles in proportion.
+        // The bays fill the remaining width without stretching the 3:1 artwork.
+        var center = new Vector2(sideWidth, 0);
+        spriteBatch.Draw(_storefront, center, null,
+            Color.White, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
+
+        void DrawBay(float left)
+        {
+            spriteBatch.Draw(_storefront, new Vector2(left, 0), displayBay,
+                Color.White, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
+        }
     }
 
     private void DrawFenceCorners(SpriteBatch spriteBatch)

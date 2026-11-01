@@ -51,7 +51,11 @@ Aktywny podskok, jazda po trawie i wyjazd nie uruchamiają kolejnego wybicia;
 opuszczenie wyspy pozwala na następny wjazd. Segmenty podskakują kolejno na własnym przekroczeniu.
 CarConvoy mnoży skalę bazową przez skalę terenu i podskoku oraz odejmuje uniesienie od Y.
 Efekty wizualne nie zmieniają kolizji; pauza zatrzymuje je w bieżącej fazie.
-ParkingLot.Draw rysuje mapę, narożniki i witrynę; scena dodaje auta, butelkę, rozprysk i UI.</li>
+ParkingLot.Draw rysuje mapę, narożniki i witrynę. DrawStorefront używa jednej skali
+160/724 dla obu osi: centralna fasada ma 480×160, a powtarzane boczne segmenty
+wypełniają pas 1280×160 bez zniekształcania drzwi, liter i towarów. Segmenty biegną
+od środka na zewnątrz; częściowe wystawy są przycinane tylko przy krawędziach ekranu.
+Scena dodaje auta, butelkę, rozprysk i UI.</li>
 <li><strong>Zebranie:</strong> GameScene.CollisionChecks porównuje Circle prowadzącego auta i butelki.
 Przecięcie najpierw wywołuje BeerBurst.Emit w dotychczasowym środku butelki,
 a potem przenosi kolejną butelkę na przeciwną stronę parkingu, resetuje puls i losuje prędkość,
@@ -136,7 +140,7 @@ które zwalnia teksturę PoliceLightbar; DuiGame zwalnia bufor RetroRenderer, a 
 <tr id="Easings"><td><a href="../DUI.Game/Framework/Easings.cs">Easings</a></td><td>31 statycznych funkcji float → float: Linear i 30 krzywych z easings.net. Postęp wejściowy 0–1; Back i Elastic zachowują wychylenia poza ten zakres. EaseInOutSine wygładza orientację aut, a EaseOutCubic i EaseInQuad sterują wybiciem i lądowaniem.</td></tr>
 <tr id="CarConvoy"><td><a href="../DUI.Game/GameObjects/CarConvoy.cs">CarConvoy</a></td><td>Łączy ConvoyMovement z renderowaniem i ParkingLot. Posiada stan CarHop oraz poprzednią pozę każdego auta. Po każdym podkroku aktualizuje podskoki i sprawdza ogrodzenie i bramę przez ParkingGeometry na podstawie środka oraz obrotu głowy. Draw pobiera interpolowaną pozę, dodaje CarSway, skalę trawnika i podskok. Indeks 0 rysuje autem gracza, pozostałe radiowozem ze światłami PoliceLightbar. Dispose zwalnia zasób belki; tekstury samochodów należą do ContentManager. Przekazuje BodyCollision i BoundaryCollision do sceny; GetBounds zachowuje promień 40 px dla zbierania butelek.</td></tr>
 <tr id="PoliceLightbar"><td><a href="../DUI.Game/GameObjects/PoliceLightbar.cs">PoliceLightbar</a></td><td>Rysuje pikselową belkę świetlną w lokalnych współrzędnych radiowozu. Dokładnie dwie klatki po 250 ms: nieprzezroczyste lampy 8×12 w jaskrawym niebieskim lub czerwonym kolorze, z refleksem 2×2. C64Palette dostarcza czerń oprawy i biel refleksu. Klatka zależy od RenderTime modelu. Współdzieli obrót, skalę i uniesienie auta. Posiada teksturę jednego białego piksela; CarConvoy.Dispose ją zwalnia.</td></tr>
-<tr id="ParkingLot"><td><a href="../DUI.Game/GameObjects/ParkingLot.cs">ParkingLot</a></td><td>Posiada Tilemap z c64-parking-atlas, witrynę c64-storefront, regiony ogrodzenia i geometrię dwóch wysp trawy. DrawFenceCorners składa lustrzane narożniki z poziomego półprzęsła, pionowego odcinka i kątownika. Ustala kafelek 80×80, początek gry oraz ParkingGeometry; udostępnia DrivingBounds i BottleBounds. GrassIslands udostępnia nieedytowalny widok prostokątów dla CarHop; GetCarScale oblicza powiększenie terenu do 106%.</td></tr>
+<tr id="ParkingLot"><td><a href="../DUI.Game/GameObjects/ParkingLot.cs">ParkingLot</a></td><td>Posiada Tilemap z c64-parking-atlas, witrynę c64-storefront, regiony ogrodzenia i geometrię dwóch wysp trawy. DrawStorefront skaluje źródło równomiernie do 480×160 na środku i uzupełnia boki powtarzanym segmentem wystawy; nie ściska obrazu do proporcji całego pasa. DrawFenceCorners składa lustrzane narożniki z poziomego półprzęsła, pionowego odcinka i kątownika. Ustala kafelek 80×80, początek gry oraz ParkingGeometry; udostępnia DrivingBounds i BottleBounds. GrassIslands udostępnia nieedytowalny widok prostokątów dla CarHop; GetCarScale oblicza powiększenie terenu do 106%.</td></tr>
 <tr id="ParkingGeometry"><td><a href="../DUI.Game/GameObjects/ParkingGeometry.cs">ParkingGeometry</a></td><td>Geometria kolizji zgodna z grafiką parkingu w skali kafelka 80×80. DrivingBounds sięga do wewnętrznych krawędzi płotu; GateBounds opisuje wysuniętą zamkniętą bramę. IntersectsBoundary sprawdza oba obszary przez ConvoyCollision. BottleBounds wyznacza prostokątny obszar odbić i odrodzeń butelek, kończący się przed bramą.</td></tr>
 <tr id="ConvoyMovement"><td><a href="../DUI.Game/GameObjects/ConvoyMovement.cs">ConvoyMovement</a></td><td>Model płynnej jazdy: 400 px/s, skręt 90° w 160 ms przez EaseInOutSine, dwa oczekujące kierunki. Podkroki 5 ms, zachowanie reszty czasu i interpolacja obrazu. Cars udostępnia aktualne CarPose, GetRenderPose pozy do rysowania. Auta odtwarzają ślad w odstępach 80 px. Stepped synchronizuje teren i granice, BodyCollision zatrzymuje symulację. Stop przerywa także pozostałą część aktualizacji.</td></tr>
 <tr id="CarPose"><td><a href="../DUI.Game/GameObjects/CarPose.cs">CarPose</a></td><td>Niezmienny środek auta w pikselach planszy, obrót w radianach oraz droga wzdłuż śladu głowy. Interpolacja uwzględnia zawijanie kąta.</td></tr>
@@ -150,8 +154,10 @@ które zwalnia teksturę PoliceLightbar; DuiGame zwalnia bufor RetroRenderer, a 
 <h2>Zasoby samochodów</h2>
 <p>Gracz używa <a href="../DUI.Game/Content/Images/car.png">car.png</a>, a ogon
 <a href="../DUI.Game/Content/Images/police-car.png">police-car.png</a>.
-Oba sprite’y uproszczono wbudowanym image_gen do dużych plam koloru, prostych szyb
-i pojedynczych refleksów w klimacie C64. Radiowóz ma srebrno-niebieskie panele
+Oba sprite’y przerysowano wbudowanym image_gen jako proste ikony o kompozycji
+około 24×24 logicznych pikseli: duże plamy koloru, jednolite szyby, proste koła
+i pojedynczy cień. Bez refleksów, wewnętrznych obwódek i drobnych detali.
+Tekstury pozostają w pełnym rozmiarze; nie są filtrowane ani automatycznie pikselizowane. Radiowóz ma srebrno-niebieskie panele
 bez drobnego napisu. Zachowują rozmiar, orientację w prawo i przezroczyste tło. Światła nie są zapisane w teksturze:
 PoliceLightbar nakłada na pusty dach animację z dwóch stanów.
 Pełny prompt i źródło referencyjne są w <a href="AssetPrompts.json">AssetPrompts.json</a>.</p>
@@ -163,11 +169,14 @@ wykorzystuje <a href="../DUI.Game/Content/Images/c64-parking-atlas.png">atlas C6
 odstęp 8 i początek (4,4), co pomija linie podziału arkusza.
 <a href="../DUI.Game/Content/Images/c64-storefront.png">Witryna C64</a> pokrywa dwa górne rzędy,
 a atlas.png nadal obsługuje font i UI. Kafelki są widoczne jako 80×80 pikseli,
-a witryna jako 1280×160. Tekstury zachowują swoje kolory bez redukcji palety. Szachownice 2×2 z dwóch kolorów oraz rzadsze pikselowe akcenty
-stanowią część materiałów i cieni w teksturach. Na każdej z czterech półek stoi 12 smukłych butelek, łącznie 48. Ich boczne krawędzie
-mają co drugi piksel w ciemniejszym odcieniu tego samego koloru, bez czarnych wcięć;
-środek sylwetki pozostaje jednolity. Wąskie sylwetki w źródle uwzględniają
-różne skale poziomą i pionową witryny w grze. Oba warianty powstały przez edycję
+a pas witryny jako 1280×160. Centralny obraz 2172×724 jest rysowany jako 480×160
+z jednakową skalą w obu osiach. Region (26,0,432,724), przecięty przez szare filary
+pierwszej wystawy, jest powtarzany od środkowej fasady w stronę obu krawędzi ekranu.
+Szyld i drzwi występują tylko raz, a niepełne segmenty wypadają na skraju obrazu. Tekstury zachowują swoje kolory bez redukcji palety. Szachownice 2×2 z dwóch kolorów oraz rzadsze pikselowe akcenty
+stanowią część materiałów i cieni w teksturach. Każdy segment wystawy ma 12 smukłych butelek. Ich boczne krawędzie
+mają co drugi piksel w zbliżonym ciemniejszym odcieniu tego samego koloru,
+np. czerwień #9A6759 z #805247, bez czarnych wcięć; środek pozostaje jednolity.
+Wzory są częścią tekstury, a jednakowa skala zachowuje ich proporcje. Oba warianty powstały przez edycję
 wbudowanym image_gen; oryginały pozostają materiałem źródłowym.
 Narożniki korzystają z górnych 100 wierszy kafelka 10 i prawej połowy
 kafelka 12. Oba fragmenty zachowują skalę atlasu, więc szyny i wzór siatki
@@ -179,6 +188,12 @@ całego połączenia. ParkingGeometry uwzględnia położenie metalu wewnątrz k
 boczne krawędzie są odsunięte o 46 px od boków planszy, poziome przęsło
 zaczyna się 26 px poniżej początku dolnego rzędu, a brama 14 px poniżej. Prompty nowych grafik są w
 <a href="AssetPrompts.json">AssetPrompts.json</a>.</p>
+<h2>Zasób zbieranej butelki</h2>
+<p><a href="../DUI.Game/Content/Images/beer-bottle.png">beer-bottle.png</a> ma prostą
+sylwetkę z dużych bloków, bursztynowe szkło z jednym ciemniejszym brzegiem, płaski
+kapsel i kremową etykietę z czerwonym pasem. Nie ma połysku, drobnych refleksów
+ani napisów. Powstała przez przerysowanie image_gen; BeerBottle zachowuje skalę,
+pulsowanie i promień kolizji 20. Prompt jest w AssetPrompts.json.</p>
 <h2>Zasób licznika</h2>
 <p><a href="../DUI.Game/Content/Images/per-mille.png">per-mille.png</a> to cały znak ‰
 w jednej przezroczystej teksturze 42×29. Powstał z ręcznie narysowanych figur w
