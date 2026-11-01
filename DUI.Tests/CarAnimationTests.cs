@@ -141,11 +141,11 @@ internal static class CarAnimationTests
         var (large, largeHops) = CreateHoppingConvoy();
         small.QueueDirection(Vector2.UnitY);
         large.QueueDirection(Vector2.UnitY);
-        for (int i = 0; i < 23; i++)
+        for (int i = 0; i < 38; i++)
         {
             small.Update(TimeSpan.FromMilliseconds(7));
         }
-        large.Update(TimeSpan.FromMilliseconds(161));
+        large.Update(TimeSpan.FromMilliseconds(266));
         var paused = smallHops[0].GetTransform(small.RenderTime);
         Assert.Check(paused.Lift > 0);
         EqualHop(paused, largeHops[0].GetTransform(large.RenderTime));

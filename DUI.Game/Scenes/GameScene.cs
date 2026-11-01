@@ -181,6 +181,7 @@ public class GameScene : Scene
     {
         _convoy.Dispose();
         _beerBurst?.Dispose();
+        _parkingLot?.Dispose();
         base.UnloadContent();
     }
 

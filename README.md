@@ -86,8 +86,12 @@ a nagłówki paneli 64×64 px przy obrazie 720p.
 - Strzałki / WASD lub D-pad / lewy drążek pada zmieniają kierunek.
 - Auto jedzie z prędkością 400 jednostek planszy na sekundę; proszek
   zwiększa ją na 10 sekund do 480 (1,2×).
-  Skręt zaczyna się bez czekania na kafelek, trwa 160 ms czasu symulacji i zmienia kierunek
-  o 90° przez `EaseInOutSine`. Samochód porusza się po rzeczywistej krzywej.
+  Proste odcinki przechodzą przez środki kafelków 80×80. Skręt czeka na
+  najbliższą krawędź kafelka, po czym łączy osie rzędów i kolumn łukiem
+  o promieniu 40 px. Zmiana kierunku o 90° trwa około 157 ms czasu symulacji
+  przy stałej prędkości. Późne polecenie czeka na kolejną krawędź; auto
+  nie cofa się ani nie przeskakuje na sąsiedni tor. Dwa łuki nawrotu
+  zmieniają rząd dokładnie o 80 px, bez narastającego przesunięcia.
 - Kolejka przechowuje dwa oczekujące skręty. Rozpoczęty manewr zawsze
   kończy się przed następnym. Kierunek jest sprawdzany względem ostatniego
   zaplanowanego celu; natychmiastowy zwrot, powtórzenie celu i przepełnienie
@@ -165,6 +169,10 @@ a nagłówki paneli 64×64 px przy obrazie 720p.
   zajmuje dwa górne rzędy; po bokach i na dole jest ogrodzenie z siatki,
   a pośrodku dolnego ogrodzenia zamknięta brama szerokości dwóch kafelków.
   Dolne narożniki mają kątowniki „L” łączące boczną siatkę z dolnym przęsłem.
+- Dyskretna siatka pokazuje granice kafelków 80×80 na asfalcie i trawnikach.
+  Szare linie C64 `#959595` mają 1 piksel grubości i krycie 35%, także na
+  skrzyżowaniach. Kończą się przy ogrodzeniu i bramie, są pod autami oraz
+  przedmiotami i podlegają tym samym efektom co plansza.
 - Dwie symetryczne wysepki trawnika mają po 2×4 kafelki. Można po nich
   przejechać: gdy przód auta przekracza krawężnik z asfaltu na trawę,
   auto podskakuje o 12
@@ -204,11 +212,14 @@ się standardowym przyciskiem systemu.
   nakłada dwuklatkowe światła na dach, używając czasu modelu i tej samej transformacji co auto; posiada i zwalnia teksturę
   jednego piksela. `CarSway` dodaje małe wizualne falowanie.
 - `Easings` — statyczne funkcje interpolacji (30 krzywych oraz `Linear`);
-  `ConvoyMovement` używa `EaseInOutSine` do skrętów, a `CarHop` używa
-  `EaseOutCubic` i `EaseInQuad` do wybicia oraz lądowania.
+  `CarHop` używa `EaseOutCubic` i `EaseInQuad` do wybicia oraz lądowania.
+  `ConvoyMovement` wyznacza styczne łuki geometrycznie, zachowując stałą prędkość.
 - `ParkingLot` — układ parkingu, granice jazdy, składanie proporcjonalnej
   witryny z centralnej fasady i powtarzanych segmentów wystawy oraz
   wspólna geometria kafelków trawy i płynnego powiększania aut do 106%.
+  Rysuje też półprzezroczystą siatkę pól; posiada teksturę jednego piksela,
+  zwalnianą przez `GameScene.UnloadContent`. `GridOpacity` i `GridLineWidth`
+  określają wygląd siatki.
   `ParkingGeometry` wyznacza krawędzie ogrodzenia, osobny obrys bramy
   i prostokątny obszar ruchu przedmiotów, który mieści się przed bramą.
   `CarHop` ma osobny stan dla każdego auta i wykrywa przekroczenie
@@ -262,8 +273,8 @@ dotnet build DUI.slnx
 dotnet run --project DUI.Tests
 ```
 
-52 testy obejmują natychmiastową reakcję między kafelkami, wszystkie
-kierunki skrętów, kolejkę, odrzucanie nieprawidłowych poleceń, stałą prędkość,
+52 testy obejmują oczekiwanie na krawędź kafelka, wszystkie kierunki skrętów,
+kolejkę, odrzucanie nieprawidłowych poleceń, stałą prędkość,
 interpolację i różne podziały czasu. Sprawdzają odtwarzanie śladu przez
 cztery zakręty, odstępy, wzrost, ograniczenie pamięci historii, ciasny nawrót,
 przecięcie ogona między podkrokami, granice parkingu, pauzę i restart.
@@ -271,7 +282,8 @@ Testy animacji obejmują ograniczone falowanie, wjazd z czterech stron
 oraz po skosie, wybicie i lądowanie, brak ponownego podskoku podczas
 animacji i jazdy po trawie, ponowny wjazd oraz opóźnienie segmentów.
 Trzy regresje ścian sprawdzają ciasne skręty przy czterech krawędziach,
-obrócone boki i narożniki auta oraz rzeczywiste uderzenia podczas skrętu.
+obrócone boki i narożniki auta oraz uderzenia po minięciu ostatniego
+bezpiecznego miejsca rozpoczęcia skrętu.
 Cztery testy geometrii parkingu obejmują asfalt wewnątrz kafelków płotu,
 mijanie narożników bramy ukośnym autem, osobne krawędzie bramy i przęsła
 oraz bezpieczny obszar ruchu przedmiotów.
