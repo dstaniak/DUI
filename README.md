@@ -68,8 +68,15 @@ i towary zachowują proporcje, a pas sklepu nadal zajmuje dwa górne kafelki.
 
 UI ma układ logiczny 320×180 i zoom 4, rysowany w osobnym przezroczystym
 buforze 720p, skalowanym tak samo jak plansza. Licznik, przyciski i panele
-pauzy oraz końca gry nie podlegają podwójnemu widzeniu, tęczy ani drżeniu. Napisy zachowują czytelną wielkość i szczegóły fontu bez pośredniego
-pomniejszania do 200 wierszy.
+pauzy oraz końca gry nie podlegają podwójnemu widzeniu, tęczy ani drżeniu. Całe UI używa ekranowego fontu C64 na siatce 8×8:
+cyfry promili, znak ‰, PAUSE, RESUME, RETRY i nagłówki paneli.
+Pasek ma tło C64 Blue `#352879` i ramkę Light Blue `#6C5EB5`.
+Panele pauzy i końca gry mają tę samą paletę i prostokątne ramki.
+Przyciski są płaskie: fokus lub najechanie odwraca niebieskie kolory,
+a naciśnięcie rozjaśnia tło do bieli. Białe ikony i wypełnienie gwiazdek
+zachowują kontrast; puste gwiazdki używają jasnej szarości C64 `#959595`.
+Bitmapowy font skaluje się bez wygładzania: standardowy znak ma 32×32 px,
+a nagłówki paneli 64×64 px przy obrazie 720p.
 
 ## Zasady i sterowanie
 
@@ -109,7 +116,7 @@ pomniejszania do 200 wierszy.
   Piwo dodaje 0,2‰ i samochód, a przy zebraniu rozpryskuje piwo i pianę.
   Wódka dodaje 0,4‰ i samochód. Kiełbaska odejmuje 0,4‰, do minimum 0‰,
   i nie zmienia długości kolumny. Licznik zaczyna od `0,0‰` i pokazuje
-  jedną cyfrę po przecinku; cały znak `‰` jest osobnym pikselowym sprite’em.
+  jedną cyfrę po przecinku; znak `‰` jest glifem tej samej czcionki C64.
   Kolejny przedmiot pojawia się po przeciwnej stronie parkingu.
   Witryna, ogrodzenie, zamknięta brama lub własna kolumna aut kończą grę.
 - Biały proszek w woreczku strunowym dodaje jeden radiowóz i przez
@@ -217,6 +224,9 @@ się standardowym przyciskiem systemu.
   `DuiGame` przekazuje promile, czas aktywnej gry i flagi powerupów; przełącza
   bufory między `GameScene.Draw` i `DrawUI`, a przy wyjściu zwalnia oba.
   Shadery należą do głównego `ContentManager`.
+- `C64Theme` — wspólna czcionka i prostokątne powierzchnie z palety C64.
+  `C64Button` zachowuje obsługę wejścia Gum, używając własnych kolorów
+  fokusu, najechania, naciśnięcia i wyłączenia.
 - `ScoreStars` — pięć przyciemnionych gwiazdek z białym wypełnieniem
   przycinanym do całych pikseli na podstawie `GameScene.Score` (długości kolumny).
   `GameSceneUI` ustawia je za slotami powerupów w osobnej warstwie UI.
@@ -316,18 +326,20 @@ Oba zasoby i ich warianty z wzorami powstały we wbudowanym `image_gen`; prompty
 pliku AssetPrompts.json. Definicja mapy wycina wnętrza kafelków bez linii
 podziału atlasu; `ParkingLot` skaluje je do logicznych 80×80.
 Oryginalne parking-atlas.png i storefront.png pozostają materiałem źródłowym.
-Tutorialowy atlas.png pozostaje źródłem fontu i elementów UI.
+Tutorialowy font i atlas UI zostały zastąpione motywem C64.
 Narożniki są składane z fragmentów pionowego i poziomego przęsła tego samego
 atlasu, dzięki czemu zachowują rozstaw szyn oraz wzór siatki. Na styku jest
 [kątownik](DUI.Game/Content/Images/fence-corner.png) wycięty podczas rysowania
 z grafiki wygenerowanej we wbudowanym `image_gen`. Całe połączenie jest
 odbijane lustrzanie po prawej stronie. Prompt grafiki jest w AssetPrompts.json.
 
-Cały [znak promila](DUI.Game/Content/Images/per-mille.png) jest pojedynczą
-teksturą 42×29 z przezroczystym tłem. Narysowano go jako pikselowe figury
-w [źródłowym SVG](SourceAssets/UI/per-mille.svg) i zrasteryzowano do PNG.
-UI dopasowuje go do skali fontu i przesuwa za liczbą przy zmianie jej szerokości.
-Punktacja używa `decimal`, aby przyrosty o 0,2 były dokładne.
+[Czcionka UI C64](DUI.Game/Content/Fonts/c64.fnt) korzysta z
+[fontu C64 autorstwa zeiche](https://github.com/zeiche/c64font), udostępnionego
+na CC0. [Źródło i licencja](SourceAssets/Fonts/README.md) są w repozytorium.
+Skrypt `SourceAssets/Fonts/build_font.py` tworzy atlas bez antyaliasingu:
+ASCII 32–95 oraz dodatkowy znak ‰, dopasowany do pikselowej siatki.
+Gra wczytuje gotowy bitmapowy font; nie wymaga instalowania czcionki w systemie.
+Promile używają `decimal`, aby przyrosty o 0,2 były dokładne.
 
 Wskaźniki aktywnych efektów mają osobne, białe sprite’y 28×28:
 [kieliszek](DUI.Game/Content/Images/UI/vodka-indicator.png),
@@ -335,4 +347,4 @@ Wskaźniki aktywnych efektów mają osobne, białe sprite’y 28×28:
 [grzybek](DUI.Game/Content/Images/UI/mushroom-indicator.png).
 Ich źródłowe SVG są w `SourceAssets/UI/`. Powstały z pikselowych prostokątów
 na siatce 14×14, powiększonych dwukrotnie bez antyaliasingu; używają tylko
-bieli i przezroczystości, podobnie jak znak promila.
+bieli i przezroczystości, podobnie jak atlas nowego fontu.

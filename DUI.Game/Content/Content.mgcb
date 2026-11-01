@@ -65,24 +65,22 @@
 /processorParam:Version=3.8.5.0
 /build:Effects/rainbowEffect.fx
 
-#begin Fonts/04b_30.fnt
-/copy:Fonts/04b_30.fnt
+#begin Fonts/c64.fnt
+/copy:Fonts/c64.fnt
 
-#begin Images/atlas-definition.xml
-/copy:Images/atlas-definition.xml
-
-#begin Images/atlas.png
+#begin Fonts/c64.png
 /importer:TextureImporter
 /processor:TextureProcessor
-/processorParam:ColorKeyColor=255,0,255,255
-/processorParam:ColorKeyEnabled=True
+/processorParam:ColorKeyEnabled=False
 /processorParam:GenerateMipmaps=False
 /processorParam:PremultiplyAlpha=True
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/processorParam:Version=3.8.5.0
-/build:Images/atlas.png
+/build:Fonts/c64.png
+
+#begin Fonts/c64-license.txt
+/copy:Fonts/c64-license.txt
 
 #begin Images/tilemap-definition.xml
 /copy:Images/tilemap-definition.xml
@@ -196,17 +194,6 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:Images/fence-corner.png
-
-#begin Images/per-mille.png
-/importer:TextureImporter
-/processor:TextureProcessor
-/processorParam:ColorKeyEnabled=False
-/processorParam:GenerateMipmaps=False
-/processorParam:PremultiplyAlpha=False
-/processorParam:ResizeToPowerOfTwo=False
-/processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
-/build:Images/per-mille.png
 
 #begin Images/UI/vodka-indicator.png
 /importer:TextureImporter

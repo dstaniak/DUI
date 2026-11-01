@@ -2,7 +2,6 @@ using System;
 using System.Globalization;
 using DUI.GameObjects;
 using Gum.DataTypes;
-using Gum.Managers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
@@ -27,16 +26,15 @@ public class GameSceneUI : ContainerRuntime
     private const long BlinkHalfPeriodTicks = TimeSpan.TicksPerMillisecond * 300;
     private SoundEffect _uiSoundEffect;
     private Panel _pausePanel;
-    private AnimatedButton _resumeButton;
+    private C64Button _resumeButton;
     private Panel _gameOverPanel;
-    private AnimatedButton _retryButton;
+    private C64Button _retryButton;
     private TextRuntime _scoreText;
-    private SpriteRuntime _perMilleSymbol;
     private SpriteRuntime _vodkaIndicator;
     private SpriteRuntime _powderIndicator;
     private SpriteRuntime _mushroomIndicator;
     private ScoreStars _scoreStars;
-    private AnimatedButton _pauseButton;
+    private C64Button _pauseButton;
 
     public GameSceneUI()
     {
@@ -45,12 +43,17 @@ public class GameSceneUI : ContainerRuntime
 
         ContentManager content = Gum.GumService.Default.ContentLoader.XnaContentManager;
         _uiSoundEffect = content.Load<SoundEffect>("Audio/ui");
-        TextureAtlas atlas = TextureAtlas.FromFile(content, "Images/atlas-definition.xml");
+
+        var header = new ContainerRuntime();
+        header.Dock(Gum.Wireframe.Dock.Fill);
+        header.Anchor(Gum.Wireframe.Anchor.TopLeft);
+        header.HeightUnits = DimensionUnitType.Absolute;
+        header.Height = 12f;
+        C64Theme.AddFrame(header, 1f);
+        AddChild(header);
 
         _scoreText = CreateScoreText();
         AddChild(_scoreText);
-        _perMilleSymbol = CreatePerMilleSymbol(content.Load<Texture2D>("Images/per-mille"));
-        AddChild(_perMilleSymbol);
         _vodkaIndicator = CreateEffectIndicator(content.Load<Texture2D>("Images/UI/vodka-indicator"));
         _powderIndicator = CreateEffectIndicator(content.Load<Texture2D>("Images/UI/powder-indicator"));
         _mushroomIndicator = CreateEffectIndicator(content.Load<Texture2D>("Images/UI/mushroom-indicator"));
@@ -61,7 +64,7 @@ public class GameSceneUI : ContainerRuntime
         AddChild(_scoreStars);
         PositionScoreAccessories();
 
-        _pauseButton = new AnimatedButton(atlas);
+        _pauseButton = new C64Button();
         _pauseButton.Text = "PAUSE";
         // Fit the 48-pixel shop fascia at the UI camera's 4x zoom.
         _pauseButton.Visual.Height = 10;
@@ -69,10 +72,10 @@ public class GameSceneUI : ContainerRuntime
         _pauseButton.Click += OnPauseButtonClicked;
         AddChild(_pauseButton);
 
-        _pausePanel = CreatePausePanel(atlas);
+        _pausePanel = CreatePausePanel();
         AddChild(_pausePanel.Visual);
 
-        _gameOverPanel = CreateGameOverPanel(atlas);
+        _gameOverPanel = CreateGameOverPanel();
         AddChild(_gameOverPanel.Visual);
     }
 
@@ -128,7 +131,7 @@ public class GameSceneUI : ContainerRuntime
     public void Update(GameTime gameTime)
     {
         _scoreText.X = 20;
-        _scoreText.Y = 4;
+        _scoreText.Y = 2;
         PositionScoreAccessories();
         _pauseButton.X = -20;
         _pauseButton.Y = 1;
@@ -140,40 +143,18 @@ public class GameSceneUI : ContainerRuntime
         Gum.GumService.Default.Draw();
     }
 
-    private TextRuntime CreateScoreText()
+    private static TextRuntime CreateScoreText()
     {
-        TextRuntime text = new();
+        TextRuntime text = C64Theme.CreateText(FormatScore(0m));
         text.Anchor(Gum.Wireframe.Anchor.TopLeft);
-        text.WidthUnits = DimensionUnitType.RelativeToChildren;
-        text.X = 20.0f;
-        text.Y = 4.0f;
-        text.UseCustomFont = true;
-        text.CustomFontFile = "Fonts/04b_30.fnt";
-        text.FontScale = 0.25f;
-        text.Text = FormatScore(0m);
-
+        text.X = 20f;
+        text.Y = 2f;
         return text;
     }
 
     private static string FormatScore(decimal scorePermille)
     {
-        return scorePermille.ToString("F1", s_scoreCulture);
-    }
-
-    private static SpriteRuntime CreatePerMilleSymbol(Texture2D texture)
-    {
-        // The font has no U+2030 glyph. Draw the complete sign as one sprite
-        // at the same quarter-size UI scale as the numeric text.
-        var symbol = new SpriteRuntime
-        {
-            Texture = texture,
-            WidthUnits = DimensionUnitType.Absolute,
-            HeightUnits = DimensionUnitType.Absolute,
-            Width = texture.Width * 0.25f,
-            Height = texture.Height * 0.25f
-        };
-        symbol.Anchor(Gum.Wireframe.Anchor.TopLeft);
-        return symbol;
+        return scorePermille.ToString("F1", s_scoreCulture) + "‰";
     }
 
     private static SpriteRuntime CreateEffectIndicator(Texture2D texture)
@@ -188,7 +169,7 @@ public class GameSceneUI : ContainerRuntime
             Visible = false
         };
         indicator.Anchor(Gum.Wireframe.Anchor.TopLeft);
-        indicator.Y = 4f;
+        indicator.Y = 2.5f;
         return indicator;
     }
 
@@ -205,106 +186,59 @@ public class GameSceneUI : ContainerRuntime
     {
         // Reposition immediately when the number changes width (e.g. 9,8→10,0),
         // and again when Update applies the logical HUD position.
-        _perMilleSymbol.X = _scoreText.X + _scoreText.AbsoluteWidth + 1;
-        _perMilleSymbol.Y = _scoreText.Y + 0.5f;
-
+        // The C64 font includes the per-mille glyph; icons follow the whole text.
         // Fixed slots preserve vodka / powder / mushroom order while blinking.
-        _vodkaIndicator.X = _perMilleSymbol.X + _perMilleSymbol.Width + IndicatorGap;
+        _vodkaIndicator.X = _scoreText.X + _scoreText.AbsoluteWidth + IndicatorGap;
         _powderIndicator.X = _vodkaIndicator.X + IndicatorSize + IndicatorGap;
         _mushroomIndicator.X = _powderIndicator.X + IndicatorSize + IndicatorGap;
         _scoreStars.X = _mushroomIndicator.X + IndicatorSize + IndicatorGap;
-        _scoreStars.Y = _scoreText.Y;
+        _scoreStars.Y = 2.5f;
     }
 
-    private Panel CreatePausePanel(TextureAtlas atlas)
+    private Panel CreatePausePanel()
     {
-        Panel panel = new Panel();
-        panel.Anchor(Gum.Wireframe.Anchor.Center);
-        panel.WidthUnits = DimensionUnitType.Absolute;
-        panel.HeightUnits = DimensionUnitType.Absolute;
-        panel.Width = 264.0f;
-        panel.Height = 70.0f;
-        panel.IsVisible = false;
-
-        TextureRegion backgroundRegion = atlas.GetRegion("panel-background");
-
-        NineSliceRuntime background = new NineSliceRuntime();
-        background.Dock(Gum.Wireframe.Dock.Fill);
-        background.Texture = backgroundRegion.Texture;
-        background.TextureAddress = TextureAddress.Custom;
-        background.TextureHeight = backgroundRegion.Height;
-        background.TextureWidth = backgroundRegion.Width;
-        background.TextureTop = backgroundRegion.SourceRectangle.Top;
-        background.TextureLeft = backgroundRegion.SourceRectangle.Left;
-        panel.AddChild(background);
-
-        TextRuntime text = new TextRuntime();
-        text.Text = "PAUSED";
-        text.UseCustomFont = true;
-        text.CustomFontFile = "Fonts/04b_30.fnt";
-        text.FontScale = 0.5f;
-        text.X = 10.0f;
-        text.Y = 10.0f;
-        panel.AddChild(text);
-
-        _resumeButton = new AnimatedButton(atlas);
-        _resumeButton.Text = "RESUME";
-        _resumeButton.Anchor(Gum.Wireframe.Anchor.BottomLeft);
-        _resumeButton.X = 9.0f;
-        _resumeButton.Y = -9.0f;
-
+        Panel panel = CreatePanel("PAUSED");
+        _resumeButton = CreatePanelButton("RESUME");
         _resumeButton.Click += OnResumeButtonClicked;
         _resumeButton.GotFocus += OnElementGotFocus;
-
         panel.AddChild(_resumeButton);
-
         return panel;
     }
 
-    private Panel CreateGameOverPanel(TextureAtlas atlas)
+    private Panel CreateGameOverPanel()
     {
-        Panel panel = new Panel();
+        Panel panel = CreatePanel("GAME OVER");
+        _retryButton = CreatePanelButton("RETRY");
+        _retryButton.Click += OnRetryButtonClicked;
+        _retryButton.GotFocus += OnElementGotFocus;
+        panel.AddChild(_retryButton);
+        return panel;
+    }
+
+    private static Panel CreatePanel(string title)
+    {
+        var panel = new Panel(new ContainerRuntime());
         panel.Anchor(Gum.Wireframe.Anchor.Center);
         panel.WidthUnits = DimensionUnitType.Absolute;
         panel.HeightUnits = DimensionUnitType.Absolute;
-        panel.Width = 264.0f;
-        panel.Height = 70.0f;
+        panel.Width = 240f;
+        panel.Height = 70f;
         panel.IsVisible = false;
+        C64Theme.AddFrame(panel.Visual, 2f);
 
-        TextureRegion backgroundRegion = atlas.GetRegion("panel-background");
-
-        NineSliceRuntime background = new NineSliceRuntime();
-        background.Dock(Gum.Wireframe.Dock.Fill);
-        background.Texture = backgroundRegion.Texture;
-        background.TextureAddress = TextureAddress.Custom;
-        background.TextureHeight = backgroundRegion.Height;
-        background.TextureWidth = backgroundRegion.Width;
-        background.TextureTop = backgroundRegion.SourceRectangle.Top;
-        background.TextureLeft = backgroundRegion.SourceRectangle.Left;
-        panel.AddChild(background);
-
-        TextRuntime text = new TextRuntime();
-        text.Text = "GAME OVER";
-        text.WidthUnits = DimensionUnitType.RelativeToChildren;
-        text.UseCustomFont = true;
-        text.CustomFontFile = "Fonts/04b_30.fnt";
-        text.FontScale = 0.5f;
-        text.X = 10.0f;
-        text.Y = 10.0f;
+        TextRuntime text = C64Theme.CreateText(title, 2f);
+        text.Anchor(Gum.Wireframe.Anchor.Top);
+        text.Y = 12f;
         panel.AddChild(text);
-
-        _retryButton = new AnimatedButton(atlas);
-        _retryButton.Text = "RETRY";
-        _retryButton.Anchor(Gum.Wireframe.Anchor.BottomLeft);
-        _retryButton.X = 9.0f;
-        _retryButton.Y = -9.0f;
-
-        _retryButton.Click += OnRetryButtonClicked;
-        _retryButton.GotFocus += OnElementGotFocus;
-
-        panel.AddChild(_retryButton);
-
         return panel;
+    }
+
+    private static C64Button CreatePanelButton(string text)
+    {
+        var button = new C64Button { Text = text };
+        button.Anchor(Gum.Wireframe.Anchor.Bottom);
+        button.Y = -10f;
+        return button;
     }
 
     private void OnResumeButtonClicked(object sender, EventArgs e)
