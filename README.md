@@ -5,8 +5,9 @@ skierowany również do osób, które faktycznie tak jeżdżą. Ton gry ma być
 przystępny i zabawny, bez zawstydzania odbiorcy.
 
 Pierwsza gra wykorzystuje mechanikę snake’a z tutorialu DungeonSlime:
-gracz prowadzi czerwony samochód i zbiera losowane piwo, wódkę oraz kiełbaskę.
-Alkohol wydłuża kolumnę radiowozów, a zakąska zmniejsza wynik w promilach.
+gracz prowadzi czerwony samochód i zbiera losowane piwo, wódkę, proszek, grzybki
+oraz kiełbaskę. Alkohol i proszek wydłużają kolumnę radiowozów, zakąska zmniejsza
+wynik w promilach, a powerupy tymczasowo zmieniają efekty i sterowanie.
 
 ## Uruchomienie
 
@@ -33,7 +34,8 @@ naturalnych proporcji najlepszy jest widok 16:9. Fizyka, prędkość i granice
 kolizji pozostają w jednostkach planszy.
 
 Wynik w promilach steruje shaderem podwójnego widzenia na całej klatce,
-łącznie z UI. Przy 0,0‰ shader jest pomijany. Powyżej zera kopia obrazu
+łącznie z UI. Przy 0,0‰ lub aktywnym proszku shader jest pomijany.
+Powyżej zera, bez proszku, kopia obrazu
 zatacza koło wokół środka okna w ciągu 8 sekund; sam obraz nie zmienia
 orientacji. Alfa rośnie od bazowego 0,1 o 0,01 na każde 0,1‰, do maksimum 0,5:
 przy 0,2‰ wynosi 0,12, przy 1‰ — 0,2, a przy 2‰ — 0,3. Od 4‰ pozostaje 0,5.
@@ -71,8 +73,9 @@ pomniejszania do 200 wierszy.
 ## Zasady i sterowanie
 
 - Strzałki / WASD lub D-pad / lewy drążek pada zmieniają kierunek.
-- Auto jedzie ze stałą prędkością 400 jednostek planszy na sekundę.
-  Skręt zaczyna się bez czekania na kafelek, trwa 160 ms i zmienia kierunek
+- Auto jedzie z prędkością 400 jednostek planszy na sekundę; proszek
+  zwiększa ją na 10 sekund do 480 (1,2×).
+  Skręt zaczyna się bez czekania na kafelek, trwa 160 ms czasu symulacji i zmienia kierunek
   o 90° przez `EaseInOutSine`. Samochód porusza się po rzeczywistej krzywej.
 - Kolejka przechowuje dwa oczekujące skręty. Rozpoczęty manewr zawsze
   kończy się przed następnym. Kierunek jest sprawdzany względem ostatniego
@@ -100,13 +103,30 @@ pomniejszania do 200 wierszy.
   są sprawdzane względem obróconego auta. Witryna kończy się na y=160.
 - Na planszy jest jeden pulsujący przedmiot, poruszający się i odbijający
   od granic parkingu. Na początku, po RETRY i po każdym zebraniu losowany
-  jest następny: **60% piwo, 20% kieliszek wódki, 20% kiełbaska**.
+  jest następny: **50% piwo, 20% kieliszek wódki, 5% proszek,
+  5% grzybek, 20% kiełbaska**.
   Piwo dodaje 0,2‰ i samochód, a przy zebraniu rozpryskuje piwo i pianę.
   Wódka dodaje 0,4‰ i samochód. Kiełbaska odejmuje 0,4‰, do minimum 0‰,
   i nie zmienia długości kolumny. Licznik zaczyna od `0,0‰` i pokazuje
   jedną cyfrę po przecinku; cały znak `‰` jest osobnym pikselowym sprite’em.
   Kolejny przedmiot pojawia się po przeciwnej stronie parkingu.
   Witryna, ogrodzenie, zamknięta brama lub własna kolumna aut kończą grę.
+- Biały proszek w woreczku strunowym dodaje jeden radiowóz i przez
+  **10 sekund** wyłącza podwójne widzenie, drżenie planszy oraz tęczę.
+  Jednocześnie przyspiesza symulację kolumny do **1,2×**; odstępy między
+  autami zostają takie same, a skręty i animacje aut podążają za jej zegarem.
+  Nie zmienia promili ani odwróconego sterowania.
+- Grzybek z ostrym kapeluszem i cienką nóżką przez **10 sekund** odwraca
+  wszystkie kierunki (lewo ↔ prawo, góra ↔ dół), na klawiaturze, padzie
+  oraz dla gestów. Nie zmienia promili ani długości kolumny.
+  Nowy `rainbowEffect` nakłada na cały widok, łącznie z UI, tęczowy gradient
+  z alfą 0,22. Gradient przesuwa się płynnie, wykonując cykl co 6 sekund.
+- Ponowne zebranie tego samego powerupu odnawia jego czas do 10 sekund.
+  Timery obu powerupów, drżenia i shaderów używają zwykłego czasu gry,
+  niezależnego od przyspieszenia kolumny. Pauza i przegrana je zamrażają,
+  RETRY usuwa efekty i przywraca normalne sterowanie oraz prędkość.
+  Proszek ukrywa tęczę i drżenie, ale ich czas nadal upływa. Jeśli po
+  wygaśnięciu proszku dany efekt nadal trwa, ponownie staje się widoczny.
 - Wódka uruchamia mocne drżenie kafelków i sprite’ów na planszy w lewo
   i prawo: ±24 piksele przy 720p, 18 cykli na sekundę, przez 3 sekundy.
   UI jest rysowane osobno i nie drży. Kolejna wódka odnawia czas;
@@ -207,7 +227,7 @@ dotnet build DUI.slnx
 dotnet run --project DUI.Tests
 ```
 
-44 testy obejmują natychmiastową reakcję między kafelkami, wszystkie
+52 testy obejmują natychmiastową reakcję między kafelkami, wszystkie
 kierunki skrętów, kolejkę, odrzucanie nieprawidłowych poleceń, stałą prędkość,
 interpolację i różne podziały czasu. Sprawdzają odtwarzanie śladu przez
 cztery zakręty, odstępy, wzrost, ograniczenie pamięci historii, ciasny nawrót,
@@ -225,10 +245,13 @@ wypełnienie okna, zgodność kursora Gum przy zoomie 4 z wejściem planszy po z
 rozmiaru (także nieparzystym i bardzo małym) oraz odrzucanie gestów
 z HUD i spoza planszy. Pozostają też testy gestów i kolizji z butelkami.
 Program testowy zwraca kod różny od zera, jeśli dowolny test zawiedzie.
-Trzy testy `PickupTests` sprawdzają dokładne proporcje 60/20/20, mieszane
+Trzy testy `PickupTests` sprawdzają dokładne proporcje 50/20/5/5/20, mieszane
 sekwencje punktacji i wzrostu oraz dolny limit 0‰ po zakąsce. Cztery testy
 `ScreenShakeTests` sprawdzają amplitudę i tempo, czas 3 sekund, pauzę,
 reset, ponowne wyzwolenie oraz niezależność od podziału czasu.
+Osiem testów `PowerupEffectsTests` sprawdza kierunki, oba czasy 10 sekund,
+odnawianie, nakładanie efektów, reset i podział czasu oraz prędkość 480 px/s,
+odstępy aut, zwykłe tempo timerów i wygaśnięcie przyspieszenia wewnątrz klatki.
 Renderowanie, dźwięk, interakcje Gum i cykl życia aplikacji wymagają też
 sprawdzenia w uruchomionej grze; te testy nie potwierdzają działania na telefonie.
 
@@ -257,6 +280,9 @@ Nowe [kieliszek wódki](DUI.Game/Content/Images/vodka-shot.png) i
 [kiełbaska](DUI.Game/Content/Images/sausage.png) powstały we wbudowanym
 `image_gen` jako osobne przezroczyste sprite’y retro. Ich prompty również
 są zapisane w `AssetPrompts.json`.
+[Woreczek proszku](DUI.Game/Content/Images/powder-bag.png) i
+[grzybek](DUI.Game/Content/Images/mushroom.png) również powstały we wbudowanym
+`image_gen`, jako przezroczyste pikselowe sprite’y. Prompty są w tym samym pliku.
 
 Aktywny [atlas parkingu C64](DUI.Game/Content/Images/c64-parking-atlas.png) zawiera
 16 kafelków asfaltu, linii, krawężników, trawy, siatki i bramy.

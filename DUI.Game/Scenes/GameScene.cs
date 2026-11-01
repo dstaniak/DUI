@@ -21,6 +21,7 @@ public class GameScene : Scene
     }
 
     private readonly ScreenShake _screenShake = new();
+    private readonly PowerupEffects _powerups = new();
     private CarConvoy _convoy;
     private Pickup _pickup;
     private BeerBurst _beerBurst;
@@ -36,6 +37,8 @@ public class GameScene : Scene
     private const float FadeSpeed = 0.01f;
 
     public decimal ScorePermille => _scorePermille;
+    public bool VisualEffectsSuppressed => _powerups.VisualEffectsSuppressed;
+    public bool RainbowActive => _powerups.RainbowActive;
 
     // Drives the full-screen effect only while playing; a new game resets it.
     public TimeSpan PlayTime { get; private set; }
@@ -65,6 +68,8 @@ public class GameScene : Scene
         _pickup = new Pickup(
             LoadSprite("Images/beer-bottle"),
             LoadSprite("Images/vodka-shot"),
+            LoadSprite("Images/powder-bag"),
+            LoadSprite("Images/mushroom"),
             LoadSprite("Images/sausage"),
             bounceEffect);
         _beerBurst = new BeerBurst(Core.GraphicsDevice);
@@ -109,8 +114,9 @@ public class GameScene : Scene
 
         PlayTime += gameTime.ElapsedGameTime;
         _screenShake.Update(gameTime.ElapsedGameTime);
-        _convoy.QueueDirection(GameController.ReadDirection());
-        _convoy.Update(gameTime);
+        TimeSpan movementElapsed = _powerups.Update(gameTime.ElapsedGameTime);
+        _convoy.QueueDirection(_powerups.MapDirection(GameController.ReadDirection()));
+        _convoy.Update(movementElapsed);
         if (_state != GameState.Playing)
         {
             return;
@@ -137,7 +143,8 @@ public class GameScene : Scene
             blendState: BlendState.NonPremultiplied,
             samplerState: SamplerState.PointClamp,
             effect: sceneEffect,
-            transformMatrix: Matrix.CreateTranslation(_screenShake.HorizontalOffset, 0, 0));
+            transformMatrix: Matrix.CreateTranslation(
+                VisualEffectsSuppressed ? 0f : _screenShake.HorizontalOffset, 0, 0));
 
         _parkingLot.Draw(Core.SpriteBatch);
         _convoy.Draw();
@@ -223,6 +230,7 @@ public class GameScene : Scene
     {
         // Apply the collected type before spawning and choosing the next one.
         PickupType type = _pickup.Type;
+        _powerups.Collect(type);
         if (type == PickupType.Beer)
         {
             _beerBurst.Emit(_pickup.Center);
@@ -262,6 +270,7 @@ public class GameScene : Scene
         _scorePermille = 0m;
         PlayTime = TimeSpan.Zero;
         _screenShake.Reset();
+        _powerups.Reset();
         _ui.UpdateScoreText(_scorePermille);
         _ui.HidePausePanel();
         _ui.HideGameOverPanel();

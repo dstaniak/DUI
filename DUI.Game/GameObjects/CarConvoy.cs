@@ -58,9 +58,9 @@ public sealed class CarConvoy : IDisposable
         AddCarAnimation();
     }
 
-    public void Update(GameTime gameTime)
+    public void Update(TimeSpan movementElapsed)
     {
-        _movement.Update(gameTime.ElapsedGameTime);
+        _movement.Update(movementElapsed);
     }
 
     public void Draw()

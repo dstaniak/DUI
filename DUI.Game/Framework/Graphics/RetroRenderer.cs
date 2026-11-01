@@ -4,10 +4,11 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace MonoGameLibrary.Graphics;
 
-/// <summary>Owns the 720p frame buffer and overlays an orbiting copy of the complete game view.</summary>
+/// <summary>Owns the 720p frame buffer and applies full-view double vision and rainbow effects.</summary>
 public sealed class RetroRenderer : IDisposable
 {
     private const double OrbitPeriodSeconds = 8.0;
+    private const double RainbowPeriodSeconds = 6.0;
     private const float BaseGhostAlpha = 0.1f;
     private const float MaxGhostAlpha = 0.5f;
     // Each 0.1 per mille adds 0.01 to the copy's opacity.
@@ -18,13 +19,15 @@ public sealed class RetroRenderer : IDisposable
     private readonly GraphicsDevice _graphicsDevice;
     private readonly RenderTarget2D _scene;
     private readonly Effect _doubleVisionEffect;
+    private readonly Effect _rainbowEffect;
 
-    public RetroRenderer(GraphicsDevice graphicsDevice, Effect doubleVisionEffect)
+    public RetroRenderer(GraphicsDevice graphicsDevice, Effect doubleVisionEffect, Effect rainbowEffect)
     {
         _graphicsDevice = graphicsDevice;
         _scene = new RenderTarget2D(graphicsDevice, GameDisplay.RasterWidth, GameDisplay.RasterHeight);
-        // The game's ContentManager owns the effect; this renderer owns only the buffer.
+        // The game's ContentManager owns both effects; this renderer owns only the buffer.
         _doubleVisionEffect = doubleVisionEffect;
+        _rainbowEffect = rainbowEffect;
         _doubleVisionEffect.Parameters["GhostTexture"].SetValue(_scene);
     }
 
@@ -34,16 +37,29 @@ public sealed class RetroRenderer : IDisposable
         _graphicsDevice.Clear(Color.Black);
     }
 
-    public void Present(SpriteBatch spriteBatch, GameDisplay display, decimal scorePermille, TimeSpan playTime)
+    public void Present(SpriteBatch spriteBatch, GameDisplay display, decimal scorePermille,
+        TimeSpan playTime, bool visualEffectsSuppressed, bool rainbowActive)
     {
         _graphicsDevice.SetRenderTarget(null);
-        Effect effect = PrepareDoubleVision(display.OutputBounds, scorePermille, playTime);
+        Effect effect = visualEffectsSuppressed ? null :
+            PrepareDoubleVision(display.OutputBounds, scorePermille, playTime);
         spriteBatch.Begin(
             blendState: BlendState.Opaque,
             samplerState: SamplerState.PointClamp,
             effect: effect);
         spriteBatch.Draw(_scene, display.OutputBounds, Color.White);
         spriteBatch.End();
+
+        if (rainbowActive && !visualEffectsSuppressed)
+        {
+            float phase = (float)(playTime.TotalSeconds % RainbowPeriodSeconds / RainbowPeriodSeconds);
+            _rainbowEffect.Parameters["Phase"].SetValue(phase);
+            // A translucent color-only pass overlays the already composed view,
+            // including UI, without another render target or texture sampling.
+            spriteBatch.Begin(blendState: BlendState.NonPremultiplied, effect: _rainbowEffect);
+            spriteBatch.Draw(_scene, display.OutputBounds, Color.White);
+            spriteBatch.End();
+        }
     }
 
     public void Dispose()
