@@ -21,12 +21,15 @@ public sealed class Pickup
     private Vector2 _velocity;
     private double _pulseTime;
 
-    public Pickup(Sprite beerSprite, Sprite vodkaSprite, Sprite sausageSprite, SoundEffect bounceEffect)
+    public Pickup(Sprite beerSprite, Sprite vodkaSprite, Sprite powderSprite,
+        Sprite mushroomSprite, Sprite sausageSprite, SoundEffect bounceEffect)
     {
         _sprites = new Dictionary<PickupType, Sprite>
         {
             [PickupType.Beer] = beerSprite,
             [PickupType.Vodka] = vodkaSprite,
+            [PickupType.Powder] = powderSprite,
+            [PickupType.Mushroom] = mushroomSprite,
             [PickupType.Sausage] = sausageSprite
         };
         foreach (Sprite sprite in _sprites.Values)

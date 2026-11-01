@@ -4,10 +4,11 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace MonoGameLibrary.Graphics;
 
-/// <summary>Owns the 720p frame buffer and overlays an orbiting copy of the complete game view.</summary>
+/// <summary>Composes an affected world and a separate, unfiltered UI layer at 720p.</summary>
 public sealed class RetroRenderer : IDisposable
 {
     private const double OrbitPeriodSeconds = 8.0;
+    private const double RainbowPeriodSeconds = 6.0;
     private const float BaseGhostAlpha = 0.1f;
     private const float MaxGhostAlpha = 0.5f;
     // Each 0.1 per mille adds 0.01 to the copy's opacity.
@@ -17,14 +18,18 @@ public sealed class RetroRenderer : IDisposable
 
     private readonly GraphicsDevice _graphicsDevice;
     private readonly RenderTarget2D _scene;
+    private readonly RenderTarget2D _ui;
     private readonly Effect _doubleVisionEffect;
+    private readonly Effect _rainbowEffect;
 
-    public RetroRenderer(GraphicsDevice graphicsDevice, Effect doubleVisionEffect)
+    public RetroRenderer(GraphicsDevice graphicsDevice, Effect doubleVisionEffect, Effect rainbowEffect)
     {
         _graphicsDevice = graphicsDevice;
         _scene = new RenderTarget2D(graphicsDevice, GameDisplay.RasterWidth, GameDisplay.RasterHeight);
-        // The game's ContentManager owns the effect; this renderer owns only the buffer.
+        _ui = new RenderTarget2D(graphicsDevice, GameDisplay.RasterWidth, GameDisplay.RasterHeight);
+        // ContentManager owns both effects; this renderer owns the two buffers.
         _doubleVisionEffect = doubleVisionEffect;
+        _rainbowEffect = rainbowEffect;
         _doubleVisionEffect.Parameters["GhostTexture"].SetValue(_scene);
     }
 
@@ -34,21 +39,47 @@ public sealed class RetroRenderer : IDisposable
         _graphicsDevice.Clear(Color.Black);
     }
 
-    public void Present(SpriteBatch spriteBatch, GameDisplay display, decimal scorePermille, TimeSpan playTime)
+    public void BeginUiFrame()
+    {
+        // Keep Gum's 720p layout and cursor mapping at every window size.
+        _graphicsDevice.SetRenderTarget(_ui);
+        _graphicsDevice.Clear(Color.Transparent);
+    }
+
+    public void Present(SpriteBatch spriteBatch, GameDisplay display, decimal scorePermille,
+        TimeSpan playTime, bool visualEffectsSuppressed, bool rainbowActive)
     {
         _graphicsDevice.SetRenderTarget(null);
-        Effect effect = PrepareDoubleVision(display.OutputBounds, scorePermille, playTime);
+        Effect effect = visualEffectsSuppressed ? null :
+            PrepareDoubleVision(display.OutputBounds, scorePermille, playTime);
         spriteBatch.Begin(
             blendState: BlendState.Opaque,
             samplerState: SamplerState.PointClamp,
             effect: effect);
         spriteBatch.Draw(_scene, display.OutputBounds, Color.White);
         spriteBatch.End();
+
+        if (rainbowActive && !visualEffectsSuppressed)
+        {
+            float phase = (float)(playTime.TotalSeconds % RainbowPeriodSeconds / RainbowPeriodSeconds);
+            _rainbowEffect.Parameters["Phase"].SetValue(phase);
+            // A translucent color-only pass overlays the world before the UI.
+            spriteBatch.Begin(blendState: BlendState.NonPremultiplied, effect: _rainbowEffect);
+            spriteBatch.Draw(_scene, display.OutputBounds, Color.White);
+            spriteBatch.End();
+        }
+
+        // Gum's transparent render target contains premultiplied colors.
+        // Composite it last so no gameplay shader or shake can affect UI.
+        spriteBatch.Begin(blendState: BlendState.AlphaBlend, samplerState: SamplerState.PointClamp);
+        spriteBatch.Draw(_ui, display.OutputBounds, Color.White);
+        spriteBatch.End();
     }
 
     public void Dispose()
     {
         _scene.Dispose();
+        _ui.Dispose();
     }
 
     private Effect PrepareDoubleVision(Rectangle outputBounds, decimal scorePermille, TimeSpan playTime)

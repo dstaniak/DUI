@@ -30,7 +30,9 @@ public sealed class DuiGame : Core
     {
         base.Initialize();
         InitializeGum();
-        _renderer = new RetroRenderer(GraphicsDevice, Content.Load<Effect>("Effects/doubleVisionEffect"));
+        _renderer = new RetroRenderer(GraphicsDevice,
+            Content.Load<Effect>("Effects/doubleVisionEffect"),
+            Content.Load<Effect>("Effects/rainbowEffect"));
         UpdateDisplay();
         Audio.PlaySong(_themeSong);
         _gameScene = new GameScene();
@@ -52,7 +54,10 @@ public sealed class DuiGame : Core
     {
         _renderer.BeginFrame();
         base.Draw(gameTime);
-        _renderer.Present(SpriteBatch, Display, _gameScene.ScorePermille, _gameScene.PlayTime);
+        _renderer.BeginUiFrame();
+        _gameScene.DrawUI();
+        _renderer.Present(SpriteBatch, Display, _gameScene.ScorePermille, _gameScene.PlayTime,
+            _gameScene.VisualEffectsSuppressed, _gameScene.RainbowActive);
     }
 
     protected override void UnloadContent()

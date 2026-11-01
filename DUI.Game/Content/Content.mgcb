@@ -57,6 +57,14 @@
 /processorParam:Version=3.8.5.0
 /build:Effects/grayscaleEffect.fx
 
+#begin Effects/rainbowEffect.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/processorParam:Defines=
+/processorParam:Version=3.8.5.0
+/build:Effects/rainbowEffect.fx
+
 #begin Fonts/04b_30.fnt
 /copy:Fonts/04b_30.fnt
 
@@ -134,6 +142,28 @@
 /processorParam:TextureFormat=Color
 /build:Images/sausage.png
 
+#begin Images/powder-bag.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=False
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Images/powder-bag.png
+
+#begin Images/mushroom.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=False
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Images/mushroom.png
+
 #begin Images/c64-parking-atlas.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -177,4 +207,37 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:Images/per-mille.png
+
+#begin Images/UI/vodka-indicator.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Images/UI/vodka-indicator.png
+
+#begin Images/UI/powder-indicator.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Images/UI/powder-indicator.png
+
+#begin Images/UI/mushroom-indicator.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Images/UI/mushroom-indicator.png
 

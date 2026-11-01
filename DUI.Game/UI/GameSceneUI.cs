@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using DUI.GameObjects;
 using Gum.DataTypes;
 using Gum.Managers;
 using Microsoft.Xna.Framework;
@@ -21,6 +22,9 @@ public class GameSceneUI : ContainerRuntime
     public event EventHandler RetryButtonClick;
 
     private static readonly CultureInfo s_scoreCulture = CultureInfo.GetCultureInfo("pl-PL");
+    private const float IndicatorSize = 7f;
+    private const float IndicatorGap = 3f;
+    private const long BlinkHalfPeriodTicks = TimeSpan.TicksPerMillisecond * 300;
     private SoundEffect _uiSoundEffect;
     private Panel _pausePanel;
     private AnimatedButton _resumeButton;
@@ -28,6 +32,9 @@ public class GameSceneUI : ContainerRuntime
     private AnimatedButton _retryButton;
     private TextRuntime _scoreText;
     private SpriteRuntime _perMilleSymbol;
+    private SpriteRuntime _vodkaIndicator;
+    private SpriteRuntime _powderIndicator;
+    private SpriteRuntime _mushroomIndicator;
     private AnimatedButton _pauseButton;
 
     public GameSceneUI()
@@ -43,7 +50,13 @@ public class GameSceneUI : ContainerRuntime
         AddChild(_scoreText);
         _perMilleSymbol = CreatePerMilleSymbol(content.Load<Texture2D>("Images/per-mille"));
         AddChild(_perMilleSymbol);
-        PositionPerMilleSymbol();
+        _vodkaIndicator = CreateEffectIndicator(content.Load<Texture2D>("Images/UI/vodka-indicator"));
+        _powderIndicator = CreateEffectIndicator(content.Load<Texture2D>("Images/UI/powder-indicator"));
+        _mushroomIndicator = CreateEffectIndicator(content.Load<Texture2D>("Images/UI/mushroom-indicator"));
+        AddChild(_vodkaIndicator);
+        AddChild(_powderIndicator);
+        AddChild(_mushroomIndicator);
+        PositionScoreAccessories();
 
         _pauseButton = new AnimatedButton(atlas);
         _pauseButton.Text = "PAUSE";
@@ -63,7 +76,15 @@ public class GameSceneUI : ContainerRuntime
     public void UpdateScoreText(decimal scorePermille)
     {
         _scoreText.Text = FormatScore(scorePermille);
-        PositionPerMilleSymbol();
+        PositionScoreAccessories();
+    }
+
+    public void UpdateEffectIndicators(TimeSpan vodkaRemaining, TimeSpan powderRemaining,
+        TimeSpan mushroomRemaining)
+    {
+        SetIndicatorVisibility(_vodkaIndicator, vodkaRemaining, ScreenShake.Duration);
+        SetIndicatorVisibility(_powderIndicator, powderRemaining, PowerupEffects.Duration);
+        SetIndicatorVisibility(_mushroomIndicator, mushroomRemaining, PowerupEffects.Duration);
     }
 
     public void ShowPausePanel()
@@ -100,7 +121,7 @@ public class GameSceneUI : ContainerRuntime
     {
         _scoreText.X = 20;
         _scoreText.Y = 4;
-        PositionPerMilleSymbol();
+        PositionScoreAccessories();
         _pauseButton.X = -20;
         _pauseButton.Y = 1;
         Gum.GumService.Default.Update(gameTime);
@@ -147,12 +168,42 @@ public class GameSceneUI : ContainerRuntime
         return symbol;
     }
 
-    private void PositionPerMilleSymbol()
+    private static SpriteRuntime CreateEffectIndicator(Texture2D texture)
+    {
+        var indicator = new SpriteRuntime
+        {
+            Texture = texture,
+            WidthUnits = DimensionUnitType.Absolute,
+            HeightUnits = DimensionUnitType.Absolute,
+            Width = IndicatorSize,
+            Height = IndicatorSize,
+            Visible = false
+        };
+        indicator.Anchor(Gum.Wireframe.Anchor.TopLeft);
+        indicator.Y = 4f;
+        return indicator;
+    }
+
+    private static void SetIndicatorVisibility(SpriteRuntime indicator, TimeSpan remaining, TimeSpan duration)
+    {
+        // Use the effect's own elapsed time: no duplicate countdown can drift,
+        // and refreshing the effect always starts with the icon switched on.
+        long elapsedTicks = duration.Ticks - remaining.Ticks;
+        indicator.Visible = remaining > TimeSpan.Zero &&
+            elapsedTicks / BlinkHalfPeriodTicks % 2 == 0;
+    }
+
+    private void PositionScoreAccessories()
     {
         // Reposition immediately when the number changes width (e.g. 9,8→10,0),
         // and again when Update applies the logical HUD position.
         _perMilleSymbol.X = _scoreText.X + _scoreText.AbsoluteWidth + 1;
         _perMilleSymbol.Y = _scoreText.Y + 0.5f;
+
+        // Fixed slots preserve vodka / powder / mushroom order while blinking.
+        _vodkaIndicator.X = _perMilleSymbol.X + _perMilleSymbol.Width + IndicatorGap;
+        _powderIndicator.X = _vodkaIndicator.X + IndicatorSize + IndicatorGap;
+        _mushroomIndicator.X = _powderIndicator.X + IndicatorSize + IndicatorGap;
     }
 
     private Panel CreatePausePanel(TextureAtlas atlas)

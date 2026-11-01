@@ -21,6 +21,7 @@ var tests = new (string Name, Action Run)[]
     .Concat(ParkingGeometryTests.Cases)
     .Concat(GameDisplayTests.Cases)
     .Concat(PickupTests.Cases)
+    .Concat(PowerupEffectsTests.Cases)
     .Concat(ScreenShakeTests.Cases)
     .ToArray();
 

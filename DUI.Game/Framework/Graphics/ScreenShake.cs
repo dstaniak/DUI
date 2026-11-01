@@ -11,6 +11,8 @@ public sealed class ScreenShake
 
     private TimeSpan _elapsed = Duration;
 
+    public TimeSpan RemainingTime => Duration - _elapsed;
+
     public float HorizontalOffset => _elapsed >= Duration ? 0f :
         Amplitude * (float)Math.Sin(_elapsed.TotalSeconds * CyclesPerSecond * Math.Tau);
 
