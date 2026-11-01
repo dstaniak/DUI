@@ -4,16 +4,24 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace MonoGameLibrary.Graphics;
 
-/// <summary>Owns the 720p frame buffer and presents pixel artwork without smoothing or color reduction.</summary>
+/// <summary>Owns the 720p frame buffer and overlays an orbiting copy of the complete game view.</summary>
 public sealed class RetroRenderer : IDisposable
 {
+    private const double OrbitPeriodSeconds = 8.0;
+    // At 720p, each per mille adds 12 pixels to the copy's orbit radius.
+    private const float RadiusPerPermille = 12.0f / GameDisplay.RasterHeight;
+
     private readonly GraphicsDevice _graphicsDevice;
     private readonly RenderTarget2D _scene;
+    private readonly Effect _doubleVisionEffect;
 
-    public RetroRenderer(GraphicsDevice graphicsDevice)
+    public RetroRenderer(GraphicsDevice graphicsDevice, Effect doubleVisionEffect)
     {
         _graphicsDevice = graphicsDevice;
         _scene = new RenderTarget2D(graphicsDevice, GameDisplay.RasterWidth, GameDisplay.RasterHeight);
+        // The game's ContentManager owns the effect; this renderer owns only the buffer.
+        _doubleVisionEffect = doubleVisionEffect;
+        _doubleVisionEffect.Parameters["GhostTexture"].SetValue(_scene);
     }
 
     public void BeginFrame()
@@ -22,10 +30,14 @@ public sealed class RetroRenderer : IDisposable
         _graphicsDevice.Clear(Color.Black);
     }
 
-    public void Present(SpriteBatch spriteBatch, GameDisplay display)
+    public void Present(SpriteBatch spriteBatch, GameDisplay display, decimal scorePermille, TimeSpan playTime)
     {
         _graphicsDevice.SetRenderTarget(null);
-        spriteBatch.Begin(blendState: BlendState.Opaque, samplerState: SamplerState.PointClamp);
+        Effect effect = PrepareDoubleVision(display.OutputBounds, scorePermille, playTime);
+        spriteBatch.Begin(
+            blendState: BlendState.Opaque,
+            samplerState: SamplerState.PointClamp,
+            effect: effect);
         spriteBatch.Draw(_scene, display.OutputBounds, Color.White);
         spriteBatch.End();
     }
@@ -33,5 +45,25 @@ public sealed class RetroRenderer : IDisposable
     public void Dispose()
     {
         _scene.Dispose();
+    }
+
+    private Effect PrepareDoubleVision(Rectangle outputBounds, decimal scorePermille, TimeSpan playTime)
+    {
+        if (scorePermille <= 0m)
+        {
+            return null;
+        }
+
+        double angle = playTime.TotalSeconds % OrbitPeriodSeconds / OrbitPeriodSeconds * Math.Tau;
+        float radius = (float)scorePermille * RadiusPerPermille *
+            Math.Min(outputBounds.Width, outputBounds.Height);
+
+        // Normalize screen-space offsets separately so the orbit stays circular
+        // even when the game view is stretched to a different aspect ratio.
+        Vector2 offset = new(
+            radius * (float)Math.Cos(angle) / outputBounds.Width,
+            radius * (float)Math.Sin(angle) / outputBounds.Height);
+        _doubleVisionEffect.Parameters["GhostOffset"].SetValue(offset);
+        return _doubleVisionEffect;
     }
 }

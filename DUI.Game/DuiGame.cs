@@ -3,6 +3,7 @@ using DUI.Scenes;
 using Gum.Forms;
 using Gum.Forms.Controls;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Media;
 using MonoGameGum;
 using MonoGameLibrary;
@@ -29,7 +30,7 @@ public sealed class DuiGame : Core
     {
         base.Initialize();
         InitializeGum();
-        _renderer = new RetroRenderer(GraphicsDevice);
+        _renderer = new RetroRenderer(GraphicsDevice, Content.Load<Effect>("Effects/doubleVisionEffect"));
         UpdateDisplay();
         Audio.PlaySong(_themeSong);
         _gameScene = new GameScene();
@@ -51,7 +52,7 @@ public sealed class DuiGame : Core
     {
         _renderer.BeginFrame();
         base.Draw(gameTime);
-        _renderer.Present(SpriteBatch, Display);
+        _renderer.Present(SpriteBatch, Display, _gameScene.ScorePermille, _gameScene.PlayTime);
     }
 
     protected override void UnloadContent()

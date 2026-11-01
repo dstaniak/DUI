@@ -32,6 +32,16 @@ Przy innych proporcjach okna każda oś jest dopasowywana osobno; dla
 naturalnych proporcji najlepszy jest widok 16:9. Fizyka, prędkość i granice
 kolizji pozostają w jednostkach planszy.
 
+Wynik w promilach steruje shaderem podwójnego widzenia na całej klatce,
+łącznie z UI. Przy 0,0‰ shader jest pomijany. Powyżej zera kopia obrazu
+z alfą 0,1 zatacza koło wokół środka okna w ciągu 8 sekund; sam obraz
+nie zmienia orientacji. Promień rośnie liniowo: 12 pikseli na 1‰ przy
+720p, czyli 2,4 piksela za butelkę. Skaluje się z krótszym bokiem okna,
+a ruch pozostaje kołowy także przy innych proporcjach. Tylko kopia używa
+filtrowania liniowego dla płynnych przesunięć mniejszych niż piksel;
+oryginał zachowuje `PointClamp`. Poza krawędziami przesuniętej kopii widać
+sam oryginał. Pauza i koniec gry zatrzymują orbitę; RETRY zeruje efekt.
+
 Retro wygląd tworzą same grafiki: uproszczone kształty, pikselowy font,
 kolory inspirowane C64 i wybrane dwukolorowe wzory w cieniach.
 Każdy segment wystawy zawiera 12 smukłych butelek. Ich boki mają
@@ -149,8 +159,10 @@ się standardowym przyciskiem systemu.
   określa logiczny układ UI 320×180 przy zoomie 4. Odwrotna transformacja
   obsługuje gesty oraz kursor Gum, aż do krawędzi widocznej planszy.
 - `RetroRenderer` — posiada jeden bufor 1280×720 ze sceną i UI. Prezentuje
-  go przez `PointClamp`, zachowując kolory źródłowe. `DuiGame` obejmuje nim
-  rysowanie sceny i zwalnia bufor przy wyjściu.
+  go przez `PointClamp` i nakłada shader `doubleVisionEffect`, gdy wynik
+  przekracza 0‰. `DuiGame` przekazuje wynik oraz czas aktywnej gry ze sceny,
+  obejmuje rendererem jej rysowanie i zwalnia bufor przy wyjściu.
+  Shader należy do głównego `ContentManager`.
 - `DUI.Tests` — testy regresji uruchamiane bez okna i urządzenia graficznego.
 - [Mapa klas](Docs/ClassMap.html) — odpowiedzialności i przepływy aplikacji.
 

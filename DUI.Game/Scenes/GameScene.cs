@@ -35,6 +35,11 @@ public class GameScene : Scene
     private const float FadeSpeed = 0.01f;
     private const decimal BeerScorePermille = 0.2m;
 
+    public decimal ScorePermille => _scorePermille;
+
+    // Drives the full-screen effect only while playing; a new game resets it.
+    public TimeSpan PlayTime { get; private set; }
+
     public override void Initialize()
     {
         base.Initialize();
@@ -98,6 +103,7 @@ public class GameScene : Scene
             return;
         }
 
+        PlayTime += gameTime.ElapsedGameTime;
         _convoy.QueueDirection(GameController.ReadDirection());
         _convoy.Update(gameTime);
         if (_state != GameState.Playing)
@@ -230,6 +236,7 @@ public class GameScene : Scene
         PositionBottleAwayFromConvoy();
 
         _scorePermille = 0m;
+        PlayTime = TimeSpan.Zero;
         _ui.UpdateScoreText(_scorePermille);
         _ui.HidePausePanel();
         _ui.HideGameOverPanel();

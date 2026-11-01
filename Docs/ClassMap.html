@@ -10,7 +10,7 @@ wspólne źródła i zasoby, podstawy wejścia dotykowego. Hosty Android/iOS nie
 <a href="#DuiGame">DuiGame</a> → <a href="#Core">Core.ChangeScene</a> →
 <a href="#GameScene">GameScene.Initialize</a> → plansza i rozgrywka.</p>
 <p>Host wybiera backend MonoGame. <code>DUI.Game.projitems</code> włącza wspólne źródła
-oraz content do hosta. Core posiada scenę i usługi. DuiGame posiada RetroRenderer i zwalnia jego jeden bufor 1280×720. GameScene posiada stan sesji,
+oraz content do hosta. Core posiada scenę i usługi. DuiGame posiada RetroRenderer i zwalnia jego jeden bufor 1280×720; główny ContentManager posiada shader doubleVisionEffect. GameScene posiada czas aktywnej gry PlayTime, stan sesji,
 wynik gry w promilach (decimal), ParkingLot, CarConvoy, BeerBottle, BeerBurst i UI. ParkingLot posiada mapę kafelkową, witrynę, ParkingGeometry i geometrię trawników; tekstury zwalnia ContentManager sceny. ConvoyMovement posiada kolejkę, pozy aut i czas symulacji; ConvoyTrail przechowuje ograniczoną historię drogi. CarConvoy posiada model, sprite gracza i radiowozu, PoliceLightbar oraz stan CarHop dla każdego auta; CarSway dodaje delikatne falowanie. CarHop wykrywa wjazd przodu na wyspę i oblicza skalę oraz uniesienie; UI prezentuje wynik i emituje intencje.</p>
 <h2>Przepływy użytkownika i relacje</h2>
 <ol>
@@ -61,6 +61,7 @@ Przecięcie najpierw wywołuje BeerBurst.Emit w dotychczasowym środku butelki,
 a potem przenosi kolejną butelkę na przeciwną stronę parkingu, resetuje puls i losuje prędkość,
 wywołuje CarConvoy.Grow (nowy radiowóz za ogonem), dodaje dokładnie 0,2‰ do wyniku decimal, aktualizuje GameSceneUI i gra dźwięk.
 Licznik pokazuje 0,0‰ → 0,2‰ → 0,4‰, zawsze z przecinkiem i jedną cyfrą ułamkową.
+Ten sam wynik ScorePermille steruje promieniem kopii całego widoku w RetroRenderer: przy 720p każda butelka dodaje 2,4 px.
 GameSceneUI.UpdateScoreText formatuje liczbę w kulturze pl-PL i ustawia pojedynczy sprite całego znaku ‰ za jej prawą krawędzią.</li>
 <li><strong>Przegrana:</strong> kontakt obróconego obrysu głowy z ogrodzeniem, bramą lub witryną albo zdarzenie
 ConvoyMovement.BodyCollision → CarConvoy.BodyCollision → GameScene.GameOver →
@@ -78,12 +79,12 @@ i ma osobny obrys x=560–720, y=654–720. Dzięki temu asfalt przed płotem je
 a wysunięcie bramy nie blokuje pozostałej części dolnej krawędzi.
 BottleBounds ogranicza prostokątny ruch i odrodzenie butelek do y=654, przed bramą. Trawniki są przejezdne.
 RETRY → GameSceneUI.RetryButtonClick → InitializeNewGame:
-nowe segmenty i pusta kolejka, wyzerowany czas, niebieska klatka świateł, faza falowania i postęp podskoku, pozycja butelki, wynik 0,0‰, BeerBurst.Clear.</li>
+nowe segmenty i pusta kolejka, wyzerowany czas, niebieska klatka świateł, faza falowania i postęp podskoku, pozycja butelki, wynik 0,0‰, PlayTime=0 i wyłączone podwójne widzenie, BeerBurst.Clear.</li>
 <li><strong>Pauza:</strong> Escape/Start/Back lub PAUSE → GameScene.Pause.
 RESUME → ResumeButtonClick → stan Playing; Escape również wznawia.
 Pauza zachowuje wynik i zaakceptowane ruchy, a zeruje rozpoczęty gest. Kliknięcie
 RESUME lub RETRY nie jest interpretowane jako skręt. Butelka i cząsteczki
-oraz ConvoyMovement są aktualizowane tylko podczas Playing, więc pauza zatrzymuje puls, rozprysk, falowanie, podskoki i światła radiowozów.</li>
+oraz ConvoyMovement są aktualizowane tylko podczas Playing, więc pauza zatrzymuje puls, rozprysk, falowanie, podskoki i światła radiowozów. PlayTime również rośnie tylko podczas Playing, więc pauza i koniec gry zamrażają orbitę kopii widoku.</li>
 <li><strong>Tło aplikacji:</strong> DuiGame.OnDeactivated → GameScene.Pause i AudioController.PauseAudio.
 Core nie aktualizuje sceny bez aktywności. OnActivated resetuje licznik czasu i wznawia audio;
 rozgrywka czeka na RESUME. To nie zapis stanu po zabiciu procesu przez system.</li>
@@ -98,6 +99,14 @@ Nie ma ditheringu ekranowego: wzory dwóch kolorów są zapisane w grafice parki
 Jedyny bufor 1280×720 jest skalowany przez PointClamp do GameDisplay.OutputBounds,
 które obejmuje całe okno bez ramek, pasów ani przycinania planszy. Każda oś jest
 skalowana osobno; widok 16:9 zachowuje proporcje świata.
+DuiGame przekazuje GameScene.ScorePermille i PlayTime do Present. Przy 0,0‰ renderer
+pomija shader; powyżej zera <a href="../DUI.Game/Content/Effects/doubleVisionEffect.fx">doubleVisionEffect</a>
+miesza obraz bazowy z kopią o alfie 0,1. Środek kopii zatacza koło wokół środka okna,
+bez obracania orientacji obrazu. Obieg trwa 8 s aktywnej gry, a promień rośnie liniowo
+o 12 px na 1‰ przy 720p i skaluje się z krótszym bokiem okna. Przesunięcia UV
+są liczone osobno dla obu osi, co zachowuje kołową orbitę także w pionie.
+Oryginał używa PointClamp, kopia LinearClamp dla płynnego ruchu podpikselowego.
+Poza przesuniętą kopią shader pozostawia oryginał, bez rozciągania brzegów.
 DuiGame.UpdateDisplay ustawia Cursor.TransformMatrix=ScreenToRaster;
 Gum dzieli przeliczoną pozycję przez zoom 4. GameController mapuje mysz/dotyk
 przez ToGamePosition do planszy. UI i gesty trafiają w ten sam punkt obrazu
@@ -108,11 +117,11 @@ falowanie, podskoki, powiększenie aut i puls butelki nie zmieniają kolizji.
 oraz 32 dla kolizji aut z ogonem.</li>
 <li><strong>Wyjście:</strong> systemowy przycisk zamyka okno desktopowe.
 GameScene.UnloadContent zwalnia teksturę BeerBurst i wywołuje CarConvoy.Dispose,
-które zwalnia teksturę PoliceLightbar; DuiGame zwalnia bufor RetroRenderer, a Core scenę, content, audio i SpriteBatch. Brak powrotu do ekranu tytułowego.</li>
+które zwalnia teksturę PoliceLightbar; DuiGame zwalnia bufor RetroRenderer, a Core scenę, content (w tym doubleVisionEffect), audio i SpriteBatch. Brak powrotu do ekranu tytułowego.</li>
 </ol>
 <h2>Klasy i typy</h2>
 <table><thead><tr><th>Typ i źródło</th><th>Odpowiedzialność</th></tr></thead><tbody>
-<tr id="DuiGame"><td><a href="../DUI.Game/DuiGame.cs">DuiGame</a></td><td>Uruchamia GameScene bez menu; ustala 60 Hz, układ Gum 320×180 z zoomem 4 i transformację kursora. Posiada RetroRenderer, obejmuje nim Draw i zwalnia bufor. Obsługuje utratę i odzyskanie aktywności.</td></tr>
+<tr id="DuiGame"><td><a href="../DUI.Game/DuiGame.cs">DuiGame</a></td><td>Uruchamia GameScene bez menu; ustala 60 Hz, układ Gum 320×180 z zoomem 4 i transformację kursora. Wczytuje doubleVisionEffect przez główny ContentManager. Posiada RetroRenderer, obejmuje nim Draw, przekazuje ScorePermille i PlayTime oraz zwalnia bufor. Obsługuje utratę i odzyskanie aktywności.</td></tr>
 <tr id="AudioController"><td><a href="../DUI.Game/Framework/Audio/AudioController.cs">AudioController</a></td><td>Zarządza muzyką i instancjami efektów dźwiękowych oraz pauzą po utracie aktywności.</td></tr>
 <tr id="Circle"><td><a href="../DUI.Game/Framework/Circle.cs">Circle</a></td><td>Okrągły obszar kolizji, z testem ścisłego przecięcia jak w tutorialu.</td></tr>
 <tr id="Core"><td><a href="../DUI.Game/Framework/Core.cs">Core</a></td><td>Właściciel usług MonoGame i aktywnej sceny. Aktualizuje wejście, audio i grę; zwalnia zasoby przy wyjściu.</td></tr>
@@ -120,7 +129,7 @@ które zwalnia teksturę PoliceLightbar; DuiGame zwalnia bufor RetroRenderer, a 
 <tr id="Animation"><td><a href="../DUI.Game/Framework/Graphics/Animation.cs">Animation</a></td><td>Lista klatek atlasu i czas każdej klatki.</td></tr>
 <tr id="GameDisplay"><td><a href="../DUI.Game/Framework/Graphics/GameDisplay.cs">GameDisplay</a></td><td>Określa planszę i raster 1280×720 oraz logiczny układ UI 320×180 przy zoomie 4. Resize dopasowuje OutputBounds do całego okna, osobno w obu osiach; ScreenToRaster mapuje kursor Gum, a ToGamePosition gesty na planszę. Małe okna są pomniejszane.</td></tr>
 <tr id="C64Palette"><td><a href="../DUI.Game/Framework/Graphics/C64Palette.cs">C64Palette</a></td><td>16 kolorów Pepto PAL w kolejności VIC-II. Udostępnia czerń oprawy i biel małych refleksów PoliceLightbar; inspiruje barwy grafik, lecz nie ogranicza kolorów całej klatki ani jaskrawych kolorów błysku.</td></tr>
-<tr id="RetroRenderer"><td><a href="../DUI.Game/Framework/Graphics/RetroRenderer.cs">RetroRenderer</a></td><td>Posiada jeden RenderTarget2D 1280×720. BeginFrame czyści bufor sceny; Present skaluje kompletną scenę i UI przez PointClamp. Zachowuje kolory i szczegóły grafik bez shadera palety lub ditheringu. Dispose zwalnia bufor.</td></tr>
+<tr id="RetroRenderer"><td><a href="../DUI.Game/Framework/Graphics/RetroRenderer.cs">RetroRenderer</a></td><td>Posiada jeden RenderTarget2D 1280×720. BeginFrame czyści bufor sceny; Present skaluje kompletną scenę i UI przez PointClamp. Przy dodatnim wyniku doubleVisionEffect dodaje kopię z alfą 0,1, filtrowaną liniowo, z kołowym przesunięciem środka. Promień rośnie z promilami i krótszym bokiem okna, faza zależy od PlayTime. Przy 0‰ shader jest pomijany. Dispose zwalnia bufor; efekt należy do głównego ContentManager.</td></tr>
 <tr id="Sprite"><td><a href="../DUI.Game/Framework/Graphics/Sprite.cs">Sprite</a></td><td>Parametry rysowania regionu tekstury: pozycja, skala, obrót, kolor i warstwa.</td></tr>
 <tr id="TextureAtlas"><td><a href="../DUI.Game/Framework/Graphics/TextureAtlas.cs">TextureAtlas</a></td><td>Wczytuje definicję XML, teksturę, regiony i animacje; tworzy sprite’y.</td></tr>
 <tr id="TextureRegion"><td><a href="../DUI.Game/Framework/Graphics/TextureRegion.cs">TextureRegion</a></td><td>Prostokątny fragment atlasu wraz ze współrzędnymi UV i operacją rysowania.</td></tr>
@@ -147,7 +156,7 @@ które zwalnia teksturę PoliceLightbar; DuiGame zwalnia bufor RetroRenderer, a 
 <tr id="ConvoyTrail"><td><a href="../DUI.Game/GameObjects/ConvoyTrail.cs">ConvoyTrail</a></td><td>Historia pozycji głowy indeksowana odległością. Wyszukiwanie binarne i interpolacja dla segmentów; zachowuje długość kolumny oraz zapas dla nowego auta. Kompaktuje bufor partiami. Brakujący początek historii przedłuża wstecz wzdłuż najstarszego kierunku.</td></tr>
 <tr id="ConvoyCollision"><td><a href="../DUI.Game/GameObjects/ConvoyCollision.cs">ConvoyCollision</a></td><td>Przecięcie ruchomych okręgów aut o promieniu 32 px w przestrzeni względnej, także między końcami podkroku. Granice parkingu sprawdza dla obróconego obrysu auta 74×36 px. IsOutsideParking przyjmuje CarPose, a skrajne współrzędne zależą od długości, szerokości oraz aktualnego kąta auta. IntersectsObstacle sprawdza obrócone auto i prostokąt bramy na czterech osiach separacji.</td></tr>
 <tr id="SwipeTracker"><td><a href="../DUI.Game/Input/SwipeTracker.cs">SwipeTracker</a></td><td>Rozpoznaje jeden kierunek na kontakt po przesunięciu o 32 jednostki planszy; pomija kafelki krawędziowe i pasek wyniku.</td></tr>
-<tr id="GameScene"><td><a href="../DUI.Game/Scenes/GameScene.cs">GameScene</a></td><td>Zarządza stanem Playing/Paused/GameOver, zderzeniami, wynikiem decimal w promilach (0,2 za butelkę, reset do 0), odrodzeniem i odbiciami butelki wewnątrz ParkingLot.BottleBounds, wybuchem piwa i panelami UI. Łączy ParkingLot z rysowaniem CarConvoy i kontrolą kolizji. Rysuje świat w rozdzielczości 1280×720 do bufora RetroRenderer, a potem UI Gum.</td></tr>
+<tr id="GameScene"><td><a href="../DUI.Game/Scenes/GameScene.cs">GameScene</a></td><td>Zarządza stanem Playing/Paused/GameOver, zderzeniami, wynikiem decimal w promilach (0,2 za butelkę, reset do 0), odrodzeniem i odbiciami butelki wewnątrz ParkingLot.BottleBounds, wybuchem piwa i panelami UI. Udostępnia ScorePermille oraz PlayTime, liczony tylko podczas Playing i zerowany przy RETRY, do prezentacji podwójnego widzenia. Łączy ParkingLot z rysowaniem CarConvoy i kontrolą kolizji. Rysuje świat w rozdzielczości 1280×720 do bufora RetroRenderer, a potem UI Gum.</td></tr>
 <tr id="AnimatedButton"><td><a href="../DUI.Game/UI/AnimatedButton.cs">AnimatedButton</a></td><td>Przycisk Gum z animowanym fokusem i grafiką atlasu, obsługujący mysz, dotyk, klawiaturę i pada.</td></tr>
 <tr id="GameSceneUI"><td><a href="../DUI.Game/UI/GameSceneUI.cs">GameSceneUI</a></td><td>Formatuje wynik z jedną cyfrą po przecinku (pl-PL), rysuje liczbę przez TextRuntime i cały znak ‰ przez jeden SpriteRuntime z per-mille.png. Dopasowuje pozycję znaku do szerokości liczby w układzie logicznym 320×180, rysowanym przy zoomie 4 w buforze 720p bez ramki. Rysuje PAUSE, panel pauzy z RESUME i koniec gry z RETRY. Zdarzenia trafiają do GameScene.</td></tr>
 </tbody></table>
@@ -227,6 +236,9 @@ Uwzględniają okna szerokie, pionowe, nieparzyste oraz mniejsze niż raster.
 Testy kompilują te same źródła modelu i GameDisplay co gra.</p>
 <p>Testy nie zastępują sprawdzenia renderowania, audio, przycisków Gum,
 łączenia kafelków parkingu, witryny, ogrodzenia i bramy, falowania aut i opóźnienia segmentów, radiowozów w ogonie i dwóch kolorów świateł na obracającym się dachu, powiększania każdego auta na trawie i podskoków przy wjeździe, pulsowania i zebrania butelki, rozprysku piwa, przyrostów wyniku o 0,2‰ i resetu do 0,0‰, położenia sprite’a przy przejściu 9,8‰ → 10,0‰ oraz utraty aktywności w uruchomionej aplikacji.
+Shader podwójnego widzenia wymaga sprawdzenia na GPU: brak efektu przy 0‰,
+alfa 0,1, rosnący promień, kołowa orbita przy różnych proporcjach okna,
+ostry oryginał i płynna kopia, krawędzie obrazu, pauza i RETRY.
 Wersja na fizyczny telefon, safe areas i zachowanie po utracie procesu
 pozostają do zweryfikowania po dodaniu hosta mobilnego.</p>
 <p><a href="../README.md">Uruchamianie, sterowanie i dalsze kroki mobilne</a></p>
