@@ -289,16 +289,21 @@ dotnet build DUI.slnx
 dotnet run --project DUI.Tests
 ```
 
-57 testów obejmuje oczekiwanie na krawędź kafelka i polecenie poza tolerancją,
+64 testy obejmują oczekiwanie na krawędź kafelka i polecenie poza tolerancją,
 500 kolejnych skrętów bez zejścia z osi siatki, wszystkie kierunki skrętów,
 kolejkę, odrzucanie nieprawidłowych poleceń, stałą prędkość,
 interpolację i różne podziały czasu. Sprawdzają odtwarzanie śladu przez
 cztery zakręty, odstępy, wzrost, ograniczenie pamięci historii, ciasny nawrót,
 przecięcie ogona między podkrokami, granice parkingu, pauzę i restart.
+Sześć testów `SteeringTests` sprawdza natychmiastowy skręt do 20 px za krawędzią,
+stałą prędkość i brak teleportacji, powrót na właściwą oś, ślad radiowozów,
+odstępy, podział klatek oraz krótkie naciśnięcia między aktualizacjami.
+Obejmują kolejność strzałek/WASD, odwrócenie całej sekwencji przez grzybka,
+pomijanie automatycznych powtórzeń i reset po utracie aktywności.
 Testy animacji obejmują ograniczone falowanie, wjazd z czterech stron
 oraz po skosie, wybicie i lądowanie, brak ponownego podskoku podczas
 animacji i jazdy po trawie, ponowny wjazd oraz opóźnienie segmentów.
-Trzy regresje ścian sprawdzają ciasne skręty przy czterech krawędziach,
+Cztery regresje ścian sprawdzają zwykłe i spóźnione skręty z radiowozami przy czterech krawędziach,
 obrócone boki i narożniki auta oraz uderzenia po minięciu ostatniego
 bezpiecznego miejsca rozpoczęcia skrętu i tolerancji 20 px.
 Cztery testy geometrii parkingu obejmują asfalt wewnątrz kafelków płotu,

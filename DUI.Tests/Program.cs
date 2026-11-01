@@ -16,6 +16,7 @@ var tests = new (string Name, Action Run)[]
     ("Wide and portrait screens keep the board visible and map input", DisplayMapping),
     ("Circle contact uses the strict intersection rule", CircleCollision)
 }.Concat(MovementTests.Cases)
+    .Concat(SteeringTests.Cases)
     .Concat(CarAnimationTests.Cases)
     .Concat(WallCollisionTests.Cases)
     .Concat(ParkingGeometryTests.Cases)

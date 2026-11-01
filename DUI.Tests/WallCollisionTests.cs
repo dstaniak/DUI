@@ -14,7 +14,8 @@ internal static class WallCollisionTests
     [
         ("A close quarter turn clears each wall without a phantom collision", TurnsClearWalls),
         ("Wall contact follows the car sides and rotated corners", RotatedFootprint),
-        ("Late input after the last safe turn still collides with the wall", LateTurnsHitWalls)
+        ("Late input after the last safe turn still collides with the wall", LateTurnsHitWalls),
+        ("Grace turns clear every wall and the gate with followers", GraceTurnsClearWalls)
     ];
 
     private static readonly (Vector2 Start, Vector2 Approach, Vector2 Turn, float Edge)[] s_turns =
@@ -121,6 +122,37 @@ internal static class WallCollisionTests
                 CarPose outside = new(contact.Center + contact.Outward * 0.1f, orientation.Angle, 0);
                 Assert.Check(!s_parking.IntersectsBoundary(inside));
                 Assert.Check(s_parking.IntersectsBoundary(outside));
+            }
+        }
+    }
+
+    private static void GraceTurnsClearWalls()
+    {
+        foreach (var scenario in s_turns)
+        {
+            foreach (int delayMs in new[] {15, 35, 55})
+            {
+                ConvoyMovement movement = CreateApproach(scenario.Start, scenario.Approach,
+                    scenario.Edge, late: false);
+                movement.Update(TimeSpan.FromMilliseconds(delayMs));
+                for (int car = 0; car < 3; car++)
+                {
+                    movement.Grow();
+                }
+                StopAtBoundary(movement);
+                CarPose before = movement.Cars[0];
+                Assert.Check(movement.QueueDirection(scenario.Turn));
+                movement.Update(ConvoyMovement.StepDuration);
+                Assert.Check(Vector2.Dot(movement.Cars[0].Direction, scenario.Turn) > 0);
+                Assert.Check(Vector2.Distance(before.Center, movement.Cars[0].Center) <= 2.001f);
+                AdvanceUntilFacing(movement, scenario.Turn);
+                movement.Update(TimeSpan.FromMilliseconds(600));
+                Assert.Check(!movement.HasStopped);
+                for (int car = 0; car < movement.Cars.Count; car++)
+                {
+                    Assert.Check(!s_parking.IntersectsBoundary(movement.Cars[car]));
+                    Assert.Near(car * 80, movement.Cars[0].Distance - movement.Cars[car].Distance);
+                }
             }
         }
     }

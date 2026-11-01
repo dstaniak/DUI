@@ -361,20 +361,26 @@ ContentManager Gum posiada teksturę; nie ma systemowej zależności od fontu.
 Usunięto tutorialowy atlas UI, 04b_30 i osobny sprite ‰. C64Theme rysuje ramki prostokątami,
 a C64Button nadaje kolory wszystkim stanom wejścia. Własne białe ikonki i gwiazdki pozostają osobnymi teksturami.</p>
 <h2>Weryfikacja i ograniczenia</h2>
-<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> uruchamia 57 testów bez GPU.
+<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> uruchamia 64 testy bez GPU.
 <a href="../DUI.Tests/MovementTests.cs">MovementTests</a> sprawdza oczekiwanie na krawędź kafelka, polecenie poza tolerancją,
 500 skrętów bez zejścia z osi siatki (stan logiczny i rysowany),
 cztery kierunki, stałą prędkość, kolejkę, odrzucanie zwrotu i powtórzeń,
 resztę czasu, interpolację, ślad przez cztery zakręty, odstępy, wzrost,
 ograniczenie historii, ciasny nawrót, kolizje między końcami podkroku,
 granice parkingu, zatrzymanie, pauzę i restart.
+Sześć <a href="../DUI.Tests/SteeringTests.cs">SteeringTests</a> sprawdza natychmiastowy skręt
+po spóźnieniu o 2, 10 i 20 px w obu stronach, stałą prędkość bez teleportacji,
+powrót na właściwą oś, ślad i odstępy radiowozów oraz niezależność od podziału czasu.
+Sprawdza krótkie naciśnięcia strzałek/WASD pomiędzy aktualizacjami, kolejność zdarzeń,
+odwrócenie sekwencji przez grzybka, brak automatycznych powtórzeń i reset po utracie aktywności.
 <a href="../DUI.Tests/CarAnimationTests.cs">CarAnimationTests</a> sprawdza granice falowania,
 podskok z czterech stron i po skosie, aktywną animację, jazdę po trawie i wyjazd,
 ponowne uzbrojenie po opuszczeniu wyspy, opóźnienie segmentów na zakręcie,
 pauzę, restart i niezależność od podziału czasu. Pozostałe testy obejmują gesty,
-mapowanie ekranu oraz Circle. Trzy testy w <a href="../DUI.Tests/WallCollisionTests.cs">WallCollisionTests</a>
+mapowanie ekranu oraz Circle. Cztery testy w <a href="../DUI.Tests/WallCollisionTests.cs">WallCollisionTests</a>
 odtwarzają fałszywe zderzenie przy ciasnym skręcie i sprawdzają przejazd kolumny
-przy wszystkich czterech ścianach, skrajne boki i narożniki obróconego auta
+przy wszystkich czterech ścianach, również przy spóźnionym skręcie z radiowozami
+w całym oknie tolerancji i przed zamkniętą bramą, skrajne boki i narożniki obróconego auta
 oraz zatrzymanie po spóźnionym poleceniu za ostatnią bezpieczną krawędzią skrętu i tolerancją 20 px.
 Korzystają z tych samych granic ParkingGeometry co gra. Cztery testy w
 <a href="../DUI.Tests/ParkingGeometryTests.cs">ParkingGeometryTests</a>
