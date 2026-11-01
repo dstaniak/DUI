@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="42" height="29" viewBox="0 0 42 29" shape-rendering="crispEdges">
-  <title>Pixel per-mille score symbol</title>
-  <g fill="#ffffff" fill-rule="evenodd">
-    <path d="M2 0H8L10 2V8L8 10H2L0 8V2Z M3 3V7H7V3Z"/>
-    <path d="M22 19H28L30 21V27L28 29H22L20 27V21Z M23 22V26H27V22Z"/>
-    <path d="M34 19H40L42 21V27L40 29H34L32 27V21Z M35 22V26H39V22Z"/>
-    <path d="M24 0H30V4H26V8H22V12H18V16H14V20H10V24H6V29H0V24H4V20H8V16H12V12H16V8H20V4H24Z"/>
-  </g>
-</svg>

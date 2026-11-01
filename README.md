@@ -7,7 +7,7 @@ przystępny i zabawny, bez zawstydzania odbiorcy.
 Pierwsza gra wykorzystuje mechanikę snake’a z tutorialu DungeonSlime:
 gracz prowadzi czerwony samochód i zbiera losowane piwo, wódkę, proszek, grzybki
 oraz kiełbaskę. Alkohol i proszek wydłużają kolumnę radiowozów, zakąska zmniejsza
-wynik w promilach, a powerupy tymczasowo zmieniają efekty i sterowanie.
+poziom alkoholu, a powerupy tymczasowo zmieniają efekty i sterowanie.
 
 ## Uruchomienie
 
@@ -33,7 +33,7 @@ Przy innych proporcjach okna każda oś jest dopasowywana osobno; dla
 naturalnych proporcji najlepszy jest widok 16:9. Fizyka, prędkość i granice
 kolizji pozostają w jednostkach planszy.
 
-Wynik w promilach steruje shaderem podwójnego widzenia na warstwie planszy.
+Poziom alkoholu w promilach steruje shaderem podwójnego widzenia na warstwie planszy.
 UI jest rysowane osobno i nakładane po wszystkich efektach świata. Przy 0,0‰ lub aktywnym proszku shader jest pomijany.
 Powyżej zera, bez proszku, kopia obrazu
 zatacza koło wokół środka okna w ciągu 8 sekund; sam obraz nie zmienia
@@ -68,8 +68,18 @@ i towary zachowują proporcje, a pas sklepu nadal zajmuje dwa górne kafelki.
 
 UI ma układ logiczny 320×180 i zoom 4, rysowany w osobnym przezroczystym
 buforze 720p, skalowanym tak samo jak plansza. Licznik, przyciski i panele
-pauzy oraz końca gry nie podlegają podwójnemu widzeniu, tęczy ani drżeniu. Napisy zachowują czytelną wielkość i szczegóły fontu bez pośredniego
-pomniejszania do 200 wierszy.
+pauzy oraz końca gry nie podlegają podwójnemu widzeniu, tęczy ani drżeniu. Całe UI używa ekranowego fontu C64 na siatce 8×8:
+cyfry promili, znak ‰, PAUSE, RESUME, RETRY i nagłówki paneli.
+Pasek ma tło C64 Orange `#6F4F25`, żółty tekst i ramkę Yellow `#B8C76F`.
+Panele pauzy i końca gry mają tę samą paletę i prostokątne ramki.
+Przyciski są płaskie: fokus lub najechanie daje pomarańczowy tekst na żółtym tle,
+a naciśnięcie rozjaśnia tło do bieli. Białe ikony i wypełnienie gwiazdek
+zachowują kontrast; puste gwiazdki używają jasnej szarości C64 `#959595`.
+Wszystkie kolory UI są przypisane do ról w `C64Theme`: tło, tekst, akcent,
+naciśnięcie, przygaszone elementy i symbole. Kolejny wariant wymaga tylko
+zmiany tych przypisań i ponownego uruchomienia gry.
+Bitmapowy font skaluje się bez wygładzania: standardowy znak ma 32×32 px,
+a nagłówki paneli 64×64 px przy obrazie 720p.
 
 ## Zasady i sterowanie
 
@@ -109,7 +119,7 @@ pomniejszania do 200 wierszy.
   Piwo dodaje 0,2‰ i samochód, a przy zebraniu rozpryskuje piwo i pianę.
   Wódka dodaje 0,4‰ i samochód. Kiełbaska odejmuje 0,4‰, do minimum 0‰,
   i nie zmienia długości kolumny. Licznik zaczyna od `0,0‰` i pokazuje
-  jedną cyfrę po przecinku; cały znak `‰` jest osobnym pikselowym sprite’em.
+  jedną cyfrę po przecinku; znak `‰` jest glifem tej samej czcionki C64.
   Kolejny przedmiot pojawia się po przeciwnej stronie parkingu.
   Witryna, ogrodzenie, zamknięta brama lub własna kolumna aut kończą grę.
 - Biały proszek w woreczku strunowym dodaje jeden radiowóz i przez
@@ -135,7 +145,16 @@ pomniejszania do 200 wierszy.
   Ponowne zebranie zaczyna od widocznej ikonki, wygaśnięcie i RETRY ją gaszą,
   a pauza i koniec gry zamrażają mruganie. Wskaźniki pokazują aktywne timery
   również wtedy, gdy proszek chwilowo ukrywa ich efekty wizualne.
-  Wszystkie trzy przesuwają się za wynikiem, gdy rośnie liczba jego cyfr.
+  Wszystkie trzy przesuwają się za promilami, gdy rośnie liczba cyfr licznika.
+- Wynikiem gry jest liczba segmentów kolumny, razem z autem gracza.
+  Za trzema slotami powerupów jest pięć białych gwiazdek 28×28 px.
+  Ich jasnoszare tło z palety C64 (#959595) jest zawsze widoczne; białe wypełnienie narasta
+  od lewej do prawej w skali 0–84 segmentów, z dokładnością do jednego
+  piksela obrazu 720p. Odstępy między gwiazdkami nie wliczają się do postępu.
+  Start i RETRY dają 1 punkt za głowę, 42 segmenty to 2,5 gwiazdki,
+  a 84 lub więcej — pełne pięć. Piwo, wódka i proszek dodają punkt;
+  kiełbaska oraz grzybek nie zmieniają wyniku. Promile pozostają osobnym
+  licznikiem. Gwiazdki nie mrugają i nie podlegają efektom świata.
 - Wódka uruchamia mocne drżenie kafelków i sprite’ów na planszy w lewo
   i prawo: ±24 piksele przy 720p, 18 cykli na sekundę, przez 3 sekundy.
   UI jest rysowane osobno i nie drży. Kolejna wódka odnawia czas;
@@ -159,7 +178,7 @@ pomniejszania do 200 wierszy.
 - Pulsowanie jest wyłącznie wizualne; rozmiar obszaru kolizji pozostaje stały.
   Pauza zatrzymuje też rozprysk, a RETRY usuwa pozostałe cząsteczki.
 - Escape / Start / Back lub przycisk PAUSE pauzuje grę.
-  RESUME wznawia, RETRY rozpoczyna nową rozgrywkę z wynikiem `0,0‰`.
+  RESUME wznawia, RETRY rozpoczyna nową rozgrywkę z 1 punktem i `0,0‰`.
   Przyciski obsługują także Enter / A na padzie.
 - Gest przesunięcia na planszy trafia do tej samej kolejki. Na komputerze
   można go sprawdzić przeciągnięciem lewego przycisku myszy.
@@ -181,8 +200,8 @@ się standardowym przyciskiem systemu.
   `ConvoyCollision` sprawdza ruchome okręgi oraz granice parkingu.
 - `CarConvoy` — łączy model z rysowaniem, aktualizuje podskoki i sprawdza
   granice po każdym podkroku. Rysuje czerwone auto gracza oraz radiowozy
-  w ogonie. `PoliceLightbar` nakłada dwuklatkowe światła na dach, używając
-  czasu modelu i tej samej transformacji co auto; posiada i zwalnia teksturę
+  w ogonie. `SegmentCount` udostępnia wynik razem z głową. `PoliceLightbar`
+  nakłada dwuklatkowe światła na dach, używając czasu modelu i tej samej transformacji co auto; posiada i zwalnia teksturę
   jednego piksela. `CarSway` dodaje małe wizualne falowanie.
 - `Easings` — statyczne funkcje interpolacji (30 krzywych oraz `Linear`);
   `ConvoyMovement` używa `EaseInOutSine` do skrętów, a `CarHop` używa
@@ -196,7 +215,7 @@ się standardowym przyciskiem systemu.
   krawężnika przez jego przód; renderowanie korzysta z czasu modelu ruchu.
 - `Pickup` — wspólny ruch, pulsowanie i kolizje wszystkich pięciu przedmiotów.
   `PickupType` rozróżnia ich rodzaj, a `PickupRules` określa losowanie,
-  zmianę wyniku i wydłużanie kolumny. `BeerBurst` rysuje krople i pianę
+  zmianę promili i wydłużanie kolumny. `BeerBurst` rysuje krople i pianę
   wyłącznie po piwie. `ScreenShake` odmierza 3 sekundy drżenia po wódce;
   `GameScene` przesuwa tylko partię rysowania planszy, przed UI Gum.
 - `GameDisplay` — mapuje planszę i klatkę 1280×720 na całe okno oraz
@@ -205,9 +224,15 @@ się standardowym przyciskiem systemu.
 - `RetroRenderer` — posiada dwa bufory 1280×720: świata i przezroczystego UI.
   Nakłada podwójne widzenie i tęczę na świat, a dopiero potem komponuje UI
   bez efektów. Obie warstwy skaluje przez `PointClamp` do tego samego obszaru.
-  `DuiGame` przekazuje wynik, czas aktywnej gry i flagi powerupów; przełącza
+  `DuiGame` przekazuje promile, czas aktywnej gry i flagi powerupów; przełącza
   bufory między `GameScene.Draw` i `DrawUI`, a przy wyjściu zwalnia oba.
   Shadery należą do głównego `ContentManager`.
+- `C64Theme` — wspólna czcionka, role kolorów i prostokątne powierzchnie z palety C64.
+  `C64Button` zachowuje obsługę wejścia Gum, używając własnych kolorów
+  fokusu, najechania, naciśnięcia i wyłączenia.
+- `ScoreStars` — pięć przyciemnionych gwiazdek z białym wypełnieniem
+  przycinanym do całych pikseli na podstawie `GameScene.Score` (długości kolumny).
+  `GameSceneUI` ustawia je za slotami powerupów w osobnej warstwie UI.
 - `DUI.Tests` — testy regresji uruchamiane bez okna i urządzenia graficznego.
 - [Mapa klas](Docs/ClassMap.html) — odpowiedzialności i przepływy aplikacji.
 
@@ -304,18 +329,20 @@ Oba zasoby i ich warianty z wzorami powstały we wbudowanym `image_gen`; prompty
 pliku AssetPrompts.json. Definicja mapy wycina wnętrza kafelków bez linii
 podziału atlasu; `ParkingLot` skaluje je do logicznych 80×80.
 Oryginalne parking-atlas.png i storefront.png pozostają materiałem źródłowym.
-Tutorialowy atlas.png pozostaje źródłem fontu i elementów UI.
+Tutorialowy font i atlas UI zostały zastąpione motywem C64.
 Narożniki są składane z fragmentów pionowego i poziomego przęsła tego samego
 atlasu, dzięki czemu zachowują rozstaw szyn oraz wzór siatki. Na styku jest
 [kątownik](DUI.Game/Content/Images/fence-corner.png) wycięty podczas rysowania
 z grafiki wygenerowanej we wbudowanym `image_gen`. Całe połączenie jest
 odbijane lustrzanie po prawej stronie. Prompt grafiki jest w AssetPrompts.json.
 
-Cały [znak promila](DUI.Game/Content/Images/per-mille.png) jest pojedynczą
-teksturą 42×29 z przezroczystym tłem. Narysowano go jako pikselowe figury
-w [źródłowym SVG](SourceAssets/UI/per-mille.svg) i zrasteryzowano do PNG.
-UI dopasowuje go do skali fontu i przesuwa za liczbą przy zmianie jej szerokości.
-Punktacja używa `decimal`, aby przyrosty o 0,2 były dokładne.
+[Czcionka UI C64](DUI.Game/Content/Fonts/c64.fnt) korzysta z
+[fontu C64 autorstwa zeiche](https://github.com/zeiche/c64font), udostępnionego
+na CC0. [Źródło i licencja](SourceAssets/Fonts/README.md) są w repozytorium.
+Skrypt `SourceAssets/Fonts/build_font.py` tworzy atlas bez antyaliasingu:
+ASCII 32–95 oraz dodatkowy znak ‰, dopasowany do pikselowej siatki.
+Gra wczytuje gotowy bitmapowy font; nie wymaga instalowania czcionki w systemie.
+Promile używają `decimal`, aby przyrosty o 0,2 były dokładne.
 
 Wskaźniki aktywnych efektów mają osobne, białe sprite’y 28×28:
 [kieliszek](DUI.Game/Content/Images/UI/vodka-indicator.png),
@@ -323,4 +350,4 @@ Wskaźniki aktywnych efektów mają osobne, białe sprite’y 28×28:
 [grzybek](DUI.Game/Content/Images/UI/mushroom-indicator.png).
 Ich źródłowe SVG są w `SourceAssets/UI/`. Powstały z pikselowych prostokątów
 na siatce 14×14, powiększonych dwukrotnie bez antyaliasingu; używają tylko
-bieli i przezroczystości, podobnie jak znak promila.
+bieli i przezroczystości, podobnie jak atlas nowego fontu.
