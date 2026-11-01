@@ -28,7 +28,7 @@ public class GameScene : Scene
     private ParkingLot _parkingLot;
     private Rectangle _pickupArea;
     private SoundEffect _collectSoundEffect;
-    // Game points expressed in per mille; decimal keeps pickup changes exact.
+    // Alcohol level; decimal keeps pickup changes exact, independently of score.
     private decimal _scorePermille;
     private GameSceneUI _ui;
     private GameState _state;
@@ -36,6 +36,7 @@ public class GameScene : Scene
     private float _saturation = 1.0f;
     private const float FadeSpeed = 0.01f;
 
+    public int Score => _convoy.SegmentCount;
     public decimal ScorePermille => _scorePermille;
     public bool VisualEffectsSuppressed => _powerups.VisualEffectsSuppressed;
     public bool RainbowActive => _powerups.RainbowActive;
@@ -159,6 +160,7 @@ public class GameScene : Scene
         // and retry frames. Hidden world visuals do not cancel their timers.
         _ui.UpdateEffectIndicators(_screenShake.RemainingTime,
             _powerups.PowderRemaining, _powerups.MushroomRemaining);
+        _ui.UpdateScoreStars(Score);
         _ui.Draw();
     }
 

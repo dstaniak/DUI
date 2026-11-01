@@ -24,6 +24,9 @@ public sealed class CarConvoy : IDisposable
     public event EventHandler BodyCollision;
     public event EventHandler BoundaryCollision;
 
+    // The player's car is segment zero and contributes one point.
+    public int SegmentCount => _movement.Cars.Count;
+
     public CarConvoy(Sprite playerSprite, Sprite policeSprite, ParkingLot parkingLot)
     {
         _parkingLot = parkingLot;

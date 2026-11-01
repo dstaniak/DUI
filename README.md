@@ -7,7 +7,7 @@ przystępny i zabawny, bez zawstydzania odbiorcy.
 Pierwsza gra wykorzystuje mechanikę snake’a z tutorialu DungeonSlime:
 gracz prowadzi czerwony samochód i zbiera losowane piwo, wódkę, proszek, grzybki
 oraz kiełbaskę. Alkohol i proszek wydłużają kolumnę radiowozów, zakąska zmniejsza
-wynik w promilach, a powerupy tymczasowo zmieniają efekty i sterowanie.
+poziom alkoholu, a powerupy tymczasowo zmieniają efekty i sterowanie.
 
 ## Uruchomienie
 
@@ -33,7 +33,7 @@ Przy innych proporcjach okna każda oś jest dopasowywana osobno; dla
 naturalnych proporcji najlepszy jest widok 16:9. Fizyka, prędkość i granice
 kolizji pozostają w jednostkach planszy.
 
-Wynik w promilach steruje shaderem podwójnego widzenia na warstwie planszy.
+Poziom alkoholu w promilach steruje shaderem podwójnego widzenia na warstwie planszy.
 UI jest rysowane osobno i nakładane po wszystkich efektach świata. Przy 0,0‰ lub aktywnym proszku shader jest pomijany.
 Powyżej zera, bez proszku, kopia obrazu
 zatacza koło wokół środka okna w ciągu 8 sekund; sam obraz nie zmienia
@@ -135,7 +135,16 @@ pomniejszania do 200 wierszy.
   Ponowne zebranie zaczyna od widocznej ikonki, wygaśnięcie i RETRY ją gaszą,
   a pauza i koniec gry zamrażają mruganie. Wskaźniki pokazują aktywne timery
   również wtedy, gdy proszek chwilowo ukrywa ich efekty wizualne.
-  Wszystkie trzy przesuwają się za wynikiem, gdy rośnie liczba jego cyfr.
+  Wszystkie trzy przesuwają się za promilami, gdy rośnie liczba cyfr licznika.
+- Wynikiem gry jest liczba segmentów kolumny, razem z autem gracza.
+  Za trzema slotami powerupów jest pięć białych gwiazdek 28×28 px.
+  Ich ciemnoszare tło jest zawsze widoczne; białe wypełnienie narasta
+  od lewej do prawej w skali 0–84 segmentów, z dokładnością do jednego
+  piksela obrazu 720p. Odstępy między gwiazdkami nie wliczają się do postępu.
+  Start i RETRY dają 1 punkt za głowę, 42 segmenty to 2,5 gwiazdki,
+  a 84 lub więcej — pełne pięć. Piwo, wódka i proszek dodają punkt;
+  kiełbaska oraz grzybek nie zmieniają wyniku. Promile pozostają osobnym
+  licznikiem. Gwiazdki nie mrugają i nie podlegają efektom świata.
 - Wódka uruchamia mocne drżenie kafelków i sprite’ów na planszy w lewo
   i prawo: ±24 piksele przy 720p, 18 cykli na sekundę, przez 3 sekundy.
   UI jest rysowane osobno i nie drży. Kolejna wódka odnawia czas;
@@ -159,7 +168,7 @@ pomniejszania do 200 wierszy.
 - Pulsowanie jest wyłącznie wizualne; rozmiar obszaru kolizji pozostaje stały.
   Pauza zatrzymuje też rozprysk, a RETRY usuwa pozostałe cząsteczki.
 - Escape / Start / Back lub przycisk PAUSE pauzuje grę.
-  RESUME wznawia, RETRY rozpoczyna nową rozgrywkę z wynikiem `0,0‰`.
+  RESUME wznawia, RETRY rozpoczyna nową rozgrywkę z 1 punktem i `0,0‰`.
   Przyciski obsługują także Enter / A na padzie.
 - Gest przesunięcia na planszy trafia do tej samej kolejki. Na komputerze
   można go sprawdzić przeciągnięciem lewego przycisku myszy.
@@ -181,8 +190,8 @@ się standardowym przyciskiem systemu.
   `ConvoyCollision` sprawdza ruchome okręgi oraz granice parkingu.
 - `CarConvoy` — łączy model z rysowaniem, aktualizuje podskoki i sprawdza
   granice po każdym podkroku. Rysuje czerwone auto gracza oraz radiowozy
-  w ogonie. `PoliceLightbar` nakłada dwuklatkowe światła na dach, używając
-  czasu modelu i tej samej transformacji co auto; posiada i zwalnia teksturę
+  w ogonie. `SegmentCount` udostępnia wynik razem z głową. `PoliceLightbar`
+  nakłada dwuklatkowe światła na dach, używając czasu modelu i tej samej transformacji co auto; posiada i zwalnia teksturę
   jednego piksela. `CarSway` dodaje małe wizualne falowanie.
 - `Easings` — statyczne funkcje interpolacji (30 krzywych oraz `Linear`);
   `ConvoyMovement` używa `EaseInOutSine` do skrętów, a `CarHop` używa
@@ -196,7 +205,7 @@ się standardowym przyciskiem systemu.
   krawężnika przez jego przód; renderowanie korzysta z czasu modelu ruchu.
 - `Pickup` — wspólny ruch, pulsowanie i kolizje wszystkich pięciu przedmiotów.
   `PickupType` rozróżnia ich rodzaj, a `PickupRules` określa losowanie,
-  zmianę wyniku i wydłużanie kolumny. `BeerBurst` rysuje krople i pianę
+  zmianę promili i wydłużanie kolumny. `BeerBurst` rysuje krople i pianę
   wyłącznie po piwie. `ScreenShake` odmierza 3 sekundy drżenia po wódce;
   `GameScene` przesuwa tylko partię rysowania planszy, przed UI Gum.
 - `GameDisplay` — mapuje planszę i klatkę 1280×720 na całe okno oraz
@@ -205,9 +214,12 @@ się standardowym przyciskiem systemu.
 - `RetroRenderer` — posiada dwa bufory 1280×720: świata i przezroczystego UI.
   Nakłada podwójne widzenie i tęczę na świat, a dopiero potem komponuje UI
   bez efektów. Obie warstwy skaluje przez `PointClamp` do tego samego obszaru.
-  `DuiGame` przekazuje wynik, czas aktywnej gry i flagi powerupów; przełącza
+  `DuiGame` przekazuje promile, czas aktywnej gry i flagi powerupów; przełącza
   bufory między `GameScene.Draw` i `DrawUI`, a przy wyjściu zwalnia oba.
   Shadery należą do głównego `ContentManager`.
+- `ScoreStars` — pięć przyciemnionych gwiazdek z białym wypełnieniem
+  przycinanym do całych pikseli na podstawie `GameScene.Score` (długości kolumny).
+  `GameSceneUI` ustawia je za slotami powerupów w osobnej warstwie UI.
 - `DUI.Tests` — testy regresji uruchamiane bez okna i urządzenia graficznego.
 - [Mapa klas](Docs/ClassMap.html) — odpowiedzialności i przepływy aplikacji.
 

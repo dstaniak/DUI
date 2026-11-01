@@ -35,6 +35,7 @@ public class GameSceneUI : ContainerRuntime
     private SpriteRuntime _vodkaIndicator;
     private SpriteRuntime _powderIndicator;
     private SpriteRuntime _mushroomIndicator;
+    private ScoreStars _scoreStars;
     private AnimatedButton _pauseButton;
 
     public GameSceneUI()
@@ -56,6 +57,8 @@ public class GameSceneUI : ContainerRuntime
         AddChild(_vodkaIndicator);
         AddChild(_powderIndicator);
         AddChild(_mushroomIndicator);
+        _scoreStars = new ScoreStars(content.Load<Texture2D>("Images/UI/score-star"));
+        AddChild(_scoreStars);
         PositionScoreAccessories();
 
         _pauseButton = new AnimatedButton(atlas);
@@ -85,6 +88,11 @@ public class GameSceneUI : ContainerRuntime
         SetIndicatorVisibility(_vodkaIndicator, vodkaRemaining, ScreenShake.Duration);
         SetIndicatorVisibility(_powderIndicator, powderRemaining, PowerupEffects.Duration);
         SetIndicatorVisibility(_mushroomIndicator, mushroomRemaining, PowerupEffects.Duration);
+    }
+
+    public void UpdateScoreStars(int segmentCount)
+    {
+        _scoreStars.UpdateScore(segmentCount);
     }
 
     public void ShowPausePanel()
@@ -204,6 +212,8 @@ public class GameSceneUI : ContainerRuntime
         _vodkaIndicator.X = _perMilleSymbol.X + _perMilleSymbol.Width + IndicatorGap;
         _powderIndicator.X = _vodkaIndicator.X + IndicatorSize + IndicatorGap;
         _mushroomIndicator.X = _powderIndicator.X + IndicatorSize + IndicatorGap;
+        _scoreStars.X = _mushroomIndicator.X + IndicatorSize + IndicatorGap;
+        _scoreStars.Y = _scoreText.Y;
     }
 
     private Panel CreatePausePanel(TextureAtlas atlas)

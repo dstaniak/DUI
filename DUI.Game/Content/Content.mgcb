@@ -241,3 +241,14 @@
 /processorParam:TextureFormat=Color
 /build:Images/UI/mushroom-indicator.png
 
+#begin Images/UI/score-star.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Images/UI/score-star.png
+
