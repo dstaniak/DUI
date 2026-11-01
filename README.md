@@ -5,8 +5,8 @@ skierowany również do osób, które faktycznie tak jeżdżą. Ton gry ma być
 przystępny i zabawny, bez zawstydzania odbiorcy.
 
 Pierwsza gra wykorzystuje mechanikę snake’a z tutorialu DungeonSlime:
-gracz prowadzi czerwony samochód, zbiera pulsujące butelki piwa,
-a za nim rośnie kolumna radiowozów.
+gracz prowadzi czerwony samochód i zbiera losowane piwo, wódkę oraz kiełbaskę.
+Alkohol wydłuża kolumnę radiowozów, a zakąska zmniejsza wynik w promilach.
 
 ## Uruchomienie
 
@@ -31,6 +31,19 @@ piksele przy skalowaniu. Obraz wypełnia całe okno bez ramki i pasów.
 Przy innych proporcjach okna każda oś jest dopasowywana osobno; dla
 naturalnych proporcji najlepszy jest widok 16:9. Fizyka, prędkość i granice
 kolizji pozostają w jednostkach planszy.
+
+Wynik w promilach steruje shaderem podwójnego widzenia na całej klatce,
+łącznie z UI. Przy 0,0‰ shader jest pomijany. Powyżej zera kopia obrazu
+zatacza koło wokół środka okna w ciągu 8 sekund; sam obraz nie zmienia
+orientacji. Alfa rośnie od bazowego 0,1 o 0,01 na każde 0,1‰, do maksimum 0,5:
+przy 0,2‰ wynosi 0,12, przy 1‰ — 0,2, a przy 2‰ — 0,3. Od 4‰ pozostaje 0,5.
+Promień rośnie liniowo: 12 pikseli na 1‰ przy
+720p, czyli 2,4 piksela za piwo i 4,8 za wódkę; kiełbaska zmniejsza efekt.
+Promień skaluje się z krótszym bokiem okna,
+a ruch pozostaje kołowy także przy innych proporcjach. Tylko kopia używa
+filtrowania liniowego dla płynnych przesunięć mniejszych niż piksel;
+oryginał zachowuje `PointClamp`. Poza krawędziami przesuniętej kopii widać
+sam oryginał. Pauza i koniec gry zatrzymują orbitę; RETRY zeruje efekt.
 
 Retro wygląd tworzą same grafiki: uproszczone kształty, pikselowy font,
 kolory inspirowane C64 i wybrane dwukolorowe wzory w cieniach.
@@ -80,17 +93,26 @@ pomniejszania do 200 wierszy.
 - Kolizje z ogonem używają ruchomych okręgów o promieniu 32, z pominięciem
   bezpośredniego sąsiada głowy. Są sprawdzane także pomiędzy końcami podkroku.
   Przy ścianach sprawdzany jest obrys auta 74×36, obracany razem z jego
-  kierunkiem, bez przezroczystego marginesu tekstury. Zbieranie butelek
+  kierunkiem, bez przezroczystego marginesu tekstury. Zbieranie przedmiotów
   zachowuje promień głowy 40. Granica kolizji biegnie przy widocznym
   ogrodzeniu (x=46–1234, dół y=666), a nie na krawędzi jego kafelków.
   Zamknięta brama zajmuje x=560–720 i wystaje do y=654; jej narożniki
   są sprawdzane względem obróconego auta. Witryna kończy się na y=160.
-- Butelka piwa pulsuje, porusza się i odbija od granic parkingu. Jej zebranie
-  wywołuje rozprysk złotych kropli i białej piany, dodaje samochód oraz
-  0,2‰ do wyniku. Licznik zaczyna od `0,0‰` i pokazuje jedną cyfrę po
-  przecinku; cały znak `‰` jest osobnym pikselowym sprite’em.
-  Kolejna butelka pojawia się po przeciwnej stronie parkingu.
+- Na planszy jest jeden pulsujący przedmiot, poruszający się i odbijający
+  od granic parkingu. Na początku, po RETRY i po każdym zebraniu losowany
+  jest następny: **60% piwo, 20% kieliszek wódki, 20% kiełbaska**.
+  Piwo dodaje 0,2‰ i samochód, a przy zebraniu rozpryskuje piwo i pianę.
+  Wódka dodaje 0,4‰ i samochód. Kiełbaska odejmuje 0,4‰, do minimum 0‰,
+  i nie zmienia długości kolumny. Licznik zaczyna od `0,0‰` i pokazuje
+  jedną cyfrę po przecinku; cały znak `‰` jest osobnym pikselowym sprite’em.
+  Kolejny przedmiot pojawia się po przeciwnej stronie parkingu.
   Witryna, ogrodzenie, zamknięta brama lub własna kolumna aut kończą grę.
+- Wódka uruchamia mocne drżenie kafelków i sprite’ów na planszy w lewo
+  i prawo: ±24 piksele przy 720p, 18 cykli na sekundę, przez 3 sekundy.
+  UI jest rysowane osobno i nie drży. Kolejna wódka odnawia czas;
+  piwo i kiełbaska nie przerywają drżenia. Pauza i przegrana zatrzymują
+  jego fazę oraz odliczanie, a RETRY je zeruje. Drżenie jest wizualne
+  i nie zmienia kolizji; odsłonięty skraj planszy jest czarny.
 - Plansza jest parkingiem pod sklepem z alkoholem i przekąskami. Witryna
   zajmuje dwa górne rzędy; po bokach i na dole jest ogrodzenie z siatki,
   a pośrodku dolnego ogrodzenia zamknięta brama szerokości dwóch kafelków.
@@ -140,17 +162,22 @@ się standardowym przyciskiem systemu.
   witryny z centralnej fasady i powtarzanych segmentów wystawy oraz
   wspólna geometria kafelków trawy i płynnego powiększania aut do 106%.
   `ParkingGeometry` wyznacza krawędzie ogrodzenia, osobny obrys bramy
-  i prostokątny obszar ruchu butelek, który mieści się przed bramą.
+  i prostokątny obszar ruchu przedmiotów, który mieści się przed bramą.
   `CarHop` ma osobny stan dla każdego auta i wykrywa przekroczenie
   krawężnika przez jego przód; renderowanie korzysta z czasu modelu ruchu.
-- `BeerBottle` — ruch i pulsowanie butelki; `BeerBurst` — krótkotrwałe
-  krople piwa i piana, rysowane prostymi figurami pikselowymi.
+- `Pickup` — wspólny ruch, pulsowanie i kolizje piwa, wódki i kiełbaski.
+  `PickupType` rozróżnia ich rodzaj, a `PickupRules` określa losowanie,
+  zmianę wyniku i wydłużanie kolumny. `BeerBurst` rysuje krople i pianę
+  wyłącznie po piwie. `ScreenShake` odmierza 3 sekundy drżenia po wódce;
+  `GameScene` przesuwa tylko partię rysowania planszy, przed UI Gum.
 - `GameDisplay` — mapuje planszę i klatkę 1280×720 na całe okno oraz
   określa logiczny układ UI 320×180 przy zoomie 4. Odwrotna transformacja
   obsługuje gesty oraz kursor Gum, aż do krawędzi widocznej planszy.
 - `RetroRenderer` — posiada jeden bufor 1280×720 ze sceną i UI. Prezentuje
-  go przez `PointClamp`, zachowując kolory źródłowe. `DuiGame` obejmuje nim
-  rysowanie sceny i zwalnia bufor przy wyjściu.
+  go przez `PointClamp` i nakłada shader `doubleVisionEffect`, gdy wynik
+  przekracza 0‰. `DuiGame` przekazuje wynik oraz czas aktywnej gry ze sceny,
+  obejmuje rendererem jej rysowanie i zwalnia bufor przy wyjściu.
+  Shader należy do głównego `ContentManager`.
 - `DUI.Tests` — testy regresji uruchamiane bez okna i urządzenia graficznego.
 - [Mapa klas](Docs/ClassMap.html) — odpowiedzialności i przepływy aplikacji.
 
@@ -180,7 +207,7 @@ dotnet build DUI.slnx
 dotnet run --project DUI.Tests
 ```
 
-37 testów obejmuje natychmiastową reakcję między kafelkami, wszystkie
+44 testy obejmują natychmiastową reakcję między kafelkami, wszystkie
 kierunki skrętów, kolejkę, odrzucanie nieprawidłowych poleceń, stałą prędkość,
 interpolację i różne podziały czasu. Sprawdzają odtwarzanie śladu przez
 cztery zakręty, odstępy, wzrost, ograniczenie pamięci historii, ciasny nawrót,
@@ -192,12 +219,16 @@ Trzy regresje ścian sprawdzają ciasne skręty przy czterech krawędziach,
 obrócone boki i narożniki auta oraz rzeczywiste uderzenia podczas skrętu.
 Cztery testy geometrii parkingu obejmują asfalt wewnątrz kafelków płotu,
 mijanie narożników bramy ukośnym autem, osobne krawędzie bramy i przęsła
-oraz bezpieczny obszar ruchu butelek.
+oraz bezpieczny obszar ruchu przedmiotów.
 Trzy testy `GameDisplayTests` sprawdzają brak ramki i przycinania, pełne
 wypełnienie okna, zgodność kursora Gum przy zoomie 4 z wejściem planszy po zmianie
 rozmiaru (także nieparzystym i bardzo małym) oraz odrzucanie gestów
 z HUD i spoza planszy. Pozostają też testy gestów i kolizji z butelkami.
 Program testowy zwraca kod różny od zera, jeśli dowolny test zawiedzie.
+Trzy testy `PickupTests` sprawdzają dokładne proporcje 60/20/20, mieszane
+sekwencje punktacji i wzrostu oraz dolny limit 0‰ po zakąsce. Cztery testy
+`ScreenShakeTests` sprawdzają amplitudę i tempo, czas 3 sekund, pauzę,
+reset, ponowne wyzwolenie oraz niezależność od podziału czasu.
 Renderowanie, dźwięk, interakcje Gum i cykl życia aplikacji wymagają też
 sprawdzenia w uruchomionej grze; te testy nie potwierdzają działania na telefonie.
 
@@ -222,6 +253,10 @@ sylwetki, orientacji i przezroczystości. Oba auta mają mniej detali,
 większe bloki koloru i jednolite szyby bez refleksów w klimacie C64.
 Dach radiowozu jest pusty w teksturze; światła rysuje kod gry.
 Zbierana butelka ma płaskie szkło, pojedynczy cień i prostą etykietę.
+Nowe [kieliszek wódki](DUI.Game/Content/Images/vodka-shot.png) i
+[kiełbaska](DUI.Game/Content/Images/sausage.png) powstały we wbudowanym
+`image_gen` jako osobne przezroczyste sprite’y retro. Ich prompty również
+są zapisane w `AssetPrompts.json`.
 
 Aktywny [atlas parkingu C64](DUI.Game/Content/Images/c64-parking-atlas.png) zawiera
 16 kafelków asfaltu, linii, krawężników, trawy, siatki i bramy.
