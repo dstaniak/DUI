@@ -16,7 +16,10 @@ internal static class PowerupEffectsTests
         ("Powerups pause, reset and ignore ordinary pickups", PauseAndReset),
         ("Powerup duration is independent of frame partitions", FramePartitions),
         ("Powder increases convoy speed to 1.2x without speeding up timers", MovementBoost),
-        ("Powder speed handles expiration within a frame and fractional ticks", PartialBoost)
+        ("Powder speed handles expiration within a frame and fractional ticks", PartialBoost),
+        ("Mushroom halves convoy speed for ten real seconds", MushroomSlowdown),
+        ("Overlapping speed effects multiply and expire independently", OverlappingSpeeds),
+        ("Slow movement preserves fractional ticks across frames and reset", PartialSlowdown)
     ];
 
     private static void ReverseDirections()
@@ -149,6 +152,84 @@ internal static class PowerupEffectsTests
         effects.Update(TimeSpan.FromSeconds(1));
         Assert.Check(!effects.VisualEffectsSuppressed && !effects.ControlsReversed);
         Assert.Check(effects.Update(TimeSpan.FromSeconds(1)) == TimeSpan.FromSeconds(1));
+    }
+
+    private static void MushroomSlowdown()
+    {
+        var effects = new PowerupEffects();
+        var movement = new ConvoyMovement(new Vector2(40));
+        movement.Grow();
+        effects.Collect(PickupType.Mushroom);
+        movement.Update(effects.Update(TimeSpan.FromSeconds(1)));
+        Assert.Near(240, movement.Cars[0].Center.X);
+        Assert.Near(80, Vector2.Distance(movement.Cars[0].Center, movement.Cars[1].Center));
+        Assert.Check(effects.MushroomRemaining == TimeSpan.FromSeconds(9));
+        Assert.Check(effects.ControlsReversed && effects.RainbowActive);
+        Assert.Check(effects.Update(TimeSpan.FromSeconds(9)) == TimeSpan.FromSeconds(4.5));
+        Assert.Check(!effects.ControlsReversed && !effects.RainbowActive);
+        Assert.Check(effects.Update(TimeSpan.FromSeconds(1)) == TimeSpan.FromSeconds(1));
+    }
+
+    private static void OverlappingSpeeds()
+    {
+        var effects = new PowerupEffects();
+        effects.Collect(PickupType.Powder);
+        effects.Collect(PickupType.Mushroom);
+        Assert.Check(effects.Update(TimeSpan.FromSeconds(1)) == TimeSpan.FromSeconds(0.6));
+        Assert.Check(effects.ControlsReversed && effects.VisualEffectsSuppressed && !effects.RainbowActive);
+
+        effects.Reset();
+        effects.Collect(PickupType.Powder);
+        effects.Update(TimeSpan.FromSeconds(4));
+        effects.Collect(PickupType.Mushroom);
+        Assert.Check(effects.Update(TimeSpan.FromSeconds(7)) == TimeSpan.FromSeconds(4.1));
+        Assert.Check(effects.ControlsReversed && !effects.VisualEffectsSuppressed);
+        Assert.Check(effects.Update(TimeSpan.FromSeconds(4)) == TimeSpan.FromSeconds(2.5));
+
+        effects.Reset();
+        effects.Collect(PickupType.Mushroom);
+        effects.Update(TimeSpan.FromSeconds(4));
+        effects.Collect(PickupType.Powder);
+        Assert.Check(effects.Update(TimeSpan.FromSeconds(7)) == TimeSpan.FromSeconds(4.8));
+        Assert.Check(!effects.ControlsReversed && effects.VisualEffectsSuppressed);
+        Assert.Check(effects.Update(TimeSpan.FromSeconds(4)) == TimeSpan.FromSeconds(4.6));
+    }
+
+    private static void PartialSlowdown()
+    {
+        foreach (bool powderActive in new[] { false, true })
+        {
+            var whole = new PowerupEffects();
+            var split = new PowerupEffects();
+            foreach (PowerupEffects effects in new[] { whole, split })
+            {
+                effects.Collect(PickupType.Mushroom);
+                if (powderActive)
+                {
+                    effects.Collect(PickupType.Powder);
+                }
+            }
+
+            TimeSpan frame = TimeSpan.FromTicks(101);
+            TimeSpan expected = whole.Update(frame);
+            TimeSpan actual = TimeSpan.Zero;
+            for (int tick = 0; tick < frame.Ticks; tick++)
+            {
+                actual += split.Update(TimeSpan.FromTicks(1));
+            }
+            Assert.Check(actual == expected && actual.Ticks == (powderActive ? 60 : 50));
+            Assert.Check(split.Update(TimeSpan.Zero) == TimeSpan.Zero);
+            TimeSpan rest = TimeSpan.FromSeconds(11) - frame;
+            TimeSpan wholeRest = whole.Update(rest);
+            Assert.Check(wholeRest == split.Update(rest));
+            Assert.Check(expected + wholeRest == TimeSpan.FromSeconds(powderActive ? 7 : 6));
+        }
+
+        var reset = new PowerupEffects();
+        reset.Collect(PickupType.Mushroom);
+        Assert.Check(reset.Update(TimeSpan.FromTicks(1)) == TimeSpan.Zero);
+        reset.Reset();
+        Assert.Check(reset.Update(TimeSpan.FromTicks(1)) == TimeSpan.FromTicks(1));
     }
 
     private static void PartialBoost()

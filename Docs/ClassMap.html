@@ -350,7 +350,7 @@ ContentManager Gum posiada teksturę; nie ma systemowej zależności od fontu.
 Usunięto tutorialowy atlas UI, 04b_30 i osobny sprite ‰. C64Theme rysuje ramki prostokątami,
 a C64Button nadaje kolory wszystkim stanom wejścia. Własne białe ikonki i gwiazdki pozostają osobnymi teksturami.</p>
 <h2>Weryfikacja i ograniczenia</h2>
-<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> uruchamia 54 testy bez GPU.
+<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> uruchamia 57 testów bez GPU.
 <a href="../DUI.Tests/MovementTests.cs">MovementTests</a> sprawdza oczekiwanie na krawędź kafelka, spóźnione polecenie,
 500 skrętów bez zejścia z osi siatki (stan logiczny i rysowany),
 cztery kierunki, stałą prędkość, kolejkę, odrzucanie zwrotu i powtórzeń,
@@ -378,9 +378,10 @@ Trzy <a href="../DUI.Tests/PickupTests.cs">PickupTests</a> sprawdzają rozkład
 50/20/5/5/20, mieszane zmiany promili, wzrost i limit 0‰ po zakąsce. Cztery
 <a href="../DUI.Tests/ScreenShakeTests.cs">ScreenShakeTests</a> sprawdzają 18 Hz i ±24 px,
 czas 3 sekund, zamrożenie fazy, reset, odnowienie i podział czasu.
-Osiem <a href="../DUI.Tests/PowerupEffectsTests.cs">PowerupEffectsTests</a> sprawdza wszystkie kierunki,
-czasy 10 sekund, odnawianie, nakładanie efektów, reset, podział czasu oraz 480 px/s,
-odstępy aut, zwykłe tempo timerów, część klatki po wygaśnięciu i ułamki ticków.
+Jedenaście <a href="../DUI.Tests/PowerupEffectsTests.cs">PowerupEffectsTests</a> sprawdza wszystkie kierunki,
+czasy 10 sekund, odnawianie, nakładanie efektów, reset, podział czasu oraz 480, 200 i 240 px/s,
+odstępy aut, zwykłe tempo timerów, niezależne wygasanie mnożników w obu kolejnościach,
+część klatki po wygaśnięciu i ułamki ticków.
 Testy kompilują te same źródła modeli, reguł, PowerupEffects, ScreenShake i GameDisplay co gra.</p>
 <p>Testy nie zastępują sprawdzenia renderowania, audio, przycisków Gum,
 jazdy po środkach rzędów i kolumn, płynnych łuków i odtwarzania ich przez ogon, łączenia kafelków parkingu, witryny, ogrodzenia i bramy, szarej siatki 80×80 na asfalcie i trawie (alpha 0,35 bez wzmocnienia na skrzyżowaniach, przycięcie do obszaru jazdy i bramy, warstwa pod sprite’ami), falowania aut i opóźnienia segmentów, radiowozów w ogonie i dwóch kolorów świateł na obracającym się dachu, powiększania każdego auta na trawie i podskoków przy wjeździe, pulsowania i zebrania butelki, rozprysku piwa, zmian promili +0,2/+0,4/−0,4‰, wzrostu po napojach i proszku, działania obu powerupów przez 10 sekund, odwracania wejścia, przyspieszenia 1,2×, spowolnienia 0,5× i wspólnego mnożnika 0,6×, drżenia samej planszy przez 3 sekundy po wódce i resetu do 0,0‰, położenia sprite’a przy przejściu 9,8‰ → 10,0‰ oraz utraty aktywności w uruchomionej aplikacji.

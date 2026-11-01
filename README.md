@@ -277,7 +277,7 @@ dotnet build DUI.slnx
 dotnet run --project DUI.Tests
 ```
 
-54 testy obejmują oczekiwanie na krawędź kafelka i spóźnione polecenie,
+57 testów obejmuje oczekiwanie na krawędź kafelka i spóźnione polecenie,
 500 kolejnych skrętów bez zejścia z osi siatki, wszystkie kierunki skrętów,
 kolejkę, odrzucanie nieprawidłowych poleceń, stałą prędkość,
 interpolację i różne podziały czasu. Sprawdzają odtwarzanie śladu przez
@@ -301,9 +301,10 @@ Trzy testy `PickupTests` sprawdzają dokładne proporcje 50/20/5/5/20, mieszane
 sekwencje punktacji i wzrostu oraz dolny limit 0‰ po zakąsce. Cztery testy
 `ScreenShakeTests` sprawdzają amplitudę i tempo, czas 3 sekund, pauzę,
 reset, ponowne wyzwolenie oraz niezależność od podziału czasu.
-Osiem testów `PowerupEffectsTests` sprawdza kierunki, oba czasy 10 sekund,
-odnawianie, nakładanie efektów, reset i podział czasu oraz prędkość 480 px/s,
-odstępy aut, zwykłe tempo timerów i wygaśnięcie przyspieszenia wewnątrz klatki.
+Jedenaście testów `PowerupEffectsTests` sprawdza kierunki, oba czasy 10 sekund,
+odnawianie, nakładanie efektów, reset i podział czasu oraz prędkości 480, 200 i 240 px/s,
+odstępy aut, zwykłe tempo timerów, niezależne wygasanie mnożników w obu kolejnościach,
+część klatki po wygaśnięciu i ułamki ticków.
 Renderowanie, dźwięk, interakcje Gum i cykl życia aplikacji wymagają też
 sprawdzenia w uruchomionej grze, w tym niezmienionych kolorów i położenia
 UI przy aktywnych efektach i po zmianie rozmiaru okna, a także mrugania,
