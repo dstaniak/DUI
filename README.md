@@ -138,7 +138,7 @@ pomniejszania do 200 wierszy.
   Wszystkie trzy przesuwają się za promilami, gdy rośnie liczba cyfr licznika.
 - Wynikiem gry jest liczba segmentów kolumny, razem z autem gracza.
   Za trzema slotami powerupów jest pięć białych gwiazdek 28×28 px.
-  Ich ciemnoszare tło jest zawsze widoczne; białe wypełnienie narasta
+  Ich jasnoszare tło z palety C64 (#959595) jest zawsze widoczne; białe wypełnienie narasta
   od lewej do prawej w skali 0–84 segmentów, z dokładnością do jednego
   piksela obrazu 720p. Odstępy między gwiazdkami nie wliczają się do postępu.
   Start i RETRY dają 1 punkt za głowę, 42 segmenty to 2,5 gwiazdki,
