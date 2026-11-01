@@ -149,6 +149,8 @@ a nagłówki paneli 64×64 px przy obrazie 720p.
 - Za wynikiem i znakiem ‰ są trzy stałe miejsca na ikonki: wódka, proszek,
   grzybek. To osobne białe sprite’y 28×28 px z przezroczystym tłem,
   dopasowane do pikselowego licznika. Ikonka aktywnego przedmiotu mruga: 0,3 s widoczna, 0,3 s ukryta.
+  W ostatniej sekundzie każdego efektu mruga trzy razy szybciej: 0,1 s widoczna,
+  0,1 s ukryta, zaczynając od widocznego błysku na granicy ostatniej sekundy.
   Odliczanie pochodzi z tego samego timera co efekt (3 s / 10 s / 10 s).
   Ponowne zebranie zaczyna od widocznej ikonki, wygaśnięcie i RETRY ją gaszą,
   a pauza i koniec gry zamrażają mruganie. Wskaźniki pokazują aktywne timery
