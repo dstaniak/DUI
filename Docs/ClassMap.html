@@ -236,7 +236,7 @@ w jednej przezroczystej teksturze 42×29. Powstał z ręcznie narysowanych figur
 a GameSceneUI wczytuje ją przez ContentManager Gum. Znak uzupełnia font 04b_30,
 który nie zawiera U+2030; nie wymaga składania kilku sprite’ów.</p>
 <h2>Weryfikacja i ograniczenia</h2>
-<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> uruchamia 37 testów bez GPU.
+<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> uruchamia 44 testy bez GPU.
 <a href="../DUI.Tests/MovementTests.cs">MovementTests</a> sprawdza natychmiastowy skręt,
 cztery kierunki, stałą prędkość, kolejkę, odrzucanie zwrotu i powtórzeń,
 resztę czasu, interpolację, ślad przez cztery zakręty, odstępy, wzrost,
@@ -259,7 +259,11 @@ Trzy testy <a href="../DUI.Tests/GameDisplayTests.cs">GameDisplayTests</a> spraw
 pełne wypełnienie okna bez ramki i przycinania planszy, zgodność mapowania UI
 przy zoomie 4 i gestów w obu osiach po zmianie rozmiaru oraz blokadę gestów z HUD i spoza planszy.
 Uwzględniają okna szerokie, pionowe, nieparzyste oraz mniejsze niż raster.
-Testy kompilują te same źródła modelu i GameDisplay co gra.</p>
+Trzy <a href="../DUI.Tests/PickupTests.cs">PickupTests</a> sprawdzają rozkład
+60/20/20, mieszaną punktację, wzrost i limit 0‰ po zakąsce. Cztery
+<a href="../DUI.Tests/ScreenShakeTests.cs">ScreenShakeTests</a> sprawdzają 18 Hz i ±24 px,
+czas 3 sekund, zamrożenie fazy, reset, odnowienie i podział czasu.
+Testy kompilują te same źródła modeli, reguł, ScreenShake i GameDisplay co gra.</p>
 <p>Testy nie zastępują sprawdzenia renderowania, audio, przycisków Gum,
 łączenia kafelków parkingu, witryny, ogrodzenia i bramy, falowania aut i opóźnienia segmentów, radiowozów w ogonie i dwóch kolorów świateł na obracającym się dachu, powiększania każdego auta na trawie i podskoków przy wjeździe, pulsowania i zebrania butelki, rozprysku piwa, zmian wyniku +0,2/+0,4/−0,4‰, wzrostu tylko po napojach, drżenia samej planszy przez 3 sekundy po wódce i resetu do 0,0‰, położenia sprite’a przy przejściu 9,8‰ → 10,0‰ oraz utraty aktywności w uruchomionej aplikacji.
 Shader podwójnego widzenia wymaga sprawdzenia na GPU: brak efektu przy 0‰,

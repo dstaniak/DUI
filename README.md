@@ -207,7 +207,7 @@ dotnet build DUI.slnx
 dotnet run --project DUI.Tests
 ```
 
-37 testów obejmuje natychmiastową reakcję między kafelkami, wszystkie
+44 testy obejmują natychmiastową reakcję między kafelkami, wszystkie
 kierunki skrętów, kolejkę, odrzucanie nieprawidłowych poleceń, stałą prędkość,
 interpolację i różne podziały czasu. Sprawdzają odtwarzanie śladu przez
 cztery zakręty, odstępy, wzrost, ograniczenie pamięci historii, ciasny nawrót,
@@ -225,6 +225,10 @@ wypełnienie okna, zgodność kursora Gum przy zoomie 4 z wejściem planszy po z
 rozmiaru (także nieparzystym i bardzo małym) oraz odrzucanie gestów
 z HUD i spoza planszy. Pozostają też testy gestów i kolizji z butelkami.
 Program testowy zwraca kod różny od zera, jeśli dowolny test zawiedzie.
+Trzy testy `PickupTests` sprawdzają dokładne proporcje 60/20/20, mieszane
+sekwencje punktacji i wzrostu oraz dolny limit 0‰ po zakąsce. Cztery testy
+`ScreenShakeTests` sprawdzają amplitudę i tempo, czas 3 sekund, pauzę,
+reset, ponowne wyzwolenie oraz niezależność od podziału czasu.
 Renderowanie, dźwięk, interakcje Gum i cykl życia aplikacji wymagają też
 sprawdzenia w uruchomionej grze; te testy nie potwierdzają działania na telefonie.
 
