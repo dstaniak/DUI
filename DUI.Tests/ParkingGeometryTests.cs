@@ -71,7 +71,7 @@ internal static class ParkingGeometryTests
 
     private static void BottleArea()
     {
-        Rectangle area = s_parking.BottleBounds;
+        Rectangle area = s_parking.PickupBounds;
         Assert.Check(s_parking.DrivingBounds.Contains(area));
         Assert.Check(!area.Intersects(s_parking.GateBounds));
         Assert.Check(area.Bottom == s_parking.GateBounds.Top);

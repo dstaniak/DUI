@@ -19,7 +19,7 @@ public sealed class ParkingLot
     private readonly Rectangle[] _grassIslands;
 
     public Rectangle DrivingBounds => Geometry.DrivingBounds;
-    public Rectangle BottleBounds => Geometry.BottleBounds;
+    public Rectangle PickupBounds => Geometry.PickupBounds;
     public Vector2 StartingPosition { get; }
     internal ParkingGeometry Geometry { get; }
     internal ReadOnlySpan<Rectangle> GrassIslands => _grassIslands;

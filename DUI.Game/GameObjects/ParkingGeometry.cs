@@ -9,7 +9,7 @@ internal sealed class ParkingGeometry
 
     public Rectangle DrivingBounds { get; }
     public Rectangle GateBounds { get; }
-    public Rectangle BottleBounds { get; }
+    public Rectangle PickupBounds { get; }
 
     public ParkingGeometry(int columns, int rows)
     {
@@ -28,8 +28,8 @@ internal sealed class ParkingGeometry
         GateBounds = new Rectangle((columns / 2 - 1) * TileSize,
             fenceRow + gateOffset, 2 * TileSize, TileSize - gateOffset);
 
-        // Bottles bounce in a rectangle that also clears the closed gate.
-        BottleBounds = new Rectangle(sideFenceInset, shopBottom,
+        // Pickups bounce in a rectangle that also clears the closed gate.
+        PickupBounds = new Rectangle(sideFenceInset, shopBottom,
             width, GateBounds.Top - shopBottom);
     }
 

@@ -20,20 +20,20 @@ public class GameScene : Scene
         GameOver
     }
 
+    private readonly ScreenShake _screenShake = new();
     private CarConvoy _convoy;
-    private BeerBottle _bottle;
+    private Pickup _pickup;
     private BeerBurst _beerBurst;
     private ParkingLot _parkingLot;
-    private Rectangle _bottleArea;
+    private Rectangle _pickupArea;
     private SoundEffect _collectSoundEffect;
-    // Game points expressed in per mille; decimal keeps each 0.2 step exact.
+    // Game points expressed in per mille; decimal keeps pickup changes exact.
     private decimal _scorePermille;
     private GameSceneUI _ui;
     private GameState _state;
     private Effect _grayscaleEffect;
     private float _saturation = 1.0f;
     private const float FadeSpeed = 0.01f;
-    private const decimal BeerScorePermille = 0.2m;
 
     public decimal ScorePermille => _scorePermille;
 
@@ -46,7 +46,7 @@ public class GameScene : Scene
 
         Core.ExitOnEscape = false;
 
-        _bottleArea = _parkingLot.BottleBounds;
+        _pickupArea = _parkingLot.PickupBounds;
 
         _convoy.BodyCollision += OnConvoyCollision;
         _convoy.BoundaryCollision += OnConvoyCollision;
@@ -62,7 +62,11 @@ public class GameScene : Scene
         _parkingLot = new ParkingLot(Content);
         _convoy = new CarConvoy(LoadSprite("Images/car"), LoadSprite("Images/police-car"), _parkingLot);
         var bounceEffect = Content.Load<SoundEffect>("Audio/bounce");
-        _bottle = new BeerBottle(LoadSprite("Images/beer-bottle"), bounceEffect);
+        _pickup = new Pickup(
+            LoadSprite("Images/beer-bottle"),
+            LoadSprite("Images/vodka-shot"),
+            LoadSprite("Images/sausage"),
+            bounceEffect);
         _beerBurst = new BeerBurst(Core.GraphicsDevice);
         _collectSoundEffect = Content.Load<SoundEffect>("Audio/collect");
         _grayscaleEffect = Content.Load<Effect>("Effects/grayscaleEffect");
@@ -104,6 +108,7 @@ public class GameScene : Scene
         }
 
         PlayTime += gameTime.ElapsedGameTime;
+        _screenShake.Update(gameTime.ElapsedGameTime);
         _convoy.QueueDirection(GameController.ReadDirection());
         _convoy.Update(gameTime);
         if (_state != GameState.Playing)
@@ -111,7 +116,7 @@ public class GameScene : Scene
             return;
         }
 
-        _bottle.Update(gameTime);
+        _pickup.Update(gameTime);
         _beerBurst.Update(gameTime);
 
         CollisionChecks();
@@ -126,15 +131,17 @@ public class GameScene : Scene
             sceneEffect = _grayscaleEffect;
         }
 
+        // Shake only the world batch. Gum draws the HUD and dialogs afterward.
         // Sprite textures use straight alpha; preserve their transparent edges.
         Core.SpriteBatch.Begin(
             blendState: BlendState.NonPremultiplied,
             samplerState: SamplerState.PointClamp,
-            effect: sceneEffect);
+            effect: sceneEffect,
+            transformMatrix: Matrix.CreateTranslation(_screenShake.HorizontalOffset, 0, 0));
 
         _parkingLot.Draw(Core.SpriteBatch);
         _convoy.Draw();
-        _bottle.Draw();
+        _pickup.Draw();
         _beerBurst.Draw(Core.SpriteBatch);
         Core.SpriteBatch.End();
         _ui.Draw();
@@ -183,39 +190,57 @@ public class GameScene : Scene
     private void CollisionChecks()
     {
         var convoyBounds = _convoy.GetBounds();
-        var bottleBounds = _bottle.GetBounds();
+        var pickupBounds = _pickup.GetBounds();
 
-        if (convoyBounds.Intersects(bottleBounds))
+        if (convoyBounds.Intersects(pickupBounds))
         {
-            // Capture the pickup location before the next bottle is positioned.
-            _beerBurst.Emit(_bottle.Center);
-            PositionBottleAwayFromConvoy();
-            _bottle.RandomizeVelocity();
+            CollectPickup();
+            return;
+        }
+
+        if (pickupBounds.Top <= _pickupArea.Top)
+        {
+            _pickup.Bounce(Vector2.UnitY);
+        }
+
+        if (pickupBounds.Bottom >= _pickupArea.Bottom)
+        {
+            _pickup.Bounce(-Vector2.UnitY);
+        }
+
+        if (pickupBounds.Left <= _pickupArea.Left)
+        {
+            _pickup.Bounce(Vector2.UnitX);
+        }
+
+        if (pickupBounds.Right >= _pickupArea.Right)
+        {
+            _pickup.Bounce(-Vector2.UnitX);
+        }
+    }
+
+    private void CollectPickup()
+    {
+        // Apply the collected type before spawning and choosing the next one.
+        PickupType type = _pickup.Type;
+        if (type == PickupType.Beer)
+        {
+            _beerBurst.Emit(_pickup.Center);
+        }
+        else if (type == PickupType.Vodka)
+        {
+            _screenShake.Restart();
+        }
+
+        if (PickupRules.GrowsConvoy(type))
+        {
             _convoy.Grow();
-            _scorePermille += BeerScorePermille;
-            _ui.UpdateScoreText(_scorePermille);
-            Core.Audio.PlaySoundEffect(_collectSoundEffect);
         }
 
-        if (bottleBounds.Top <= _bottleArea.Top)
-        {
-            _bottle.Bounce(Vector2.UnitY);
-        }
-
-        if (bottleBounds.Bottom >= _bottleArea.Bottom)
-        {
-            _bottle.Bounce(-Vector2.UnitY);
-        }
-
-        if (bottleBounds.Left <= _bottleArea.Left)
-        {
-            _bottle.Bounce(Vector2.UnitX);
-        }
-
-        if (bottleBounds.Right >= _bottleArea.Right)
-        {
-            _bottle.Bounce(-Vector2.UnitX);
-        }
+        _scorePermille = PickupRules.ApplyScore(_scorePermille, type);
+        _ui.UpdateScoreText(_scorePermille);
+        Core.Audio.PlaySoundEffect(_collectSoundEffect);
+        SpawnPickupAwayFromConvoy();
     }
 
     private void InitializeUI()
@@ -232,11 +257,11 @@ public class GameScene : Scene
         _convoy.Initialize(_parkingLot.StartingPosition);
         _beerBurst.Clear();
 
-        _bottle.RandomizeVelocity();
-        PositionBottleAwayFromConvoy();
+        SpawnPickupAwayFromConvoy();
 
         _scorePermille = 0m;
         PlayTime = TimeSpan.Zero;
+        _screenShake.Reset();
         _ui.UpdateScoreText(_scorePermille);
         _ui.HidePausePanel();
         _ui.HideGameOverPanel();
@@ -250,10 +275,10 @@ public class GameScene : Scene
         }
     }
 
-    private void PositionBottleAwayFromConvoy()
+    private void SpawnPickupAwayFromConvoy()
     {
-        float parkingCenterX = _bottleArea.X + _bottleArea.Width * 0.5f;
-        float parkingCenterY = _bottleArea.Y + _bottleArea.Height * 0.5f;
+        float parkingCenterX = _pickupArea.X + _pickupArea.Width * 0.5f;
+        float parkingCenterY = _pickupArea.Y + _pickupArea.Height * 0.5f;
         Vector2 parkingCenter = new(parkingCenterX, parkingCenterY);
 
         Circle convoyBounds = _convoy.GetBounds();
@@ -261,45 +286,44 @@ public class GameScene : Scene
 
         Vector2 centerToConvoy = convoyCenter - parkingCenter;
 
-        Circle bottleBounds = _bottle.GetBounds();
-        int padding = bottleBounds.Radius * 2;
+        Circle pickupBounds = _pickup.GetBounds();
+        int padding = pickupBounds.Radius * 2;
 
         // Position is the texture's top-left, so the far-side random limit
         // must also reserve its center offset, not just the collision radius.
-        var newBottlePosition = Vector2.Zero;
+        var newPickupPosition = Vector2.Zero;
         if (Math.Abs(centerToConvoy.X) > Math.Abs(centerToConvoy.Y))
         {
-            newBottlePosition.Y = Random.Shared.Next(
-                _bottleArea.Top + padding, _bottleArea.Bottom - padding * 2
+            newPickupPosition.Y = Random.Shared.Next(
+                _pickupArea.Top + padding, _pickupArea.Bottom - padding * 2
             );
 
             if (centerToConvoy.X > 0)
             {
-                newBottlePosition.X = _bottleArea.Left + padding;
+                newPickupPosition.X = _pickupArea.Left + padding;
             }
             else
             {
-                newBottlePosition.X = _bottleArea.Right - padding * 2;
+                newPickupPosition.X = _pickupArea.Right - padding * 2;
             }
         }
         else
         {
-            newBottlePosition.X = Random.Shared.Next(
-                _bottleArea.Left + padding, _bottleArea.Right - padding * 2
+            newPickupPosition.X = Random.Shared.Next(
+                _pickupArea.Left + padding, _pickupArea.Right - padding * 2
             );
 
             if (centerToConvoy.Y > 0)
             {
-                newBottlePosition.Y = _bottleArea.Top + padding;
+                newPickupPosition.Y = _pickupArea.Top + padding;
             }
             else
             {
-                newBottlePosition.Y = _bottleArea.Bottom - padding * 2;
+                newPickupPosition.Y = _pickupArea.Bottom - padding * 2;
             }
         }
 
-        _bottle.Position = newBottlePosition;
-        _bottle.ResetPulse();
+        _pickup.Spawn(PickupRules.ChooseType(Random.Shared), newPickupPosition);
     }
 
     private void OnResumeButtonClicked(object sender, EventArgs e)

@@ -112,6 +112,28 @@
 /processorParam:TextureFormat=Color
 /build:Images/beer-bottle.png
 
+#begin Images/vodka-shot.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=False
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Images/vodka-shot.png
+
+#begin Images/sausage.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=False
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Images/sausage.png
+
 #begin Images/c64-parking-atlas.png
 /importer:TextureImporter
 /processor:TextureProcessor
