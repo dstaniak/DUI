@@ -5,7 +5,6 @@ using Gum.Forms.Controls;
 using Gum.Forms.DefaultVisuals.V3;
 using Gum.GueDeriving;
 using Gum.Managers;
-using MonoGameLibrary.Graphics;
 
 namespace DUI.UI;
 
@@ -40,10 +39,10 @@ internal sealed class C64Button : Button
 
             state.Apply = () =>
             {
-                background.FillColor = pressed ? C64Palette.White :
-                    selected && !disabled ? C64Palette.LightBlue : C64Palette.Blue;
-                label.Color = disabled ? C64Palette.LightGray :
-                    pressed || selected ? C64Palette.Blue : C64Palette.White;
+                background.FillColor = pressed ? C64Theme.PressedColor :
+                    selected && !disabled ? C64Theme.AccentColor : C64Theme.BackgroundColor;
+                label.Color = disabled ? C64Theme.MutedColor :
+                    pressed || selected ? C64Theme.BackgroundColor : C64Theme.TextColor;
             };
         }
 

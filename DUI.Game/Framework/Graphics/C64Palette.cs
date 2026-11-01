@@ -26,6 +26,7 @@ public static class C64Palette
     public static Color Cyan => s_colors[3];
     public static Color Blue => s_colors[6];
     public static Color Yellow => s_colors[7];
+    public static Color Orange => s_colors[8];
     public static Color LightRed => s_colors[10];
     public static Color LightBlue => s_colors[14];
     public static Color LightGray => s_colors[15];

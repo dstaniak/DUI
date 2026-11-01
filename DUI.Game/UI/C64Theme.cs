@@ -6,17 +6,25 @@ using MonoGameLibrary.Graphics;
 
 namespace DUI.UI;
 
-/// <summary>Shared C64 font, flat blue surfaces and square borders for all UI.</summary>
+/// <summary>Shared C64 font, color roles and square borders for all UI.</summary>
 internal static class C64Theme
 {
     public const string FontFile = "Fonts/c64.fnt";
+
+    // Change this set to recolor the entire UI when it is next created.
+    public static Color BackgroundColor => C64Palette.Orange;
+    public static Color TextColor => C64Palette.Yellow;
+    public static Color AccentColor => C64Palette.Yellow;
+    public static Color PressedColor => C64Palette.White;
+    public static Color MutedColor => C64Palette.LightGray;
+    public static Color SymbolColor => C64Palette.White;
 
     public static void ApplyFont(TextRuntime text, float scale = 1f)
     {
         text.UseCustomFont = true;
         text.CustomFontFile = FontFile;
         text.FontScale = scale;
-        text.Color = C64Palette.White;
+        text.Color = TextColor;
     }
 
     public static TextRuntime CreateText(string value, float scale = 1f)
@@ -44,7 +52,7 @@ internal static class C64Theme
 
     public static RectangleRuntime AddFrame(GraphicalUiElement parent, float borderWidth)
     {
-        RectangleRuntime border = CreateSurface(C64Palette.LightBlue);
+        RectangleRuntime border = CreateSurface(AccentColor);
         border.WidthUnits = DimensionUnitType.RelativeToParent;
         border.HeightUnits = DimensionUnitType.RelativeToParent;
         border.Width = 0;
@@ -52,7 +60,7 @@ internal static class C64Theme
         border.Anchor(Anchor.TopLeft);
         parent.AddChild(border);
 
-        RectangleRuntime background = CreateSurface(C64Palette.Blue);
+        RectangleRuntime background = CreateSurface(BackgroundColor);
         background.WidthUnits = DimensionUnitType.RelativeToParent;
         background.HeightUnits = DimensionUnitType.RelativeToParent;
         background.Anchor(Anchor.TopLeft);

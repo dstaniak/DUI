@@ -166,6 +166,7 @@ public class GameSceneUI : ContainerRuntime
             HeightUnits = DimensionUnitType.Absolute,
             Width = IndicatorSize,
             Height = IndicatorSize,
+            Color = C64Theme.SymbolColor,
             Visible = false
         };
         indicator.Anchor(Gum.Wireframe.Anchor.TopLeft);

@@ -70,11 +70,14 @@ UI ma układ logiczny 320×180 i zoom 4, rysowany w osobnym przezroczystym
 buforze 720p, skalowanym tak samo jak plansza. Licznik, przyciski i panele
 pauzy oraz końca gry nie podlegają podwójnemu widzeniu, tęczy ani drżeniu. Całe UI używa ekranowego fontu C64 na siatce 8×8:
 cyfry promili, znak ‰, PAUSE, RESUME, RETRY i nagłówki paneli.
-Pasek ma tło C64 Blue `#352879` i ramkę Light Blue `#6C5EB5`.
+Pasek ma tło C64 Orange `#6F4F25`, żółty tekst i ramkę Yellow `#B8C76F`.
 Panele pauzy i końca gry mają tę samą paletę i prostokątne ramki.
-Przyciski są płaskie: fokus lub najechanie odwraca niebieskie kolory,
+Przyciski są płaskie: fokus lub najechanie daje pomarańczowy tekst na żółtym tle,
 a naciśnięcie rozjaśnia tło do bieli. Białe ikony i wypełnienie gwiazdek
 zachowują kontrast; puste gwiazdki używają jasnej szarości C64 `#959595`.
+Wszystkie kolory UI są przypisane do ról w `C64Theme`: tło, tekst, akcent,
+naciśnięcie, przygaszone elementy i symbole. Kolejny wariant wymaga tylko
+zmiany tych przypisań i ponownego uruchomienia gry.
 Bitmapowy font skaluje się bez wygładzania: standardowy znak ma 32×32 px,
 a nagłówki paneli 64×64 px przy obrazie 720p.
 
@@ -224,7 +227,7 @@ się standardowym przyciskiem systemu.
   `DuiGame` przekazuje promile, czas aktywnej gry i flagi powerupów; przełącza
   bufory między `GameScene.Draw` i `DrawUI`, a przy wyjściu zwalnia oba.
   Shadery należą do głównego `ContentManager`.
-- `C64Theme` — wspólna czcionka i prostokątne powierzchnie z palety C64.
+- `C64Theme` — wspólna czcionka, role kolorów i prostokątne powierzchnie z palety C64.
   `C64Button` zachowuje obsługę wejścia Gum, używając własnych kolorów
   fokusu, najechania, naciśnięcia i wyłączenia.
 - `ScoreStars` — pięć przyciemnionych gwiazdek z białym wypełnieniem

@@ -33,8 +33,8 @@ public sealed class ScoreStars : ContainerRuntime
         for (int index = 0; index < StarCount; index++)
         {
             float x = index * (starWidth + StarGap);
-            AddChild(CreateStar(texture, x, C64Palette.LightGray));
-            SpriteRuntime filledStar = CreateStar(texture, x, Color.White);
+            AddChild(CreateStar(texture, x, C64Theme.MutedColor));
+            SpriteRuntime filledStar = CreateStar(texture, x, C64Theme.SymbolColor);
             AddChild(filledStar);
             _filledStars[index] = filledStar;
         }
