@@ -2,26 +2,31 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
-using MonoGameLibrary;
 
 namespace DUI.GameObjects;
 
-/// <summary>Continuous steering and distance-spaced followers, independent of rendering and terrain.</summary>
+/// <summary>Tile-centered lanes joined by smooth arcs, with distance-spaced followers.</summary>
 public sealed class ConvoyMovement
 {
     public const float Speed = 400f;
-    public const float Spacing = 80f;
+    public const float Spacing = ParkingGeometry.TileSize;
+    // A late turn may tighten its radius, but must still end on the intended lane.
+    public const float TurnGraceDistance = 20f;
     public static readonly TimeSpan StepDuration = TimeSpan.FromMilliseconds(5);
-    public static readonly TimeSpan TurnDuration = TimeSpan.FromMilliseconds(160);
+    public static readonly TimeSpan TurnDuration = TimeSpan.FromSeconds(TurnLength / Speed);
 
+    private const float TurnRadius = ParkingGeometry.TileSize * 0.5f;
+    private const double TurnLength = Math.PI * TurnRadius * 0.5;
     private const int MaxQueuedTurns = 2;
     private readonly List<CarPose> _cars = [];
     private readonly Queue<Vector2> _directions = new(MaxQueuedTurns);
     private readonly ConvoyTrail _trail;
+    private Vector2 _direction = Vector2.UnitX;
     private Vector2 _targetDirection = Vector2.UnitX;
-    private float _turnStart;
-    private float _turnAngle;
-    private long _turnTicks;
+    private Vector2 _turnEntry;
+    private float _turnRadius;
+    private double _turnLength;
+    private double _turnDistance;
     private long _remainingTicks;
     private bool _turning;
 
@@ -40,13 +45,17 @@ public sealed class ConvoyMovement
 
     public ConvoyMovement(Vector2 startingCenter)
     {
+        // All straight lanes pass through tile centers, including after restart.
+        startingCenter = new Vector2(
+            MathF.Floor(startingCenter.X / Spacing) * Spacing + TurnRadius,
+            MathF.Floor(startingCenter.Y / Spacing) * Spacing + TurnRadius);
         CarPose head = new(startingCenter, 0f, 0);
         _cars.Add(head);
         Cars = _cars.AsReadOnly();
         _trail = new ConvoyTrail(head);
     }
 
-    /// <summary>Accepts up to two waiting quarter turns; the active turn always finishes first.</summary>
+    /// <summary>Queues two quarter turns; accepts late entry within TurnGraceDistance of a tile edge.</summary>
     public bool QueueDirection(Vector2 direction)
     {
         bool cardinal = direction == Vector2.UnitX || direction == -Vector2.UnitX ||
@@ -106,20 +115,13 @@ public sealed class ConvoyMovement
 
     private void Advance()
     {
-        BeginQueuedTurn();
-
         CarPose before = _cars[0];
-        float middleHeading = HeadingAt(_turnTicks + StepDuration.Ticks / 2);
-        float heading = HeadingAt(_turnTicks + StepDuration.Ticks);
         float distance = Speed * (float)StepDuration.TotalSeconds;
-        Vector2 travel = new(MathF.Cos(middleHeading), MathF.Sin(middleHeading));
-        CarPose head = new(before.Center + travel * distance, heading, before.Distance + distance);
-        _trail.Append(head);
+        CarPose head = AdvanceHead(before, distance);
         _cars[0] = head;
 
         bool collided = MoveFollowers(before, head);
         ElapsedTime += StepDuration;
-        FinishTurnStep();
         _trail.TrimBefore(head.Distance - _cars.Count * Spacing - distance);
 
         Stepped?.Invoke(this, EventArgs.Empty);
@@ -130,44 +132,79 @@ public sealed class ConvoyMovement
         }
     }
 
-    private void BeginQueuedTurn()
+    private CarPose AdvanceHead(CarPose head, double remainingDistance)
     {
-        if (_turning || _directions.Count == 0)
+        // Split at lane/arc boundaries even when they fall inside a 5 ms step.
+        // Recording those joins keeps render interpolation and followers on the same path.
+        while (remainingDistance > 0)
         {
-            return;
+            if (_turning)
+            {
+                double distance = Math.Min(remainingDistance, _turnLength - _turnDistance);
+                head = AdvanceTurn(head, distance);
+                remainingDistance -= distance;
+            }
+            else
+            {
+                double distance = remainingDistance;
+                if (_directions.Count > 0)
+                {
+                    double coordinate = Vector2.Dot(head.Center, _direction);
+                    double previousEdge = Math.Floor(coordinate / Spacing) * Spacing;
+                    double overshoot = coordinate - previousEdge;
+                    if (overshoot <= TurnGraceDistance)
+                    {
+                        _targetDirection = _directions.Dequeue();
+                        _turnEntry = head.Center;
+                        // Begin at the actual position, without rewinding the trail.
+                        // A smaller circle reaches the same outgoing lane tangentially.
+                        _turnRadius = TurnRadius - (float)overshoot;
+                        _turnLength = Math.PI * _turnRadius * 0.5;
+                        _turnDistance = 0;
+                        _turning = true;
+                        continue;
+                    }
+
+                    double nextEdge = previousEdge + Spacing;
+                    distance = Math.Min(distance, nextEdge - coordinate);
+                }
+
+                head = new CarPose(head.Center + _direction * (float)distance,
+                    head.Rotation, head.Distance + distance);
+                remainingDistance -= distance;
+            }
+
+            _trail.Append(head);
         }
 
-        _targetDirection = _directions.Dequeue();
-        _turnStart = _cars[0].Rotation;
-        float targetAngle = MathF.Atan2(_targetDirection.Y, _targetDirection.X);
-        _turnAngle = MathHelper.WrapAngle(targetAngle - _turnStart);
-        _turnTicks = 0;
-        _turning = true;
+        return head;
     }
 
-    private float HeadingAt(long turnTicks)
+    private CarPose AdvanceTurn(CarPose head, double distance)
     {
-        if (!_turning)
+        _turnDistance += distance;
+        Vector2 center;
+        Vector2 tangent;
+        if (_turnDistance >= _turnLength)
         {
-            return _cars[0].Rotation;
-        }
-
-        float progress = Math.Min(1f, (float)turnTicks / TurnDuration.Ticks);
-        return _turnStart + _turnAngle * Easings.EaseInOutSine(progress);
-    }
-
-    private void FinishTurnStep()
-    {
-        if (!_turning)
-        {
-            return;
-        }
-
-        _turnTicks += StepDuration.Ticks;
-        if (_turnTicks >= TurnDuration.Ticks)
-        {
+            // Use the exact endpoint instead of accumulated trigonometry.
+            // A pair of turns therefore moves to the next lane exactly 80 px away.
+            center = _turnEntry + (_direction + _targetDirection) * _turnRadius;
+            tangent = _targetDirection;
+            _direction = _targetDirection;
             _turning = false;
         }
+        else
+        {
+            double angle = _turnDistance / _turnRadius;
+            float sine = (float)Math.Sin(angle);
+            float cosine = (float)Math.Cos(angle);
+            center = _turnEntry + _direction * (_turnRadius * sine) +
+                _targetDirection * (_turnRadius * (1f - cosine));
+            tangent = _direction * cosine + _targetDirection * sine;
+        }
+
+        return new CarPose(center, MathF.Atan2(tangent.Y, tangent.X), head.Distance + distance);
     }
 
     private bool MoveFollowers(CarPose headBefore, CarPose headAfter)

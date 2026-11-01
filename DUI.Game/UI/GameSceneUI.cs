@@ -24,6 +24,8 @@ public class GameSceneUI : ContainerRuntime
     private const float IndicatorSize = 7f;
     private const float IndicatorGap = 3f;
     private const long BlinkHalfPeriodTicks = TimeSpan.TicksPerMillisecond * 300;
+    private const long ExpiringBlinkHalfPeriodTicks = TimeSpan.TicksPerMillisecond * 100;
+    private const long ExpiringThresholdTicks = TimeSpan.TicksPerSecond;
     private SoundEffect _uiSoundEffect;
     private Panel _pausePanel;
     private C64Button _resumeButton;
@@ -179,8 +181,16 @@ public class GameSceneUI : ContainerRuntime
         // Use the effect's own elapsed time: no duplicate countdown can drift,
         // and refreshing the effect always starts with the icon switched on.
         long elapsedTicks = duration.Ticks - remaining.Ticks;
+        long halfPeriodTicks = BlinkHalfPeriodTicks;
+        if (remaining.Ticks <= ExpiringThresholdTicks)
+        {
+            // Start the final-second warning with a visible pulse.
+            elapsedTicks = ExpiringThresholdTicks - remaining.Ticks;
+            halfPeriodTicks = ExpiringBlinkHalfPeriodTicks;
+        }
+
         indicator.Visible = remaining > TimeSpan.Zero &&
-            elapsedTicks / BlinkHalfPeriodTicks % 2 == 0;
+            elapsedTicks / halfPeriodTicks % 2 == 0;
     }
 
     private void PositionScoreAccessories()

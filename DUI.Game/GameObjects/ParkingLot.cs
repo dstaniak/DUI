@@ -6,13 +6,18 @@ using MonoGameLibrary.Graphics;
 
 namespace DUI.GameObjects;
 
-/// <summary>Owns the parking layout, lawn height and car hops over its curbs.</summary>
-public sealed class ParkingLot
+/// <summary>Owns the parking layout, lawn height and the tile grid's drawing texture.</summary>
+public sealed class ParkingLot : IDisposable
 {
     public const int TileSize = ParkingGeometry.TileSize;
 
+    private const int GridLineWidth = 1;
+    private const float GridOpacity = 0.35f;
+    // The world batch uses straight alpha, so keep RGB independent of opacity.
+    private static readonly Color s_gridColor = new(C64Palette.LightGray, GridOpacity);
     private readonly Tilemap _tilemap;
     private readonly Texture2D _storefront;
+    private readonly Texture2D _gridPixel;
     private readonly TextureRegion _cornerUpright;
     private readonly TextureRegion _cornerRail;
     private readonly TextureRegion _cornerBracket;
@@ -59,6 +64,9 @@ public sealed class ParkingLot
         {
             PlaceGrassTiles(island);
         }
+
+        _gridPixel = new Texture2D(_storefront.GraphicsDevice, 1, 1);
+        _gridPixel.SetData(new[] { Color.White });
     }
 
     public float GetCarScale(Vector2 center)
@@ -84,8 +92,45 @@ public sealed class ParkingLot
     public void Draw(SpriteBatch spriteBatch)
     {
         _tilemap.Draw(spriteBatch);
+        DrawGrid(spriteBatch);
         DrawFenceCorners(spriteBatch);
         DrawStorefront(spriteBatch);
+    }
+
+    public void Dispose()
+    {
+        _gridPixel.Dispose();
+    }
+
+    private void DrawGrid(SpriteBatch spriteBatch)
+    {
+        Rectangle bounds = DrivingBounds;
+        Rectangle gate = Geometry.GateBounds;
+        int firstColumn = (bounds.Left + TileSize - 1) / TileSize;
+        int firstRow = (bounds.Top + TileSize - 1) / TileSize;
+
+        // Keep the grid on the road and lawns, including partial edge tiles.
+        // The closed gate protrudes into the bottom row, so stop before it.
+        for (int x = firstColumn * TileSize; x < bounds.Right; x += TileSize)
+        {
+            int bottom = x >= gate.Left && x < gate.Right ? gate.Top : bounds.Bottom;
+            var line = new Rectangle(x, bounds.Top, GridLineWidth, bottom - bounds.Top);
+            spriteBatch.Draw(_gridPixel, line, s_gridColor);
+        }
+
+        for (int y = firstRow * TileSize; y < bounds.Bottom; y += TileSize)
+        {
+            // Leave intersections to the vertical lines, avoiding doubled alpha.
+            int left = bounds.Left;
+            while (left < bounds.Right)
+            {
+                int nextColumn = (left / TileSize + 1) * TileSize;
+                int right = Math.Min(nextColumn, bounds.Right);
+                var line = new Rectangle(left, y, right - left, GridLineWidth);
+                spriteBatch.Draw(_gridPixel, line, s_gridColor);
+                left = nextColumn + GridLineWidth;
+            }
+        }
     }
 
     private void DrawStorefront(SpriteBatch spriteBatch)

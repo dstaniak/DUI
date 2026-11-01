@@ -88,7 +88,7 @@ public class GameScene : Scene
         // steer the first frame of the resumed game.
         if (_state != stateBeforeUi)
         {
-            GameController.ResetPointer();
+            GameController.ResetInput();
             return;
         }
 
@@ -98,6 +98,7 @@ public class GameScene : Scene
 
             if (_state == GameState.GameOver)
             {
+                GameController.ResetInput();
                 return;
             }
         }
@@ -109,14 +110,18 @@ public class GameScene : Scene
 
         if (_state == GameState.Paused)
         {
-            GameController.ResetPointer();
+            GameController.ResetInput();
             return;
         }
 
         PlayTime += gameTime.ElapsedGameTime;
         _screenShake.Update(gameTime.ElapsedGameTime);
         TimeSpan movementElapsed = _powerups.Update(gameTime.ElapsedGameTime);
-        _convoy.QueueDirection(_powerups.MapDirection(GameController.ReadDirection()));
+        while (GameController.TryReadDirection(out Vector2 direction))
+        {
+            _convoy.QueueDirection(_powerups.MapDirection(direction));
+        }
+
         _convoy.Update(movementElapsed);
         if (_state != GameState.Playing)
         {
@@ -174,13 +179,14 @@ public class GameScene : Scene
         _ui.ShowPausePanel();
         _state = GameState.Paused;
         _saturation = 1.0f;
-        GameController.ResetPointer();
+        GameController.ResetInput();
     }
 
     public override void UnloadContent()
     {
         _convoy.Dispose();
         _beerBurst?.Dispose();
+        _parkingLot?.Dispose();
         base.UnloadContent();
     }
 
@@ -196,6 +202,7 @@ public class GameScene : Scene
         {
             _ui.HidePausePanel();
             _state = GameState.Playing;
+            GameController.ResetInput();
         }
         else if (_state == GameState.Playing)
         {
@@ -283,7 +290,7 @@ public class GameScene : Scene
         _ui.UpdateScoreText(_scorePermille);
         _ui.HidePausePanel();
         _ui.HideGameOverPanel();
-        GameController.ResetPointer();
+        GameController.ResetInput();
 
         _state = GameState.Playing;
 

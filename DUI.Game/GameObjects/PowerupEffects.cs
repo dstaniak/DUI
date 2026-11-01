@@ -10,7 +10,7 @@ public sealed class PowerupEffects
 
     private TimeSpan _powderRemaining;
     private TimeSpan _mushroomRemaining;
-    private long _boostRemainderTicks;
+    private long _movementRemainderTenths;
 
     public TimeSpan PowderRemaining => _powderRemaining;
     public TimeSpan MushroomRemaining => _mushroomRemaining;
@@ -37,7 +37,7 @@ public sealed class PowerupEffects
         return ControlsReversed ? -direction : direction;
     }
 
-    /// <summary>Advances real timers and returns movement time, at 1.2x while powder is active.</summary>
+    /// <summary>Advances real timers; movement runs at 1.2x for powder, 0.5x for mushroom, 0.6x for both.</summary>
     public TimeSpan Update(TimeSpan elapsed)
     {
         if (elapsed < TimeSpan.Zero)
@@ -45,11 +45,18 @@ public sealed class PowerupEffects
             throw new ArgumentOutOfRangeException(nameof(elapsed));
         }
 
-        // Only the part of this frame covered by powder receives a 20% bonus.
-        // Carry fifths of a tick so frame partitioning cannot change distance.
-        long boostedTicks = Math.Min(_powderRemaining.Ticks, elapsed.Ticks) + _boostRemainderTicks;
-        TimeSpan movementElapsed = elapsed + TimeSpan.FromTicks(boostedTicks / 5);
-        _boostRemainderTicks = boostedTicks % 5;
+        long powderTicks = Math.Min(_powderRemaining.Ticks, elapsed.Ticks);
+        long mushroomTicks = Math.Min(_mushroomRemaining.Ticks, elapsed.Ticks);
+        long overlapTicks = Math.Min(powderTicks, mushroomTicks);
+        long normalTicks = elapsed.Ticks - Math.Max(powderTicks, mushroomTicks);
+
+        // Split at both expirations, even within one frame. Multipliers combine:
+        // powder 12/10, mushroom 5/10, both 6/10. Carry tenths of a tick so
+        // frame partitioning cannot change distance or lose fractional movement.
+        long scaledTenths = (powderTicks - overlapTicks) * 12 +
+            (mushroomTicks - overlapTicks) * 5 + overlapTicks * 6 + _movementRemainderTenths;
+        TimeSpan movementElapsed = TimeSpan.FromTicks(checked(normalTicks + scaledTenths / 10));
+        _movementRemainderTenths = scaledTenths % 10;
 
         // Suppression hides visuals without pausing either effect's lifetime.
         _powderRemaining = TimeSpan.FromTicks(Math.Max(0, _powderRemaining.Ticks - elapsed.Ticks));
@@ -61,6 +68,6 @@ public sealed class PowerupEffects
     {
         _powderRemaining = TimeSpan.Zero;
         _mushroomRemaining = TimeSpan.Zero;
-        _boostRemainderTicks = 0;
+        _movementRemainderTenths = 0;
     }
 }

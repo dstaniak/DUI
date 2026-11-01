@@ -3,7 +3,7 @@
 <title>DUI — mapa klas</title>
 <style>body{font:16px/1.6 system-ui;max-width:1080px;margin:48px auto;padding:0 24px;color:#172338;background:#f6f8fa}a{color:#174ca0}table{border-collapse:collapse;width:100%;background:white}th,td{text-align:left;vertical-align:top;padding:12px 16px;border:1px solid #d9e0e8}code{background:#e6edf4;padding:2px 5px}h1,h2{line-height:1.25}.flow{background:#e6edf4;padding:20px;border-radius:8px}</style>
 <h1>DUI — mapa klas i przepływów</h1>
-<p>Aktualny stan: edukacyjna gra z płynnie skręcającą kolumną radiowozów za czerwonym autem gracza, podskakujących na krawężnikach, losowanym piwem, wódką, proszkiem, grzybkiem i kiełbaską, rozpryskiem piany, drżeniem po wódce, przyspieszeniem i wyłączeniem efektów po proszku oraz tęczą i odwróceniem sterowania po grzybku na parkingu pod sklepem, bez menu głównego. Oprawa retro: 1280×720, UI z ekranową czcionką i pomarańczowo-żółtą paletą C64, kolory grafik i dwukolorowe wzory w wybranych cieniach tekstur. Działający host DesktopGL,
+<p>Aktualny stan: edukacyjna gra z płynnie skręcającą kolumną radiowozów za czerwonym autem gracza, podskakujących na krawężnikach, losowanym piwem, wódką, proszkiem, grzybkiem i kiełbaską, rozpryskiem piany, drżeniem po wódce, przyspieszeniem i wyłączeniem efektów po proszku oraz tęczą, odwróceniem sterowania i spowolnieniem po grzybku na parkingu pod sklepem, bez menu głównego. Oprawa retro: 1280×720, UI z ekranową czcionką i pomarańczowo-żółtą paletą C64, kolory grafik i dwukolorowe wzory w wybranych cieniach tekstur. Działający host DesktopGL,
 wspólne źródła i zasoby, podstawy wejścia dotykowego. Hosty Android/iOS nie są jeszcze dodane.</p>
 <h2>Start i własność stanu</h2>
 <p class="flow"><a href="../DUI.Desktop/Program.cs">Program</a> →
@@ -11,17 +11,31 @@ wspólne źródła i zasoby, podstawy wejścia dotykowego. Hosty Android/iOS nie
 <a href="#GameScene">GameScene.Initialize</a> → plansza i rozgrywka.</p>
 <p>Host wybiera backend MonoGame. <code>DUI.Game.projitems</code> włącza wspólne źródła
 oraz content do hosta. Core posiada scenę i usługi. DuiGame posiada RetroRenderer i zwalnia jego dwa bufory 1280×720: świata i przezroczystego UI; główny ContentManager posiada shadery doubleVisionEffect i rainbowEffect. GameScene posiada czas aktywnej gry PlayTime, stan sesji,
-poziom alkoholu w promilach (decimal), ParkingLot, CarConvoy, Pickup, BeerBurst, ScreenShake, PowerupEffects i UI. PickupRules definiuje losowanie i skutki PickupType. ParkingLot posiada mapę kafelkową, witrynę, ParkingGeometry i geometrię trawników; tekstury zwalnia ContentManager sceny. ConvoyMovement posiada kolejkę, pozy aut i czas symulacji; ConvoyTrail przechowuje ograniczoną historię drogi. CarConvoy posiada model, sprite gracza i radiowozu, PoliceLightbar oraz stan CarHop dla każdego auta; CarSway dodaje delikatne falowanie. CarHop wykrywa wjazd przodu na wyspę i oblicza skalę oraz uniesienie; GameScene.Score odczytuje wynik z CarConvoy.SegmentCount (głowa i ogon). UI prezentuje go przez ScoreStars, osobno pokazuje promile i emituje intencje.</p>
+poziom alkoholu w promilach (decimal), ParkingLot, CarConvoy, Pickup, BeerBurst, ScreenShake, PowerupEffects i UI. PickupRules definiuje losowanie i skutki PickupType. ParkingLot posiada mapę kafelkową, witrynę, ParkingGeometry, geometrię trawników i teksturę jednego piksela siatki pól. Teksturę siatki zwalnia ParkingLot.Dispose; tekstury grafiki zwalnia ContentManager sceny. ConvoyMovement posiada kolejkę, pozy aut i czas symulacji; ConvoyTrail przechowuje ograniczoną historię drogi. CarConvoy posiada model, sprite gracza i radiowozu, PoliceLightbar oraz stan CarHop dla każdego auta; CarSway dodaje delikatne falowanie. CarHop wykrywa wjazd przodu na wyspę i oblicza skalę oraz uniesienie; GameScene.Score odczytuje wynik z CarConvoy.SegmentCount (głowa i ogon). UI prezentuje go przez ScoreStars, osobno pokazuje promile i emituje intencje.</p>
 <h2>Przepływy użytkownika i relacje</h2>
 <ol>
-<li><strong>Skręt:</strong> Core → InputManager; GameScene → GameController.Update/ReadDirection
+<li><strong>Skręt:</strong> Core → InputManager; GameScene → GameController.Update/TryReadDirection
 (klawiatura, pad i SwipeTracker) → PowerupEffects.MapDirection → CarConvoy.QueueDirection → ConvoyMovement.QueueDirection.
-Pierwszy oczekujący skręt rozpoczyna się w następnym podkroku 5 ms, niezależnie od kafelka.
-Auto jedzie 400 px/s (480 px/s po proszku); kąt zmienia się o 90° w 160 ms czasu symulacji przez EaseInOutSine,
-a pozycja jest całkowana według bieżącego kierunku. Rozpoczęty skręt zawsze się kończy.
+DuiGame.Initialize podłącza GameController do GameWindow.KeyDown/KeyUp, a UnloadContent odpina zdarzenia.
+<a href="#KeyboardSteering">KeyboardSteering</a> buforuje do ośmiu naciśnięć strzałek/WASD w kolejności zdarzeń,
+także krótkie naciśnięcia puszczone przed klatką. Trzymanie klawisza nie emituje powtórzeń.
+GameScene odczytuje wszystkie polecenia przed ruchem i mapuje każde przez PowerupEffects;
+pad albo gest są odczytywane po buforze klawiatury. Model ruchu nadal przyjmuje tylko dwa oczekujące skręty.
+ConvoyMovement przypina pozycję początkową do środka kafelka 80×80. Proste odcinki
+przebiegają po osiach rzędów i kolumn. Pierwszy oczekujący skręt zaczyna się
+na najbliższej krawędzi kafelka przed autem. TurnGraceDistance pozwala rozpocząć skręt
+od razu do 20 px za krawędzią (50 ms przy zwykłej prędkości); późniejsze polecenie czeka na następną.
+Zwykły łuk ma promień 40 px. Przy spóźnionym wejściu promień maleje o przekroczony dystans,
+do minimum 20 px. Łuk zaczyna się w aktualnej pozycji i kończy stycznie na właściwej osi,
+bez cofania, teleportacji ani przepisywania śladu.
+Auto jedzie 400 px/s (480 po proszku, 200 po grzybku, 240 przy obu), więc skręt 90° trwa około 157 ms
+czasu symulacji. Pozycja wynika z długości łuku, a orientacja ze stycznej.
+Koniec łuku jest wyznaczany dokładnie, bez kumulowania błędu po kolejnych skrętach.
+Rozpoczęty skręt zawsze się kończy. AdvanceHead dzieli podkrok 5 ms na granicach
+łuków i prostych oraz zapisuje połączenia w śladzie, aby interpolacja nie ścinała narożników.
 Kolejka mieści dwa oczekujące skręty; kierunek porównuje się z ostatnim celem.
 Powtórzenie, zwrot o 180°, nieprawidłowy kierunek i przepełnienie są odrzucane.
-Sekwencja „prawo → dół → lewo” daje dwa kolejne łuki. ConvoyTrail zapisuje CarPose głowy;
+Sekwencja „prawo → dół → lewo” daje zmianę rzędu o dokładnie 80 px; po ciaśniejszym łuku krótka prosta dochodzi do kolejnego punktu skrętu. ConvoyTrail zapisuje CarPose głowy;
 każdy segment próbkuje ten sam ślad o kolejne 80 px wcześniej.
 CarConvoy.Draw → ConvoyMovement.GetRenderPose interpoluje pozę pomiędzy stanami.
 CarSway.GetPose dodaje ±1,5 px przesunięcia i ±2° obrotu; faza zależy od drogi,
@@ -51,7 +65,13 @@ Aktywny podskok, jazda po trawie i wyjazd nie uruchamiają kolejnego wybicia;
 opuszczenie wyspy pozwala na następny wjazd. Segmenty podskakują kolejno na własnym przekroczeniu.
 CarConvoy mnoży skalę bazową przez skalę terenu i podskoku oraz odejmuje uniesienie od Y.
 Efekty wizualne nie zmieniają kolizji; pauza zatrzymuje je w bieżącej fazie.
-ParkingLot.Draw rysuje mapę, narożniki i witrynę. DrawStorefront używa jednej skali
+ParkingLot.Draw rysuje mapę, siatkę pól, narożniki i witrynę. DrawGrid wyznacza linie
+co 80 px w granicach jazdy (także na trawie i częściowych kafelkach przy płocie),
+a pionowe odcinki skraca przed bramą. Linie mają kolor C64 LightGray (#959595),
+grubość 1 px i alpha 0,35, z niepremultiplikowanym RGB dla batcha NonPremultiplied.
+Poziome odcinki omijają skrzyżowania, aby alpha nie sumowała się z pionowymi.
+Siatka jest pod autami i przedmiotami, w warstwie świata: drży i podlega shaderom
+razem z planszą, bez wpływu na UI i kolizje. DrawStorefront używa jednej skali
 160/724 dla obu osi: centralna fasada ma 480×160, a powtarzane boczne segmenty
 wypełniają pas 1280×160 bez zniekształcania drzwi, liter i towarów. Segmenty biegną
 od środka na zewnątrz; częściowe wystawy są przycinane tylko przy krawędziach ekranu.
@@ -83,18 +103,19 @@ piwo i zakąska go nie przerywają. Pauza i koniec gry zamrażają efekt; RETRY 
 <li><strong>Powerupy:</strong> GameScene posiada <a href="#PowerupEffects">PowerupEffects</a>.
 Collect odnawia osobny timer proszku lub grzybka do 10 sekund; inne przedmioty ich nie zmieniają.
 Update otrzymuje zwykły czas Playing, odlicza oba timery i zwraca czas ruchu kolumny.
-Część klatki objęta proszkiem dostaje dodatkowe 20% czasu; reszta ma normalne tempo.
-Reszta z dzielenia ticków przez 5 jest przenoszona, więc podział klatek nie zmienia dystansu.
+Update dzieli klatkę według obu czasów wygaśnięcia: sam proszek mnoży czas ruchu
+przez 1,2, sam grzybek przez 0,5, a część wspólna przez 0,6. Pozostały czas ma zwykłe tempo.
+Reszta w dziesiątych częściach ticka jest przenoszona, więc podział klatek nie zmienia dystansu.
 GameScene → CarConvoy.Update(movementElapsed) → ConvoyMovement.Update.
 Model zachowuje podkroki, krzywe skrętu, ślad i odstępy, a także interpolację; animacje
 powiązane z RenderTime podążają za zegarem kolumny. PlayTime, timery powerupów,
-drżenie oraz ruch i puls przedmiotu nie przyspieszają.
+drżenie oraz ruch i puls przedmiotu zachowują zwykłe tempo.
 Proszek ustawia VisualEffectsSuppressed: GameScene zeruje wizualne przesunięcie świata,
 a RetroRenderer omija podwójne widzenie i tęczę bez zmiany ScorePermille.
-Grzybek ustawia ControlsReversed; MapDirection neguje wspólny wynik odczytu klawiatury,
+Grzybek spowalnia ruch do 0,5× i ustawia ControlsReversed; MapDirection neguje wspólny wynik odczytu klawiatury,
 pada i gestów. Zero pozostaje zerem; istniejące zasady kolejki skrętów nadal obowiązują.
 RainbowActive wymaga aktywnego grzybka i braku proszku. Proszek nie usuwa odwróconego
-sterowania ani nie zatrzymuje timerów ukrytych efektów. Po wygaśnięciu proszku widać
+sterowania ani spowolnienia grzybka (wspólnie daje 0,6×) i nie zatrzymuje timerów ukrytych efektów. Po wygaśnięciu proszku widać
 te efekty, które nadal trwają. Pauza i przegrana zamrażają timery; RETRY je zeruje.</li>
 <li><strong>Wskaźniki efektów:</strong> GameScene.DrawUI przekazuje ScreenShake.RemainingTime,
 PowerupEffects.PowderRemaining i MushroomRemaining do GameSceneUI.UpdateEffectIndicators.
@@ -103,7 +124,9 @@ Trzy SpriteRuntime używają osobnych białych ikonek kieliszka, woreczka i grzy
 Mają stałe sloty 7×7 jednostek UI (28×28 px), odstępy 3 (12 px) i Y=2,5.
 Pierwszy slot zaczyna się 3 jednostki za tekstem zawierającym znak ‰. Pozycje aktualizują się wraz z szerokością licznika promili.
 Pozostały czas większy od zera włącza mruganie: 300 ms widoczności, 300 ms ukrycia,
-liczone od początku danego efektu. Nie ma drugiego timera UI. Odnowienie zaczyna od widoczności;
+liczone od początku danego efektu. W ostatniej sekundzie każdego efektu tempo rośnie
+do 100 ms widoczności / 100 ms ukrycia; faza zaczyna się od widocznego błysku na granicy tej sekundy.
+Nie ma drugiego timera UI. Odnowienie zaczyna od widoczności;
 wygaśnięcie i RETRY gaszą ikonę, pauza i przegrana zamrażają fazę. Proszek nie zeruje timerów,
 więc ukrycie drżenia lub tęczy nie usuwa ich wskaźników. Grzybek wciąż odwraca sterowanie.
 Ikonki są częścią osobnego UI i nie podlegają shaderom świata. Białe tekstury 28×28
@@ -142,7 +165,7 @@ RETRY → GameSceneUI.RetryButtonClick → InitializeNewGame:
 jedna głowa (wynik 1 i początkowe wypełnienie gwiazdek) i pusta kolejka, wyzerowany czas, niebieska klatka świateł, faza falowania i postęp podskoku, pozycja przedmiotu, poziom alkoholu 0,0‰, PlayTime=0, wyłączone podwójne widzenie, ScreenShake.Reset, PowerupEffects.Reset (normalna prędkość i sterowanie), BeerBurst.Clear i nowy losowany przedmiot.</li>
 <li><strong>Pauza:</strong> Escape/Start/Back lub PAUSE → GameScene.Pause.
 RESUME → ResumeButtonClick → stan Playing; Escape również wznawia.
-Pauza zachowuje wynik i zaakceptowane ruchy, a zeruje rozpoczęty gest. Kliknięcie
+Pauza zachowuje wynik i zaakceptowane ruchy, a ResetInput zeruje rozpoczęty gest i nieprzekazane zdarzenia klawiatury. ResetInput działa też przy wznowieniu, RETRY i podczas GameOver. DuiGame.OnActivated synchronizuje trzymane klawisze z bieżącym stanem, więc zgubione KeyUp poza oknem nie blokuje kierunku. Kliknięcie
 RESUME lub RETRY nie jest interpretowane jako skręt. Butelka i cząsteczki
 oraz ConvoyMovement są aktualizowane tylko podczas Playing, więc pauza zatrzymuje puls, rozprysk, falowanie, podskoki i światła radiowozów. PlayTime również rośnie tylko podczas Playing, więc pauza i koniec gry zamrażają orbitę kopii widoku, przesunięcie tęczy, timery PowerupEffects oraz drżenie ScreenShake.</li>
 <li><strong>Tło aplikacji:</strong> DuiGame.OnDeactivated → GameScene.Pause i AudioController.PauseAudio.
@@ -204,7 +227,7 @@ falowanie, podskoki, powiększenie aut i puls przedmiotów nie zmieniają kolizj
 Ściany używają obrysu 74×36; promienie to 40 przy zbieraniu, 20 dla przedmiotów
 oraz 32 dla kolizji aut z ogonem.</li>
 <li><strong>Wyjście:</strong> systemowy przycisk zamyka okno desktopowe.
-GameScene.UnloadContent zwalnia teksturę BeerBurst i wywołuje CarConvoy.Dispose,
+GameScene.UnloadContent zwalnia teksturę BeerBurst, teksturę siatki przez ParkingLot.Dispose i wywołuje CarConvoy.Dispose,
 które zwalnia teksturę PoliceLightbar; DuiGame zwalnia oba bufory RetroRenderer, a Core scenę, content (w tym doubleVisionEffect i rainbowEffect), audio i SpriteBatch. Brak powrotu do ekranu tytułowego.</li>
 </ol>
 <h2>Klasy i typy</h2>
@@ -229,21 +252,22 @@ które zwalnia teksturę PoliceLightbar; DuiGame zwalnia oba bufory RetroRendere
 <tr id="MouseButton"><td><a href="../DUI.Game/Framework/Input/MouseButton.cs">MouseButton</a></td><td>Nazwy przycisków myszy używane przez MouseInfo.</td></tr>
 <tr id="MouseInfo"><td><a href="../DUI.Game/Framework/Input/MouseInfo.cs">MouseInfo</a></td><td>Przechowuje stan myszy, pozycję, przyciski i zmiany od ostatniej aktualizacji.</td></tr>
 <tr id="Scene"><td><a href="../DUI.Game/Framework/Scenes/Scene.cs">Scene</a></td><td>Właściciel ContentManager sceny; określa etapy inicjalizacji, aktualizacji, rysowania i zwalniania zasobów.</td></tr>
-<tr id="GameController"><td><a href="../DUI.Game/GameController.cs">GameController</a></td><td>Łączy klawiaturę, pada i gesty w jeden kierunek przekazywany do kolejki; obsługuje pauzę.</td></tr>
+<tr id="KeyboardSteering"><td><a href="../DUI.Game/Input/KeyboardSteering.cs">KeyboardSteering</a></td><td>Bufor do ośmiu kierunków z KeyDown/KeyUp strzałek i WASD, w kolejności nadejścia. Zachowuje krótkie naciśnięcia między aktualizacjami, pomija automatyczne powtórzenia i inne klawisze. TryReadDirection pobiera każde polecenie raz. Reset usuwa zaległe polecenia i odtwarza zbiór trzymanych klawiszy z KeyboardState po zmianach stanu gry lub aktywności okna.</td></tr>
+<tr id="GameController"><td><a href="../DUI.Game/GameController.cs">GameController</a></td><td>Initialize/Shutdown podłącza i odpina KeyDown/KeyUp okna. KeyboardSteering przechowuje naciśnięcia klawiatury w kolejności zdarzeń. Update odczytuje pada i gest, TryReadDirection opróżnia bufor klawiatury, następnie przekazuje kierunek pada albo gestu. ResetInput czyści wejście i synchronizuje stan trzymanych klawiszy. Obsługuje również pauzę.</td></tr>
 <tr id="BeerBurst"><td><a href="../DUI.Game/GameObjects/BeerBurst.cs">BeerBurst</a></td><td>Emituje 44 krople i kłęby piany w miejscu zebrania butelki. Cząsteczki zanikają po 0,5–0,75 s; limit to 176. Posiada i zwalnia teksturę jednego piksela. Stan Particle zawiera pozycję, prędkość, wiek, czas życia, rozmiar, kolor i rodzaj cząsteczki.</td></tr>
 <tr id="Pickup"><td><a href="../DUI.Game/GameObjects/Pickup.cs">Pickup</a></td><td>Przechowuje sprite’y pięciu rodzajów przedmiotów. Spawn wybiera typ, ustawia pozycję, losuje prędkość i resetuje puls. Porusza aktywny przedmiot o 0,5 jednostki na aktualizację, odbija go i pulsuje skalą wokół środka. Kolizje mają stały promień 20 dla wszystkich typów.</td></tr>
 <tr id="PickupType"><td><a href="../DUI.Game/GameObjects/PickupType.cs">PickupType</a></td><td>Rodzaj przedmiotu: Beer, Vodka, Powder, Mushroom lub Sausage.</td></tr>
 <tr id="PickupRules"><td><a href="../DUI.Game/GameObjects/PickupRules.cs">PickupRules</a></td><td>ChooseType losuje piwo 50%, wódkę 20%, proszek 5%, grzybek 5% i kiełbaskę 20%. ApplyScore zmienia promile o +0,2/+0,4/0/0/−0,4‰, z minimum 0. GrowsConvoy wydłuża kolumnę po napojach i proszku.</td></tr>
-<tr id="PowerupEffects"><td><a href="../DUI.Game/GameObjects/PowerupEffects.cs">PowerupEffects</a></td><td>Posiada niezależne timery proszku i grzybka po 10 sekund. PowderRemaining i MushroomRemaining udostępniają timery wskaźnikom UI. Collect odnawia czas. MapDirection odwraca wejście podczas grzybka. VisualEffectsSuppressed ukrywa efekty po proszku, a RainbowActive uwzględnia oba timery. Update odlicza zwykły czas i zwraca czas ruchu z premią 20% tylko w części klatki objętej proszkiem. Przenosi ułamki ticka; Reset usuwa oba efekty i resztę czasu.</td></tr>
+<tr id="PowerupEffects"><td><a href="../DUI.Game/GameObjects/PowerupEffects.cs">PowerupEffects</a></td><td>Posiada niezależne timery proszku i grzybka po 10 sekund. PowderRemaining i MushroomRemaining udostępniają timery wskaźnikom UI. Collect odnawia czas. MapDirection odwraca wejście podczas grzybka. VisualEffectsSuppressed ukrywa efekty po proszku, a RainbowActive uwzględnia oba timery. Update odlicza zwykły czas i zwraca czas ruchu skalowany dla części klatki objętych efektami: proszek 1,2×, grzybek 0,5×, oba 0,6×. Przenosi dziesiąte części ticka; Reset usuwa oba efekty i resztę czasu.</td></tr>
 <tr id="ScreenShake"><td><a href="../DUI.Game/Framework/Graphics/ScreenShake.cs">ScreenShake</a></td><td>Odmierza 3 sekundy wizualnego drżenia planszy: ±24 px i 18 Hz. RemainingTime udostępnia pozostały czas wskaźnikowi wódki. Restart odnawia czas, Update odmierza aktywną grę, Reset wyłącza efekt. Nie zarządza UI ani fizyką.</td></tr>
 <tr id="CarHop"><td><a href="../DUI.Game/GameObjects/CarHop.cs">CarHop</a></td><td>Stan pojedynczego podskoku auta. Advance wykrywa przekroczenie krawężnika przez przód na podstawie dwóch kolejnych CarPose i prostokątów trawy. Zapamiętuje czas startu oraz gotowość do ponownego wjazdu. GetTransform(RenderTime) zwraca mnożnik 1–1,28 i uniesienie 0–12 px przez 200 ms. EaseOutCubic steruje wybiciem, EaseInQuad lądowaniem.</td></tr>
 <tr id="CarSway"><td><a href="../DUI.Game/GameObjects/CarSway.cs">CarSway</a></td><td>Czysta funkcja CarPose → CarPose dodająca wizualne przesunięcie ±1,5 px i obrót ±2°. Faza zależy od drogi, więc segment powtarza falowanie głowy; okres odpowiada 1,2 s. Nie zmienia modelu ani kolizji.</td></tr>
-<tr id="Easings"><td><a href="../DUI.Game/Framework/Easings.cs">Easings</a></td><td>31 statycznych funkcji float → float: Linear i 30 krzywych z easings.net. Postęp wejściowy 0–1; Back i Elastic zachowują wychylenia poza ten zakres. EaseInOutSine wygładza orientację aut, a EaseOutCubic i EaseInQuad sterują wybiciem i lądowaniem.</td></tr>
+<tr id="Easings"><td><a href="../DUI.Game/Framework/Easings.cs">Easings</a></td><td>31 statycznych funkcji float → float: Linear i 30 krzywych z easings.net. Postęp wejściowy 0–1; Back i Elastic zachowują wychylenia poza ten zakres. EaseOutCubic i EaseInQuad sterują wybiciem i lądowaniem. Łuki jazdy są geometryczne i nie używają easingów.</td></tr>
 <tr id="CarConvoy"><td><a href="../DUI.Game/GameObjects/CarConvoy.cs">CarConvoy</a></td><td>Łączy ConvoyMovement z renderowaniem i ParkingLot. SegmentCount odczytuje liczbę Cars razem z głową dla punktacji. Update przyjmuje czas ruchu już przeliczony przez PowerupEffects. Posiada stan CarHop oraz poprzednią pozę każdego auta. Po każdym podkroku aktualizuje podskoki i sprawdza ogrodzenie i bramę przez ParkingGeometry na podstawie środka oraz obrotu głowy. Draw pobiera interpolowaną pozę, dodaje CarSway, skalę trawnika i podskok. Indeks 0 rysuje autem gracza, pozostałe radiowozem ze światłami PoliceLightbar. Dispose zwalnia zasób belki; tekstury samochodów należą do ContentManager. Przekazuje BodyCollision i BoundaryCollision do sceny; GetBounds zachowuje promień 40 px dla zbierania butelek.</td></tr>
 <tr id="PoliceLightbar"><td><a href="../DUI.Game/GameObjects/PoliceLightbar.cs">PoliceLightbar</a></td><td>Rysuje pikselową belkę świetlną w lokalnych współrzędnych radiowozu. Dokładnie dwie klatki po 250 ms: nieprzezroczyste lampy 8×12 w jaskrawym niebieskim lub czerwonym kolorze, z refleksem 2×2. C64Palette dostarcza czerń oprawy i biel refleksu. Klatka zależy od RenderTime modelu. Współdzieli obrót, skalę i uniesienie auta. Posiada teksturę jednego białego piksela; CarConvoy.Dispose ją zwalnia.</td></tr>
-<tr id="ParkingLot"><td><a href="../DUI.Game/GameObjects/ParkingLot.cs">ParkingLot</a></td><td>Posiada Tilemap z c64-parking-atlas, witrynę c64-storefront, regiony ogrodzenia i geometrię dwóch wysp trawy. DrawStorefront skaluje źródło równomiernie do 480×160 na środku i uzupełnia boki powtarzanym segmentem wystawy; nie ściska obrazu do proporcji całego pasa. DrawFenceCorners składa lustrzane narożniki z poziomego półprzęsła, pionowego odcinka i kątownika. Ustala kafelek 80×80, początek gry oraz ParkingGeometry; udostępnia DrivingBounds i PickupBounds. GrassIslands udostępnia nieedytowalny widok prostokątów dla CarHop; GetCarScale oblicza powiększenie terenu do 106%.</td></tr>
+<tr id="ParkingLot"><td><a href="../DUI.Game/GameObjects/ParkingLot.cs">ParkingLot</a></td><td>Posiada Tilemap z c64-parking-atlas, witrynę c64-storefront, regiony ogrodzenia, geometrię dwóch wysp trawy i teksturę jednego piksela siatki. DrawGrid rysuje szare linie co 80 px (GridLineWidth=1, GridOpacity=0,35) w obszarze jazdy, pod sprite’ami, bez podwójnej alfy na skrzyżowaniach. Dispose zwalnia tylko własną teksturę siatki. DrawStorefront skaluje źródło równomiernie do 480×160 na środku i uzupełnia boki powtarzanym segmentem wystawy; nie ściska obrazu do proporcji całego pasa. DrawFenceCorners składa lustrzane narożniki z poziomego półprzęsła, pionowego odcinka i kątownika. Ustala kafelek 80×80, początek gry oraz ParkingGeometry; udostępnia DrivingBounds i PickupBounds. GrassIslands udostępnia nieedytowalny widok prostokątów dla CarHop; GetCarScale oblicza powiększenie terenu do 106%.</td></tr>
 <tr id="ParkingGeometry"><td><a href="../DUI.Game/GameObjects/ParkingGeometry.cs">ParkingGeometry</a></td><td>Geometria kolizji zgodna z grafiką parkingu w skali kafelka 80×80. DrivingBounds sięga do wewnętrznych krawędzi płotu; GateBounds opisuje wysuniętą zamkniętą bramę. IntersectsBoundary sprawdza oba obszary przez ConvoyCollision. PickupBounds wyznacza prostokątny obszar odbić i odrodzeń przedmiotów, kończący się przed bramą.</td></tr>
-<tr id="ConvoyMovement"><td><a href="../DUI.Game/GameObjects/ConvoyMovement.cs">ConvoyMovement</a></td><td>Model płynnej jazdy: 400 px/s, skręt 90° w 160 ms przez EaseInOutSine, dwa oczekujące kierunki. Podkroki 5 ms, zachowanie reszty czasu i interpolacja obrazu. Cars udostępnia aktualne CarPose, GetRenderPose pozy do rysowania. Auta odtwarzają ślad w odstępach 80 px. Stepped synchronizuje teren i granice, BodyCollision zatrzymuje symulację. Stop przerywa także pozostałą część aktualizacji.</td></tr>
+<tr id="ConvoyMovement"><td><a href="../DUI.Game/GameObjects/ConvoyMovement.cs">ConvoyMovement</a></td><td>Model jazdy po osiach środków kafelków: 400 px/s, styczne łuki 90° o promieniu 40 px (około 157 ms), dwa oczekujące kierunki. Konstruktor przypina start do środka kafelka. Skręty zaczynają się na krawędziach kafelków lub do 20 px za nimi (TurnGraceDistance). Spóźnienie zmniejsza promień łuku do 20–40 px; auto rozpoczyna manewr w aktualnej pozycji i kończy dokładnie na kolejnej osi. Dalsze spóźnienie czeka na kolejną krawędź. AdvanceHead dzieli podkrok 5 ms na granicach łuku, AdvanceTurn oblicza pozycję i styczną z długości drogi. Zachowuje resztę czasu i interpolację obrazu. Cars udostępnia aktualne CarPose, GetRenderPose pozy do rysowania. Auta odtwarzają ślad w odstępach 80 px. Stepped synchronizuje teren i granice, BodyCollision zatrzymuje symulację. Stop przerywa także pozostałą część aktualizacji.</td></tr>
 <tr id="CarPose"><td><a href="../DUI.Game/GameObjects/CarPose.cs">CarPose</a></td><td>Niezmienny środek auta w pikselach planszy, obrót w radianach oraz droga wzdłuż śladu głowy. Interpolacja uwzględnia zawijanie kąta.</td></tr>
 <tr id="ConvoyTrail"><td><a href="../DUI.Game/GameObjects/ConvoyTrail.cs">ConvoyTrail</a></td><td>Historia pozycji głowy indeksowana odległością. Wyszukiwanie binarne i interpolacja dla segmentów; zachowuje długość kolumny oraz zapas dla nowego auta. Kompaktuje bufor partiami. Brakujący początek historii przedłuża wstecz wzdłuż najstarszego kierunku.</td></tr>
 <tr id="ConvoyCollision"><td><a href="../DUI.Game/GameObjects/ConvoyCollision.cs">ConvoyCollision</a></td><td>Przecięcie ruchomych okręgów aut o promieniu 32 px w przestrzeni względnej, także między końcami podkroku. Granice parkingu sprawdza dla obróconego obrysu auta 74×36 px. IsOutsideParking przyjmuje CarPose, a skrajne współrzędne zależą od długości, szerokości oraz aktualnego kąta auta. IntersectsObstacle sprawdza obrócone auto i prostokąt bramy na czterech osiach separacji.</td></tr>
@@ -252,7 +276,7 @@ które zwalnia teksturę PoliceLightbar; DuiGame zwalnia oba bufory RetroRendere
 <tr id="C64Theme"><td><a href="../DUI.Game/UI/C64Theme.cs">C64Theme</a></td><td>Wspólny font Fonts/c64.fnt i centralne role kolorów całego UI: tło, tekst, akcent, naciśnięcie, przygaszone elementy i symbole. Obecny wariant używa Orange na tle, Yellow dla tekstu i akcentu, White dla naciśnięcia i symboli oraz LightGray dla przygaszonych elementów. ApplyFont ustawia bitmapowe znaki, skalę i TextColor. CreateSurface tworzy płaski RectangleRuntime; AddFrame składa ramkę AccentColor i tło BackgroundColor, bez dodatkowych tekstur i zasobów do zwalniania. Używany przez HUD, oba panele, C64Button, wskaźniki i ScoreStars. Kolejny wariant wymaga zmiany przypisań i ponownego utworzenia UI.</td></tr>
 <tr id="C64Button"><td><a href="../DUI.Game/UI/C64Button.cs">C64Button</a></td><td>Przycisk Gum z prostokątną ramką i czcionką C64. Zastępuje domyślne dzieci ButtonVisual i nadpisuje wszystkie stany. Fokus i hover używają BackgroundColor na AccentColor; naciśnięcie daje PressedColor. Wszystkie stany pobierają kolory z C64Theme. Obsługuje mysz, dotyk, klawiaturę i pada, zachowuje nawigację lewo/prawo oraz fokus po najechaniu. Nie korzysta z tutorialowego atlasu ani animacji.</td></tr>
 <tr id="ScoreStars"><td><a href="../DUI.Game/UI/ScoreStars.cs">ScoreStars</a></td><td>Kontener pięciu par SpriteRuntime: jasnoszare tło (C64Theme.MutedColor) i białe wypełnienie (C64Theme.SymbolColor). UpdateScore przycina warstwy do całych pikseli tekstury według liczby segmentów (głowa wliczona), zakres 0–84. Odstępy 2 jednostki UI nie liczą się do postępu. Cała szerokość to 43 jednostki, wysokość 7; przy zoomie 4 daje 172×28 px. Zapamiętuje ostatnią ograniczoną wartość i zmienia przycięcie tylko po zmianie wyniku. Wspólna tekstura score-star.png należy do ContentManager Gum. Nie posiada timera ani zasobu do zwalniania.</td></tr>
-<tr id="GameSceneUI"><td><a href="../DUI.Game/UI/GameSceneUI.cs">GameSceneUI</a></td><td>Formatuje promile z jedną cyfrą po przecinku (pl-PL), rysuje liczbę i znak ‰ razem przez TextRuntime z fontem C64. Dopasowuje sloty ikon i gwiazdek do szerokości tekstu w układzie logicznym 320×180, rysowanym przy zoomie 4 w osobnym przezroczystym buforze 720p bez ramki, nakładanym po efektach świata. Posiada trzy SpriteRuntime wskaźników w stałej kolejności za znakiem ‰; UpdateEffectIndicators wyznacza mruganie 300/300 ms na podstawie pozostałych czasów modeli. Posiada też ScoreStars; UpdateScoreStars przekazuje liczbę segmentów. PositionScoreAccessories przesuwa sloty i gwiazdki za licznikiem promili. Ikony wykorzystują osobne białe tekstury UI 28×28 z przezroczystością, barwione przez C64Theme.SymbolColor; należą one do ContentManager Gum. Buduje ramkę paska HUD oraz oba panele przez C64Theme. Rysuje przyciski C64Button: PAUSE, RESUME i RETRY. Zdarzenia trafiają do GameScene.</td></tr>
+<tr id="GameSceneUI"><td><a href="../DUI.Game/UI/GameSceneUI.cs">GameSceneUI</a></td><td>Formatuje promile z jedną cyfrą po przecinku (pl-PL), rysuje liczbę i znak ‰ razem przez TextRuntime z fontem C64. Dopasowuje sloty ikon i gwiazdek do szerokości tekstu w układzie logicznym 320×180, rysowanym przy zoomie 4 w osobnym przezroczystym buforze 720p bez ramki, nakładanym po efektach świata. Posiada trzy SpriteRuntime wskaźników w stałej kolejności za znakiem ‰; UpdateEffectIndicators wyznacza mruganie 300/300 ms, przyspieszone do 100/100 ms w ostatniej sekundzie każdego efektu, na podstawie pozostałych czasów modeli. Posiada też ScoreStars; UpdateScoreStars przekazuje liczbę segmentów. PositionScoreAccessories przesuwa sloty i gwiazdki za licznikiem promili. Ikony wykorzystują osobne białe tekstury UI 28×28 z przezroczystością, barwione przez C64Theme.SymbolColor; należą one do ContentManager Gum. Buduje ramkę paska HUD oraz oba panele przez C64Theme. Rysuje przyciski C64Button: PAUSE, RESUME i RETRY. Zdarzenia trafiają do GameScene.</td></tr>
 </tbody></table>
 <h2>Zasoby samochodów</h2>
 <p>Gracz używa <a href="../DUI.Game/Content/Images/car.png">car.png</a>, a ogon
@@ -337,20 +361,27 @@ ContentManager Gum posiada teksturę; nie ma systemowej zależności od fontu.
 Usunięto tutorialowy atlas UI, 04b_30 i osobny sprite ‰. C64Theme rysuje ramki prostokątami,
 a C64Button nadaje kolory wszystkim stanom wejścia. Własne białe ikonki i gwiazdki pozostają osobnymi teksturami.</p>
 <h2>Weryfikacja i ograniczenia</h2>
-<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> uruchamia 52 testy bez GPU.
-<a href="../DUI.Tests/MovementTests.cs">MovementTests</a> sprawdza natychmiastowy skręt,
+<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> uruchamia 64 testy bez GPU.
+<a href="../DUI.Tests/MovementTests.cs">MovementTests</a> sprawdza oczekiwanie na krawędź kafelka, polecenie poza tolerancją,
+500 skrętów bez zejścia z osi siatki (stan logiczny i rysowany),
 cztery kierunki, stałą prędkość, kolejkę, odrzucanie zwrotu i powtórzeń,
 resztę czasu, interpolację, ślad przez cztery zakręty, odstępy, wzrost,
 ograniczenie historii, ciasny nawrót, kolizje między końcami podkroku,
 granice parkingu, zatrzymanie, pauzę i restart.
+Sześć <a href="../DUI.Tests/SteeringTests.cs">SteeringTests</a> sprawdza natychmiastowy skręt
+po spóźnieniu o 2, 10 i 20 px w obu stronach, stałą prędkość bez teleportacji,
+powrót na właściwą oś, ślad i odstępy radiowozów oraz niezależność od podziału czasu.
+Sprawdza krótkie naciśnięcia strzałek/WASD pomiędzy aktualizacjami, kolejność zdarzeń,
+odwrócenie sekwencji przez grzybka, brak automatycznych powtórzeń i reset po utracie aktywności.
 <a href="../DUI.Tests/CarAnimationTests.cs">CarAnimationTests</a> sprawdza granice falowania,
 podskok z czterech stron i po skosie, aktywną animację, jazdę po trawie i wyjazd,
 ponowne uzbrojenie po opuszczeniu wyspy, opóźnienie segmentów na zakręcie,
 pauzę, restart i niezależność od podziału czasu. Pozostałe testy obejmują gesty,
-mapowanie ekranu oraz Circle. Trzy testy w <a href="../DUI.Tests/WallCollisionTests.cs">WallCollisionTests</a>
+mapowanie ekranu oraz Circle. Cztery testy w <a href="../DUI.Tests/WallCollisionTests.cs">WallCollisionTests</a>
 odtwarzają fałszywe zderzenie przy ciasnym skręcie i sprawdzają przejazd kolumny
-przy wszystkich czterech ścianach, skrajne boki i narożniki obróconego auta
-oraz zatrzymanie przy rzeczywistym kontakcie podczas skrętu.
+przy wszystkich czterech ścianach, również przy spóźnionym skręcie z radiowozami
+w całym oknie tolerancji i przed zamkniętą bramą, skrajne boki i narożniki obróconego auta
+oraz zatrzymanie po spóźnionym poleceniu za ostatnią bezpieczną krawędzią skrętu i tolerancją 20 px.
 Korzystają z tych samych granic ParkingGeometry co gra. Cztery testy w
 <a href="../DUI.Tests/ParkingGeometryTests.cs">ParkingGeometryTests</a>
 sprawdzają jazdę po asfalcie wewnątrz kafelków płotu, brak fałszywej kolizji
@@ -364,12 +395,13 @@ Trzy <a href="../DUI.Tests/PickupTests.cs">PickupTests</a> sprawdzają rozkład
 50/20/5/5/20, mieszane zmiany promili, wzrost i limit 0‰ po zakąsce. Cztery
 <a href="../DUI.Tests/ScreenShakeTests.cs">ScreenShakeTests</a> sprawdzają 18 Hz i ±24 px,
 czas 3 sekund, zamrożenie fazy, reset, odnowienie i podział czasu.
-Osiem <a href="../DUI.Tests/PowerupEffectsTests.cs">PowerupEffectsTests</a> sprawdza wszystkie kierunki,
-czasy 10 sekund, odnawianie, nakładanie efektów, reset, podział czasu oraz 480 px/s,
-odstępy aut, zwykłe tempo timerów, część klatki po wygaśnięciu i ułamki ticków.
+Jedenaście <a href="../DUI.Tests/PowerupEffectsTests.cs">PowerupEffectsTests</a> sprawdza wszystkie kierunki,
+czasy 10 sekund, odnawianie, nakładanie efektów, reset, podział czasu oraz 480, 200 i 240 px/s,
+odstępy aut, zwykłe tempo timerów, niezależne wygasanie mnożników w obu kolejnościach,
+część klatki po wygaśnięciu i ułamki ticków.
 Testy kompilują te same źródła modeli, reguł, PowerupEffects, ScreenShake i GameDisplay co gra.</p>
-<p>Testy nie zastępują sprawdzenia renderowania, audio, przycisków Gum,
-łączenia kafelków parkingu, witryny, ogrodzenia i bramy, falowania aut i opóźnienia segmentów, radiowozów w ogonie i dwóch kolorów świateł na obracającym się dachu, powiększania każdego auta na trawie i podskoków przy wjeździe, pulsowania i zebrania butelki, rozprysku piwa, zmian promili +0,2/+0,4/−0,4‰, wzrostu po napojach i proszku, działania obu powerupów przez 10 sekund, odwracania wejścia oraz przyspieszenia 1,2×, drżenia samej planszy przez 3 sekundy po wódce i resetu do 0,0‰, położenia sprite’a przy przejściu 9,8‰ → 10,0‰ oraz utraty aktywności w uruchomionej aplikacji.
+<p>Testy nie zastępują sprawdzenia zdarzeń KeyDown/KeyUp w oknie, szybkich sekwencji strzałek/WASD, resetu bufora po pauzie, utracie aktywności i RETRY, ciaśniejszych skrętów do 20 px za krawędzią, renderowania, audio, przycisków Gum,
+jazdy po środkach rzędów i kolumn, płynnych łuków i odtwarzania ich przez ogon, łączenia kafelków parkingu, witryny, ogrodzenia i bramy, szarej siatki 80×80 na asfalcie i trawie (alpha 0,35 bez wzmocnienia na skrzyżowaniach, przycięcie do obszaru jazdy i bramy, warstwa pod sprite’ami), falowania aut i opóźnienia segmentów, radiowozów w ogonie i dwóch kolorów świateł na obracającym się dachu, powiększania każdego auta na trawie i podskoków przy wjeździe, pulsowania i zebrania butelki, rozprysku piwa, zmian promili +0,2/+0,4/−0,4‰, wzrostu po napojach i proszku, działania obu powerupów przez 10 sekund, odwracania wejścia, przyspieszenia 1,2×, spowolnienia 0,5× i wspólnego mnożnika 0,6×, drżenia samej planszy przez 3 sekundy po wódce i resetu do 0,0‰, położenia sprite’a przy przejściu 9,8‰ → 10,0‰ oraz utraty aktywności w uruchomionej aplikacji.
 Shader podwójnego widzenia wymaga sprawdzenia na GPU: brak efektu przy 0‰,
 alfa rosnąca o 0,01 na 0,1‰ od bazowego 0,1 i ograniczona do 0,5,
 rosnący promień, kołowa orbita przy różnych proporcjach okna,
@@ -378,7 +410,7 @@ Tęcza wymaga sprawdzenia przestrzennego gradientu, ruchu w czasie, alfy 0,22,
 połączenia z podwójnym widzeniem oraz wyłączenia obu shaderów i drżenia po proszku.
 Osobno należy porównać piksele UI przy aktywnej tęczy, podwójnym widzeniu, drżeniu
 i wygaszaniu świata: HUD, PAUSE, RESUME i RETRY mają zachować kolor i położenie.
-Sprawdzić także aktywację, obie fazy mrugania, odnowienie, nakładanie i wygaśnięcie
+Sprawdzić także aktywację, obie fazy mrugania (300/300 ms, a w ostatniej sekundzie 100/100 ms), odnowienie, nakładanie i wygaśnięcie
 wskaźników, pauzę, RETRY oraz położenie po zmianie 9,8 → 10,0 i przy trzech cyfrach licznika promili.
 Sprawdzić gwiazdki dla każdego wyniku 0–84, widoczny przyrost po każdym segmencie,
 42 jako 2,5 gwiazdki, 84 i wyższe jako pełne pięć, punkt za głowę po RETRY,

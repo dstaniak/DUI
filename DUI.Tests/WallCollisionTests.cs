@@ -14,53 +14,84 @@ internal static class WallCollisionTests
     [
         ("A close quarter turn clears each wall without a phantom collision", TurnsClearWalls),
         ("Wall contact follows the car sides and rotated corners", RotatedFootprint),
-        ("Turning towards a wall still stops at actual contact", TurnsIntoWalls)
+        ("Late input after the last safe turn still collides with the wall", LateTurnsHitWalls),
+        ("Grace turns clear every wall and the gate with followers", GraceTurnsClearWalls)
+    ];
+
+    private static readonly (Vector2 Start, Vector2 Approach, Vector2 Turn, float Edge)[] s_turns =
+    [
+        (new(680, 360), -Vector2.UnitX, -Vector2.UnitY, 160),
+        (new(680, 520), Vector2.UnitX, -Vector2.UnitY, 1120),
+        (new(680, 520), -Vector2.UnitY, Vector2.UnitX, 240),
+        (new(680, 360), Vector2.UnitY, -Vector2.UnitX, 560)
     ];
 
     private static void TurnsClearWalls()
     {
-        var cases = new (Vector2 Start, Vector2 Approach, Vector2 Turn)[]
+        foreach (var scenario in s_turns)
         {
-            (new(s_bounds.Left + 75, 500), -Vector2.UnitX, -Vector2.UnitY),
-            (new(s_bounds.Right - 75, 500), Vector2.UnitX, -Vector2.UnitY),
-            (new(500, s_bounds.Top + 75), -Vector2.UnitY, Vector2.UnitX),
-            (new(200, s_bounds.Bottom - 75), Vector2.UnitY, Vector2.UnitX)
-        };
-        foreach (var scenario in cases)
-        {
-            ConvoyMovement movement = CreateApproach(scenario.Start, scenario.Approach);
+            ConvoyMovement movement = CreateApproach(scenario.Start, scenario.Approach,
+                scenario.Edge, late: false);
             for (int i = 0; i < 3; i++)
             {
                 movement.Grow();
             }
-            movement.Stepped += (_, _) =>
-            {
-                if (s_parking.IntersectsBoundary(movement.Cars[0]))
-                {
-                    movement.Stop();
-                }
-            };
+            StopAtBoundary(movement);
             Assert.Check(movement.QueueDirection(scenario.Turn));
-            movement.Update(ConvoyMovement.TurnDuration);
-            if (movement.HasStopped)
-            {
-                throw new InvalidOperationException($"Safe turn stopped at {movement.Cars[0]}");
-            }
-            Assert.Equal(scenario.Turn, movement.Cars[0].Direction);
-            // Continue along the wall, including after every follower takes the corner.
+            AdvanceUntilFacing(movement, scenario.Turn);
+            // All followers must also have time to complete the corner.
             movement.Update(TimeSpan.FromMilliseconds(600));
             Assert.Check(!movement.HasStopped);
         }
     }
 
-    private static ConvoyMovement CreateApproach(Vector2 center, Vector2 direction)
+    private static ConvoyMovement CreateApproach(Vector2 center, Vector2 direction, float edge, bool late)
     {
-        var probe = new ConvoyMovement(Vector2.Zero);
-        FaceDirection(probe, direction);
-        var movement = new ConvoyMovement(center - probe.Cars[0].Center);
-        FaceDirection(movement, direction);
-        Assert.Equal(center, movement.Cars[0].Center);
+        var movement = new ConvoyMovement(center);
+        if (direction == -Vector2.UnitX)
+        {
+            Assert.Check(movement.QueueDirection(Vector2.UnitY));
+            AdvanceUntilFacing(movement, Vector2.UnitY);
+            // Start this setup turn beyond the grace window, retaining the
+            // approach lane and room for all followers to clear the final turn.
+            movement.Update(TimeSpan.FromMilliseconds(55));
+        }
+        if (direction != Vector2.UnitX)
+        {
+            Assert.Check(movement.QueueDirection(direction));
+            AdvanceUntilFacing(movement, direction);
+        }
+
+        float target = Vector2.Dot(new Vector2(edge), direction) + (late ? ConvoyMovement.TurnGraceDistance + 4 : -4);
+        int steps = 0;
+        while (Vector2.Dot(movement.Cars[0].Center, direction) < target)
+        {
+            movement.Update(ConvoyMovement.StepDuration);
+            Assert.Check(++steps < 1000);
+        }
+        Assert.Check(!s_parking.IntersectsBoundary(movement.Cars[0]));
         return movement;
+    }
+
+    private static void StopAtBoundary(ConvoyMovement movement)
+    {
+        movement.Stepped += (_, _) =>
+        {
+            if (s_parking.IntersectsBoundary(movement.Cars[0]))
+            {
+                movement.Stop();
+            }
+        };
+    }
+
+    private static void AdvanceUntilFacing(ConvoyMovement movement, Vector2 direction)
+    {
+        int steps = 0;
+        while (Vector2.Distance(movement.Cars[0].Direction, direction) > 0.0001f)
+        {
+            movement.Update(ConvoyMovement.StepDuration);
+            Assert.Check(++steps < 100 && !movement.HasStopped);
+        }
     }
 
     private static void RotatedFootprint()
@@ -95,48 +126,48 @@ internal static class WallCollisionTests
         }
     }
 
-    private static void TurnsIntoWalls()
+    private static void GraceTurnsClearWalls()
     {
-        var cases = new (Vector2 Start, Vector2 Approach, Vector2 Turn)[]
+        foreach (var scenario in s_turns)
         {
-            (new(s_bounds.Left + 19, 400), -Vector2.UnitY, -Vector2.UnitX),
-            (new(s_bounds.Right - 19, 400), -Vector2.UnitY, Vector2.UnitX),
-            (new(500, s_bounds.Top + 19), Vector2.UnitX, -Vector2.UnitY),
-            (new(500, s_bounds.Bottom - 19), Vector2.UnitX, Vector2.UnitY)
-        };
-        foreach (var scenario in cases)
-        {
-            ConvoyMovement movement = CreateApproach(scenario.Start, scenario.Approach);
-            Assert.Check(!s_parking.IntersectsBoundary(movement.Cars[0]));
-            movement.Stepped += (_, _) =>
+            foreach (int delayMs in new[] {15, 35, 55})
             {
-                if (s_parking.IntersectsBoundary(movement.Cars[0]))
+                ConvoyMovement movement = CreateApproach(scenario.Start, scenario.Approach,
+                    scenario.Edge, late: false);
+                movement.Update(TimeSpan.FromMilliseconds(delayMs));
+                for (int car = 0; car < 3; car++)
                 {
-                    movement.Stop();
+                    movement.Grow();
                 }
-            };
-            TimeSpan startTime = movement.ElapsedTime;
-            Assert.Check(movement.QueueDirection(scenario.Turn));
-            movement.Update(ConvoyMovement.TurnDuration);
-            Assert.Check(movement.HasStopped);
-            Assert.Check(movement.ElapsedTime - startTime < ConvoyMovement.TurnDuration);
-            Assert.Check(s_parking.IntersectsBoundary(movement.Cars[0]));
+                StopAtBoundary(movement);
+                CarPose before = movement.Cars[0];
+                Assert.Check(movement.QueueDirection(scenario.Turn));
+                movement.Update(ConvoyMovement.StepDuration);
+                Assert.Check(Vector2.Dot(movement.Cars[0].Direction, scenario.Turn) > 0);
+                Assert.Check(Vector2.Distance(before.Center, movement.Cars[0].Center) <= 2.001f);
+                AdvanceUntilFacing(movement, scenario.Turn);
+                movement.Update(TimeSpan.FromMilliseconds(600));
+                Assert.Check(!movement.HasStopped);
+                for (int car = 0; car < movement.Cars.Count; car++)
+                {
+                    Assert.Check(!s_parking.IntersectsBoundary(movement.Cars[car]));
+                    Assert.Near(car * 80, movement.Cars[0].Distance - movement.Cars[car].Distance);
+                }
+            }
         }
     }
 
-    private static void FaceDirection(ConvoyMovement movement, Vector2 direction)
+    private static void LateTurnsHitWalls()
     {
-        if (direction == -Vector2.UnitX)
+        foreach (var scenario in s_turns)
         {
-            movement.QueueDirection(Vector2.UnitY);
-            movement.Update(ConvoyMovement.TurnDuration);
+            ConvoyMovement movement = CreateApproach(scenario.Start, scenario.Approach,
+                scenario.Edge, late: true);
+            StopAtBoundary(movement);
+            Assert.Check(movement.QueueDirection(scenario.Turn));
+            movement.Update(TimeSpan.FromSeconds(1));
+            Assert.Check(movement.HasStopped);
+            Assert.Check(s_parking.IntersectsBoundary(movement.Cars[0]));
         }
-        if (direction != Vector2.UnitX)
-        {
-            movement.QueueDirection(direction);
-            movement.Update(ConvoyMovement.TurnDuration);
-        }
-        // Give the initial followers a straight approach, independent of the setup turns.
-        movement.Update(TimeSpan.FromSeconds(1));
     }
 }

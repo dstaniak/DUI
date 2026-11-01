@@ -84,10 +84,20 @@ a nagłówki paneli 64×64 px przy obrazie 720p.
 ## Zasady i sterowanie
 
 - Strzałki / WASD lub D-pad / lewy drążek pada zmieniają kierunek.
+  Naciśnięcia klawiatury są buforowane ze zdarzeń okna w kolejności nadejścia,
+  również gdy klawisz zostanie puszczony przed następną klatką. Wszystkie
+  trafiają do kolejki skrętów przed ruchem; trzymanie klawisza nie powtarza polecenia.
 - Auto jedzie z prędkością 400 jednostek planszy na sekundę; proszek
-  zwiększa ją na 10 sekund do 480 (1,2×).
-  Skręt zaczyna się bez czekania na kafelek, trwa 160 ms czasu symulacji i zmienia kierunek
-  o 90° przez `EaseInOutSine`. Samochód porusza się po rzeczywistej krzywej.
+  zwiększa ją na 10 sekund do 480 (1,2×), grzybek zmniejsza do 200 (0,5×),
+  a oba efekty razem dają 240 (0,6×).
+  Proste odcinki przechodzą przez środki kafelków 80×80. Skręt czeka na
+  najbliższą krawędź kafelka, po czym łączy osie rzędów i kolumn łukiem
+  o promieniu 40 px. Zmiana kierunku o 90° trwa około 157 ms czasu symulacji
+  przy stałej prędkości. Polecenie do 20 px za krawędzią (50 ms przy 400 px/s)
+  rozpoczyna skręt od razu: promień maleje o przekroczony dystans, do minimum 20 px,
+  a łuk kończy się stycznie na właściwej osi. Auto nie cofa się ani nie przeskakuje.
+  Po przekroczeniu tej tolerancji skręt czeka na kolejną krawędź. Nawrót nadal
+  zmienia rząd dokładnie o 80 px; ciaśniejsze łuki łączy krótki prosty odcinek.
 - Kolejka przechowuje dwa oczekujące skręty. Rozpoczęty manewr zawsze
   kończy się przed następnym. Kierunek jest sprawdzany względem ostatniego
   zaplanowanego celu; natychmiastowy zwrot, powtórzenie celu i przepełnienie
@@ -126,21 +136,26 @@ a nagłówki paneli 64×64 px przy obrazie 720p.
   **10 sekund** wyłącza podwójne widzenie, drżenie planszy oraz tęczę.
   Jednocześnie przyspiesza symulację kolumny do **1,2×**; odstępy między
   autami zostają takie same, a skręty i animacje aut podążają za jej zegarem.
-  Nie zmienia promili ani odwróconego sterowania.
+  Nie zmienia promili ani odwróconego sterowania; przy aktywnym grzybku
+  mnożniki prędkości łączą się do 0,6×.
 - Grzybek z ostrym kapeluszem i cienką nóżką przez **10 sekund** odwraca
   wszystkie kierunki (lewo ↔ prawo, góra ↔ dół), na klawiaturze, padzie
-  oraz dla gestów. Nie zmienia promili ani długości kolumny.
+  oraz dla gestów. Jednocześnie spowalnia całą kolumnę do **0,5×**
+  (200 px/s), dając więcej czasu na reakcję. Nie zmienia promili ani długości kolumny.
   `rainbowEffect` nakłada na całą warstwę planszy, poniżej UI, tęczowy gradient
   z alfą 0,22. Gradient przesuwa się płynnie, wykonując cykl co 6 sekund.
 - Ponowne zebranie tego samego powerupu odnawia jego czas do 10 sekund.
   Timery obu powerupów, drżenia i shaderów używają zwykłego czasu gry,
-  niezależnego od przyspieszenia kolumny. Pauza i przegrana je zamrażają,
+  niezależnego od przyspieszenia lub spowolnienia kolumny. Pauza i przegrana je zamrażają,
   RETRY usuwa efekty i przywraca normalne sterowanie oraz prędkość.
-  Proszek ukrywa tęczę i drżenie, ale ich czas nadal upływa. Jeśli po
+  Proszek ukrywa tęczę i drżenie, ale ich czas nadal upływa. Spowolnienie
+  i odwrócone sterowanie grzybka pozostają aktywne. Jeśli po
   wygaśnięciu proszku dany efekt nadal trwa, ponownie staje się widoczny.
 - Za wynikiem i znakiem ‰ są trzy stałe miejsca na ikonki: wódka, proszek,
   grzybek. To osobne białe sprite’y 28×28 px z przezroczystym tłem,
   dopasowane do pikselowego licznika. Ikonka aktywnego przedmiotu mruga: 0,3 s widoczna, 0,3 s ukryta.
+  W ostatniej sekundzie każdego efektu mruga trzy razy szybciej: 0,1 s widoczna,
+  0,1 s ukryta, zaczynając od widocznego błysku na granicy ostatniej sekundy.
   Odliczanie pochodzi z tego samego timera co efekt (3 s / 10 s / 10 s).
   Ponowne zebranie zaczyna od widocznej ikonki, wygaśnięcie i RETRY ją gaszą,
   a pauza i koniec gry zamrażają mruganie. Wskaźniki pokazują aktywne timery
@@ -165,6 +180,10 @@ a nagłówki paneli 64×64 px przy obrazie 720p.
   zajmuje dwa górne rzędy; po bokach i na dole jest ogrodzenie z siatki,
   a pośrodku dolnego ogrodzenia zamknięta brama szerokości dwóch kafelków.
   Dolne narożniki mają kątowniki „L” łączące boczną siatkę z dolnym przęsłem.
+- Dyskretna siatka pokazuje granice kafelków 80×80 na asfalcie i trawnikach.
+  Szare linie C64 `#959595` mają 1 piksel grubości i krycie 35%, także na
+  skrzyżowaniach. Kończą się przy ogrodzeniu i bramie, są pod autami oraz
+  przedmiotami i podlegają tym samym efektom co plansza.
 - Dwie symetryczne wysepki trawnika mają po 2×4 kafelki. Można po nich
   przejechać: gdy przód auta przekracza krawężnik z asfaltu na trawę,
   auto podskakuje o 12
@@ -179,7 +198,9 @@ a nagłówki paneli 64×64 px przy obrazie 720p.
   Pauza zatrzymuje też rozprysk, a RETRY usuwa pozostałe cząsteczki.
 - Escape / Start / Back lub przycisk PAUSE pauzuje grę.
   RESUME wznawia, RETRY rozpoczyna nową rozgrywkę z 1 punktem i `0,0‰`.
-  Przyciski obsługują także Enter / A na padzie.
+  Przyciski obsługują także Enter / A na padzie. Pauza, wznowienie i RETRY
+  czyszczą nieprzekazane naciśnięcia oraz gesty. Powrót do okna synchronizuje
+  stan trzymanych klawiszy, aby zwolnienie klawisza poza oknem go nie blokowało.
 - Gest przesunięcia na planszy trafia do tej samej kolejki. Na komputerze
   można go sprawdzić przeciągnięciem lewego przycisku myszy.
   Jeden kontakt oznacza jeden ruch; kolejny kontakt pozwala zaplanować następny.
@@ -194,7 +215,10 @@ się standardowym przyciskiem systemu.
 - `DUI.Game` — wspólny kod gry, UI Gum, zasoby i potrzebne części biblioteki
   tutorialowej. `DUI.Game.projitems` dołącza źródła do projektu platformowego,
   dzięki czemu przyszły host mobilny może użyć własnego backendu MonoGame.
-- `ConvoyMovement` — kolejka, skręty, stały podkrok oraz kolizje z ogonem.
+- `KeyboardSteering` — kolejność naciśnięć strzałek/WASD, pomijanie automatycznych
+  powtórzeń i reset wejścia. Bufor mieści osiem zdarzeń; model ruchu nadal przyjmuje
+  najwyżej dwa oczekujące skręty i odrzuca przepełnienie oraz nieprawidłowe kierunki.
+- `ConvoyMovement` — kolejka, skręty z tolerancją 20 px, stały podkrok oraz kolizje z ogonem.
   `CarPose` przechowuje środek, obrót i drogę auta; `ConvoyTrail` ogranicza
   historię do długości kolumny i zapasu na nowy segment.
   `ConvoyCollision` sprawdza ruchome okręgi oraz granice parkingu.
@@ -204,11 +228,14 @@ się standardowym przyciskiem systemu.
   nakłada dwuklatkowe światła na dach, używając czasu modelu i tej samej transformacji co auto; posiada i zwalnia teksturę
   jednego piksela. `CarSway` dodaje małe wizualne falowanie.
 - `Easings` — statyczne funkcje interpolacji (30 krzywych oraz `Linear`);
-  `ConvoyMovement` używa `EaseInOutSine` do skrętów, a `CarHop` używa
-  `EaseOutCubic` i `EaseInQuad` do wybicia oraz lądowania.
+  `CarHop` używa `EaseOutCubic` i `EaseInQuad` do wybicia oraz lądowania.
+  `ConvoyMovement` wyznacza styczne łuki geometrycznie, zachowując stałą prędkość.
 - `ParkingLot` — układ parkingu, granice jazdy, składanie proporcjonalnej
   witryny z centralnej fasady i powtarzanych segmentów wystawy oraz
   wspólna geometria kafelków trawy i płynnego powiększania aut do 106%.
+  Rysuje też półprzezroczystą siatkę pól; posiada teksturę jednego piksela,
+  zwalnianą przez `GameScene.UnloadContent`. `GridOpacity` i `GridLineWidth`
+  określają wygląd siatki.
   `ParkingGeometry` wyznacza krawędzie ogrodzenia, osobny obrys bramy
   i prostokątny obszar ruchu przedmiotów, który mieści się przed bramą.
   `CarHop` ma osobny stan dla każdego auta i wykrywa przekroczenie
@@ -262,16 +289,23 @@ dotnet build DUI.slnx
 dotnet run --project DUI.Tests
 ```
 
-52 testy obejmują natychmiastową reakcję między kafelkami, wszystkie
-kierunki skrętów, kolejkę, odrzucanie nieprawidłowych poleceń, stałą prędkość,
+64 testy obejmują oczekiwanie na krawędź kafelka i polecenie poza tolerancją,
+500 kolejnych skrętów bez zejścia z osi siatki, wszystkie kierunki skrętów,
+kolejkę, odrzucanie nieprawidłowych poleceń, stałą prędkość,
 interpolację i różne podziały czasu. Sprawdzają odtwarzanie śladu przez
 cztery zakręty, odstępy, wzrost, ograniczenie pamięci historii, ciasny nawrót,
 przecięcie ogona między podkrokami, granice parkingu, pauzę i restart.
+Sześć testów `SteeringTests` sprawdza natychmiastowy skręt do 20 px za krawędzią,
+stałą prędkość i brak teleportacji, powrót na właściwą oś, ślad radiowozów,
+odstępy, podział klatek oraz krótkie naciśnięcia między aktualizacjami.
+Obejmują kolejność strzałek/WASD, odwrócenie całej sekwencji przez grzybka,
+pomijanie automatycznych powtórzeń i reset po utracie aktywności.
 Testy animacji obejmują ograniczone falowanie, wjazd z czterech stron
 oraz po skosie, wybicie i lądowanie, brak ponownego podskoku podczas
 animacji i jazdy po trawie, ponowny wjazd oraz opóźnienie segmentów.
-Trzy regresje ścian sprawdzają ciasne skręty przy czterech krawędziach,
-obrócone boki i narożniki auta oraz rzeczywiste uderzenia podczas skrętu.
+Cztery regresje ścian sprawdzają zwykłe i spóźnione skręty z radiowozami przy czterech krawędziach,
+obrócone boki i narożniki auta oraz uderzenia po minięciu ostatniego
+bezpiecznego miejsca rozpoczęcia skrętu i tolerancji 20 px.
 Cztery testy geometrii parkingu obejmują asfalt wewnątrz kafelków płotu,
 mijanie narożników bramy ukośnym autem, osobne krawędzie bramy i przęsła
 oraz bezpieczny obszar ruchu przedmiotów.
@@ -284,9 +318,10 @@ Trzy testy `PickupTests` sprawdzają dokładne proporcje 50/20/5/5/20, mieszane
 sekwencje punktacji i wzrostu oraz dolny limit 0‰ po zakąsce. Cztery testy
 `ScreenShakeTests` sprawdzają amplitudę i tempo, czas 3 sekund, pauzę,
 reset, ponowne wyzwolenie oraz niezależność od podziału czasu.
-Osiem testów `PowerupEffectsTests` sprawdza kierunki, oba czasy 10 sekund,
-odnawianie, nakładanie efektów, reset i podział czasu oraz prędkość 480 px/s,
-odstępy aut, zwykłe tempo timerów i wygaśnięcie przyspieszenia wewnątrz klatki.
+Jedenaście testów `PowerupEffectsTests` sprawdza kierunki, oba czasy 10 sekund,
+odnawianie, nakładanie efektów, reset i podział czasu oraz prędkości 480, 200 i 240 px/s,
+odstępy aut, zwykłe tempo timerów, niezależne wygasanie mnożników w obu kolejnościach,
+część klatki po wygaśnięciu i ułamki ticków.
 Renderowanie, dźwięk, interakcje Gum i cykl życia aplikacji wymagają też
 sprawdzenia w uruchomionej grze, w tym niezmienionych kolorów i położenia
 UI przy aktywnych efektach i po zmianie rozmiaru okna, a także mrugania,
