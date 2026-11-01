@@ -101,7 +101,10 @@ które obejmuje całe okno bez ramek, pasów ani przycinania planszy. Każda oś
 skalowana osobno; widok 16:9 zachowuje proporcje świata.
 DuiGame przekazuje GameScene.ScorePermille i PlayTime do Present. Przy 0,0‰ renderer
 pomija shader; powyżej zera <a href="../DUI.Game/Content/Effects/doubleVisionEffect.fx">doubleVisionEffect</a>
-miesza obraz bazowy z kopią o alfie 0,1. Środek kopii zatacza koło wokół środka okna,
+miesza obraz bazowy z kopią o alfie min(0,5; 0,1 + 0,1 × promile): każde 0,1‰
+dodaje 0,01 do bazowej alfy 0,1. Przykładowo 0,2‰ daje alfę 0,12, a 2‰ — 0,3.
+Od 4‰ alfa pozostaje na poziomie 0,5.
+Środek kopii zatacza koło wokół środka okna,
 bez obracania orientacji obrazu. Obieg trwa 8 s aktywnej gry, a promień rośnie liniowo
 o 12 px na 1‰ przy 720p i skaluje się z krótszym bokiem okna. Przesunięcia UV
 są liczone osobno dla obu osi, co zachowuje kołową orbitę także w pionie.
@@ -129,7 +132,7 @@ które zwalnia teksturę PoliceLightbar; DuiGame zwalnia bufor RetroRenderer, a 
 <tr id="Animation"><td><a href="../DUI.Game/Framework/Graphics/Animation.cs">Animation</a></td><td>Lista klatek atlasu i czas każdej klatki.</td></tr>
 <tr id="GameDisplay"><td><a href="../DUI.Game/Framework/Graphics/GameDisplay.cs">GameDisplay</a></td><td>Określa planszę i raster 1280×720 oraz logiczny układ UI 320×180 przy zoomie 4. Resize dopasowuje OutputBounds do całego okna, osobno w obu osiach; ScreenToRaster mapuje kursor Gum, a ToGamePosition gesty na planszę. Małe okna są pomniejszane.</td></tr>
 <tr id="C64Palette"><td><a href="../DUI.Game/Framework/Graphics/C64Palette.cs">C64Palette</a></td><td>16 kolorów Pepto PAL w kolejności VIC-II. Udostępnia czerń oprawy i biel małych refleksów PoliceLightbar; inspiruje barwy grafik, lecz nie ogranicza kolorów całej klatki ani jaskrawych kolorów błysku.</td></tr>
-<tr id="RetroRenderer"><td><a href="../DUI.Game/Framework/Graphics/RetroRenderer.cs">RetroRenderer</a></td><td>Posiada jeden RenderTarget2D 1280×720. BeginFrame czyści bufor sceny; Present skaluje kompletną scenę i UI przez PointClamp. Przy dodatnim wyniku doubleVisionEffect dodaje kopię z alfą 0,1, filtrowaną liniowo, z kołowym przesunięciem środka. Promień rośnie z promilami i krótszym bokiem okna, faza zależy od PlayTime. Przy 0‰ shader jest pomijany. Dispose zwalnia bufor; efekt należy do głównego ContentManager.</td></tr>
+<tr id="RetroRenderer"><td><a href="../DUI.Game/Framework/Graphics/RetroRenderer.cs">RetroRenderer</a></td><td>Posiada jeden RenderTarget2D 1280×720. BeginFrame czyści bufor sceny; Present skaluje kompletną scenę i UI przez PointClamp. Przy dodatnim wyniku doubleVisionEffect dodaje kopię z alfą rosnącą od 0,1 o 0,01 na każde 0,1‰ (maksimum 0,5 od 4‰), filtrowaną liniowo, z kołowym przesunięciem środka. Promień rośnie z promilami i krótszym bokiem okna, faza zależy od PlayTime. Przy 0‰ shader jest pomijany. Dispose zwalnia bufor; efekt należy do głównego ContentManager.</td></tr>
 <tr id="Sprite"><td><a href="../DUI.Game/Framework/Graphics/Sprite.cs">Sprite</a></td><td>Parametry rysowania regionu tekstury: pozycja, skala, obrót, kolor i warstwa.</td></tr>
 <tr id="TextureAtlas"><td><a href="../DUI.Game/Framework/Graphics/TextureAtlas.cs">TextureAtlas</a></td><td>Wczytuje definicję XML, teksturę, regiony i animacje; tworzy sprite’y.</td></tr>
 <tr id="TextureRegion"><td><a href="../DUI.Game/Framework/Graphics/TextureRegion.cs">TextureRegion</a></td><td>Prostokątny fragment atlasu wraz ze współrzędnymi UV i operacją rysowania.</td></tr>
@@ -237,7 +240,8 @@ Testy kompilują te same źródła modelu i GameDisplay co gra.</p>
 <p>Testy nie zastępują sprawdzenia renderowania, audio, przycisków Gum,
 łączenia kafelków parkingu, witryny, ogrodzenia i bramy, falowania aut i opóźnienia segmentów, radiowozów w ogonie i dwóch kolorów świateł na obracającym się dachu, powiększania każdego auta na trawie i podskoków przy wjeździe, pulsowania i zebrania butelki, rozprysku piwa, przyrostów wyniku o 0,2‰ i resetu do 0,0‰, położenia sprite’a przy przejściu 9,8‰ → 10,0‰ oraz utraty aktywności w uruchomionej aplikacji.
 Shader podwójnego widzenia wymaga sprawdzenia na GPU: brak efektu przy 0‰,
-alfa 0,1, rosnący promień, kołowa orbita przy różnych proporcjach okna,
+alfa rosnąca o 0,01 na 0,1‰ od bazowego 0,1 i ograniczona do 0,5,
+rosnący promień, kołowa orbita przy różnych proporcjach okna,
 ostry oryginał i płynna kopia, krawędzie obrazu, pauza i RETRY.
 Wersja na fizyczny telefon, safe areas i zachowanie po utracie procesu
 pozostają do zweryfikowania po dodaniu hosta mobilnego.</p>

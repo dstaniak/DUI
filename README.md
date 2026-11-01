@@ -34,8 +34,10 @@ kolizji pozostają w jednostkach planszy.
 
 Wynik w promilach steruje shaderem podwójnego widzenia na całej klatce,
 łącznie z UI. Przy 0,0‰ shader jest pomijany. Powyżej zera kopia obrazu
-z alfą 0,1 zatacza koło wokół środka okna w ciągu 8 sekund; sam obraz
-nie zmienia orientacji. Promień rośnie liniowo: 12 pikseli na 1‰ przy
+zatacza koło wokół środka okna w ciągu 8 sekund; sam obraz nie zmienia
+orientacji. Alfa rośnie od bazowego 0,1 o 0,01 na każde 0,1‰, do maksimum 0,5:
+przy 0,2‰ wynosi 0,12, przy 1‰ — 0,2, a przy 2‰ — 0,3. Od 4‰ pozostaje 0,5.
+Promień rośnie liniowo: 12 pikseli na 1‰ przy
 720p, czyli 2,4 piksela za butelkę. Skaluje się z krótszym bokiem okna,
 a ruch pozostaje kołowy także przy innych proporcjach. Tylko kopia używa
 filtrowania liniowego dla płynnych przesunięć mniejszych niż piksel;

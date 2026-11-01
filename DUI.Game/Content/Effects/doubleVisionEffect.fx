@@ -10,7 +10,7 @@ Texture2D GhostTexture;
 
 // UV displacement of the copy's center relative to the window center.
 float2 GhostOffset;
-static const float GhostAlpha = 0.1;
+float GhostAlpha = 0.1;
 
 sampler2D SpriteTextureSampler : register(s0) = sampler_state
 {

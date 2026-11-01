@@ -8,6 +8,10 @@ namespace MonoGameLibrary.Graphics;
 public sealed class RetroRenderer : IDisposable
 {
     private const double OrbitPeriodSeconds = 8.0;
+    private const float BaseGhostAlpha = 0.1f;
+    private const float MaxGhostAlpha = 0.5f;
+    // Each 0.1 per mille adds 0.01 to the copy's opacity.
+    private const float AlphaPerPermille = 0.1f;
     // At 720p, each per mille adds 12 pixels to the copy's orbit radius.
     private const float RadiusPerPermille = 12.0f / GameDisplay.RasterHeight;
 
@@ -64,6 +68,8 @@ public sealed class RetroRenderer : IDisposable
             radius * (float)Math.Cos(angle) / outputBounds.Width,
             radius * (float)Math.Sin(angle) / outputBounds.Height);
         _doubleVisionEffect.Parameters["GhostOffset"].SetValue(offset);
+        float alpha = Math.Min(MaxGhostAlpha, BaseGhostAlpha + (float)scorePermille * AlphaPerPermille);
+        _doubleVisionEffect.Parameters["GhostAlpha"].SetValue(alpha);
         return _doubleVisionEffect;
     }
 }
