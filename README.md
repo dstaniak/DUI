@@ -33,8 +33,8 @@ Przy innych proporcjach okna każda oś jest dopasowywana osobno; dla
 naturalnych proporcji najlepszy jest widok 16:9. Fizyka, prędkość i granice
 kolizji pozostają w jednostkach planszy.
 
-Wynik w promilach steruje shaderem podwójnego widzenia na całej klatce,
-łącznie z UI. Przy 0,0‰ lub aktywnym proszku shader jest pomijany.
+Wynik w promilach steruje shaderem podwójnego widzenia na warstwie planszy.
+UI jest rysowane osobno i nakładane po wszystkich efektach świata. Przy 0,0‰ lub aktywnym proszku shader jest pomijany.
 Powyżej zera, bez proszku, kopia obrazu
 zatacza koło wokół środka okna w ciągu 8 sekund; sam obraz nie zmienia
 orientacji. Alfa rośnie od bazowego 0,1 o 0,01 na każde 0,1‰, do maksimum 0,5:
@@ -66,8 +66,9 @@ Oryginał 2172×724 tworzy środkową fasadę 480×160 z wejściem i szyldem;
 powtarzane segmenty boczne wypełniają pozostałą szerokość. Drzwi, litery
 i towary zachowują proporcje, a pas sklepu nadal zajmuje dwa górne kafelki.
 
-UI ma układ logiczny 320×180 i zoom 4, rysowany bezpośrednio w buforze
-720p. Napisy zachowują czytelną wielkość i szczegóły fontu bez pośredniego
+UI ma układ logiczny 320×180 i zoom 4, rysowany w osobnym przezroczystym
+buforze 720p, skalowanym tak samo jak plansza. Licznik, przyciski i panele
+pauzy oraz końca gry nie podlegają podwójnemu widzeniu, tęczy ani drżeniu. Napisy zachowują czytelną wielkość i szczegóły fontu bez pośredniego
 pomniejszania do 200 wierszy.
 
 ## Zasady i sterowanie
@@ -119,7 +120,7 @@ pomniejszania do 200 wierszy.
 - Grzybek z ostrym kapeluszem i cienką nóżką przez **10 sekund** odwraca
   wszystkie kierunki (lewo ↔ prawo, góra ↔ dół), na klawiaturze, padzie
   oraz dla gestów. Nie zmienia promili ani długości kolumny.
-  Nowy `rainbowEffect` nakłada na cały widok, łącznie z UI, tęczowy gradient
+  `rainbowEffect` nakłada na całą warstwę planszy, poniżej UI, tęczowy gradient
   z alfą 0,22. Gradient przesuwa się płynnie, wykonując cykl co 6 sekund.
 - Ponowne zebranie tego samego powerupu odnawia jego czas do 10 sekund.
   Timery obu powerupów, drżenia i shaderów używają zwykłego czasu gry,
@@ -185,7 +186,7 @@ się standardowym przyciskiem systemu.
   i prostokątny obszar ruchu przedmiotów, który mieści się przed bramą.
   `CarHop` ma osobny stan dla każdego auta i wykrywa przekroczenie
   krawężnika przez jego przód; renderowanie korzysta z czasu modelu ruchu.
-- `Pickup` — wspólny ruch, pulsowanie i kolizje piwa, wódki i kiełbaski.
+- `Pickup` — wspólny ruch, pulsowanie i kolizje wszystkich pięciu przedmiotów.
   `PickupType` rozróżnia ich rodzaj, a `PickupRules` określa losowanie,
   zmianę wyniku i wydłużanie kolumny. `BeerBurst` rysuje krople i pianę
   wyłącznie po piwie. `ScreenShake` odmierza 3 sekundy drżenia po wódce;
@@ -193,11 +194,12 @@ się standardowym przyciskiem systemu.
 - `GameDisplay` — mapuje planszę i klatkę 1280×720 na całe okno oraz
   określa logiczny układ UI 320×180 przy zoomie 4. Odwrotna transformacja
   obsługuje gesty oraz kursor Gum, aż do krawędzi widocznej planszy.
-- `RetroRenderer` — posiada jeden bufor 1280×720 ze sceną i UI. Prezentuje
-  go przez `PointClamp` i nakłada shader `doubleVisionEffect`, gdy wynik
-  przekracza 0‰. `DuiGame` przekazuje wynik oraz czas aktywnej gry ze sceny,
-  obejmuje rendererem jej rysowanie i zwalnia bufor przy wyjściu.
-  Shader należy do głównego `ContentManager`.
+- `RetroRenderer` — posiada dwa bufory 1280×720: świata i przezroczystego UI.
+  Nakłada podwójne widzenie i tęczę na świat, a dopiero potem komponuje UI
+  bez efektów. Obie warstwy skaluje przez `PointClamp` do tego samego obszaru.
+  `DuiGame` przekazuje wynik, czas aktywnej gry i flagi powerupów; przełącza
+  bufory między `GameScene.Draw` i `DrawUI`, a przy wyjściu zwalnia oba.
+  Shadery należą do głównego `ContentManager`.
 - `DUI.Tests` — testy regresji uruchamiane bez okna i urządzenia graficznego.
 - [Mapa klas](Docs/ClassMap.html) — odpowiedzialności i przepływy aplikacji.
 
@@ -253,7 +255,9 @@ Osiem testów `PowerupEffectsTests` sprawdza kierunki, oba czasy 10 sekund,
 odnawianie, nakładanie efektów, reset i podział czasu oraz prędkość 480 px/s,
 odstępy aut, zwykłe tempo timerów i wygaśnięcie przyspieszenia wewnątrz klatki.
 Renderowanie, dźwięk, interakcje Gum i cykl życia aplikacji wymagają też
-sprawdzenia w uruchomionej grze; te testy nie potwierdzają działania na telefonie.
+sprawdzenia w uruchomionej grze, w tym niezmienionych kolorów i położenia
+UI przy aktywnych efektach i po zmianie rozmiaru okna; te testy nie
+potwierdzają działania na telefonie.
 
 ## Pochodzenie
 

@@ -40,7 +40,7 @@ public class GameScene : Scene
     public bool VisualEffectsSuppressed => _powerups.VisualEffectsSuppressed;
     public bool RainbowActive => _powerups.RainbowActive;
 
-    // Drives the full-screen effect only while playing; a new game resets it.
+    // Drives world effects only while playing; a new game resets it.
     public TimeSpan PlayTime { get; private set; }
 
     public override void Initialize()
@@ -137,7 +137,7 @@ public class GameScene : Scene
             sceneEffect = _grayscaleEffect;
         }
 
-        // Shake only the world batch. Gum draws the HUD and dialogs afterward.
+        // This batch contains only the world. DuiGame captures UI separately.
         // Sprite textures use straight alpha; preserve their transparent edges.
         Core.SpriteBatch.Begin(
             blendState: BlendState.NonPremultiplied,
@@ -151,8 +151,11 @@ public class GameScene : Scene
         _pickup.Draw();
         _beerBurst.Draw(Core.SpriteBatch);
         Core.SpriteBatch.End();
-        _ui.Draw();
+    }
 
+    public void DrawUI()
+    {
+        _ui.Draw();
     }
 
     public void Pause()

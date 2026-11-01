@@ -54,6 +54,8 @@ public sealed class DuiGame : Core
     {
         _renderer.BeginFrame();
         base.Draw(gameTime);
+        _renderer.BeginUiFrame();
+        _gameScene.DrawUI();
         _renderer.Present(SpriteBatch, Display, _gameScene.ScorePermille, _gameScene.PlayTime,
             _gameScene.VisualEffectsSuppressed, _gameScene.RainbowActive);
     }
