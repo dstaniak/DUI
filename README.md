@@ -85,7 +85,8 @@ a nagłówki paneli 64×64 px przy obrazie 720p.
 
 - Strzałki / WASD lub D-pad / lewy drążek pada zmieniają kierunek.
 - Auto jedzie z prędkością 400 jednostek planszy na sekundę; proszek
-  zwiększa ją na 10 sekund do 480 (1,2×).
+  zwiększa ją na 10 sekund do 480 (1,2×), grzybek zmniejsza do 200 (0,5×),
+  a oba efekty razem dają 240 (0,6×).
   Proste odcinki przechodzą przez środki kafelków 80×80. Skręt czeka na
   najbliższą krawędź kafelka, po czym łączy osie rzędów i kolumn łukiem
   o promieniu 40 px. Zmiana kierunku o 90° trwa około 157 ms czasu symulacji
@@ -130,17 +131,20 @@ a nagłówki paneli 64×64 px przy obrazie 720p.
   **10 sekund** wyłącza podwójne widzenie, drżenie planszy oraz tęczę.
   Jednocześnie przyspiesza symulację kolumny do **1,2×**; odstępy między
   autami zostają takie same, a skręty i animacje aut podążają za jej zegarem.
-  Nie zmienia promili ani odwróconego sterowania.
+  Nie zmienia promili ani odwróconego sterowania; przy aktywnym grzybku
+  mnożniki prędkości łączą się do 0,6×.
 - Grzybek z ostrym kapeluszem i cienką nóżką przez **10 sekund** odwraca
   wszystkie kierunki (lewo ↔ prawo, góra ↔ dół), na klawiaturze, padzie
-  oraz dla gestów. Nie zmienia promili ani długości kolumny.
+  oraz dla gestów. Jednocześnie spowalnia całą kolumnę do **0,5×**
+  (200 px/s), dając więcej czasu na reakcję. Nie zmienia promili ani długości kolumny.
   `rainbowEffect` nakłada na całą warstwę planszy, poniżej UI, tęczowy gradient
   z alfą 0,22. Gradient przesuwa się płynnie, wykonując cykl co 6 sekund.
 - Ponowne zebranie tego samego powerupu odnawia jego czas do 10 sekund.
   Timery obu powerupów, drżenia i shaderów używają zwykłego czasu gry,
-  niezależnego od przyspieszenia kolumny. Pauza i przegrana je zamrażają,
+  niezależnego od przyspieszenia lub spowolnienia kolumny. Pauza i przegrana je zamrażają,
   RETRY usuwa efekty i przywraca normalne sterowanie oraz prędkość.
-  Proszek ukrywa tęczę i drżenie, ale ich czas nadal upływa. Jeśli po
+  Proszek ukrywa tęczę i drżenie, ale ich czas nadal upływa. Spowolnienie
+  i odwrócone sterowanie grzybka pozostają aktywne. Jeśli po
   wygaśnięciu proszku dany efekt nadal trwa, ponownie staje się widoczny.
 - Za wynikiem i znakiem ‰ są trzy stałe miejsca na ikonki: wódka, proszek,
   grzybek. To osobne białe sprite’y 28×28 px z przezroczystym tłem,

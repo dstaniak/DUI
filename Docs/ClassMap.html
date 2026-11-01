@@ -3,7 +3,7 @@
 <title>DUI — mapa klas</title>
 <style>body{font:16px/1.6 system-ui;max-width:1080px;margin:48px auto;padding:0 24px;color:#172338;background:#f6f8fa}a{color:#174ca0}table{border-collapse:collapse;width:100%;background:white}th,td{text-align:left;vertical-align:top;padding:12px 16px;border:1px solid #d9e0e8}code{background:#e6edf4;padding:2px 5px}h1,h2{line-height:1.25}.flow{background:#e6edf4;padding:20px;border-radius:8px}</style>
 <h1>DUI — mapa klas i przepływów</h1>
-<p>Aktualny stan: edukacyjna gra z płynnie skręcającą kolumną radiowozów za czerwonym autem gracza, podskakujących na krawężnikach, losowanym piwem, wódką, proszkiem, grzybkiem i kiełbaską, rozpryskiem piany, drżeniem po wódce, przyspieszeniem i wyłączeniem efektów po proszku oraz tęczą i odwróceniem sterowania po grzybku na parkingu pod sklepem, bez menu głównego. Oprawa retro: 1280×720, UI z ekranową czcionką i pomarańczowo-żółtą paletą C64, kolory grafik i dwukolorowe wzory w wybranych cieniach tekstur. Działający host DesktopGL,
+<p>Aktualny stan: edukacyjna gra z płynnie skręcającą kolumną radiowozów za czerwonym autem gracza, podskakujących na krawężnikach, losowanym piwem, wódką, proszkiem, grzybkiem i kiełbaską, rozpryskiem piany, drżeniem po wódce, przyspieszeniem i wyłączeniem efektów po proszku oraz tęczą, odwróceniem sterowania i spowolnieniem po grzybku na parkingu pod sklepem, bez menu głównego. Oprawa retro: 1280×720, UI z ekranową czcionką i pomarańczowo-żółtą paletą C64, kolory grafik i dwukolorowe wzory w wybranych cieniach tekstur. Działający host DesktopGL,
 wspólne źródła i zasoby, podstawy wejścia dotykowego. Hosty Android/iOS nie są jeszcze dodane.</p>
 <h2>Start i własność stanu</h2>
 <p class="flow"><a href="../DUI.Desktop/Program.cs">Program</a> →
@@ -20,7 +20,7 @@ ConvoyMovement przypina pozycję początkową do środka kafelka 80×80. Proste 
 przebiegają po osiach rzędów i kolumn. Pierwszy oczekujący skręt zaczyna się
 na najbliższej krawędzi kafelka przed autem; spóźnione polecenie czeka na następną.
 Łuk koła o promieniu 40 px łączy osie dwóch prostopadłych torów ze wspólną styczną.
-Auto jedzie 400 px/s (480 px/s po proszku), więc skręt 90° trwa około 157 ms
+Auto jedzie 400 px/s (480 po proszku, 200 po grzybku, 240 przy obu), więc skręt 90° trwa około 157 ms
 czasu symulacji. Pozycja wynika z długości łuku, a orientacja ze stycznej.
 Koniec łuku jest wyznaczany dokładnie, bez kumulowania błędu po kolejnych skrętach.
 Rozpoczęty skręt zawsze się kończy. AdvanceHead dzieli podkrok 5 ms na granicach
@@ -95,18 +95,19 @@ piwo i zakąska go nie przerywają. Pauza i koniec gry zamrażają efekt; RETRY 
 <li><strong>Powerupy:</strong> GameScene posiada <a href="#PowerupEffects">PowerupEffects</a>.
 Collect odnawia osobny timer proszku lub grzybka do 10 sekund; inne przedmioty ich nie zmieniają.
 Update otrzymuje zwykły czas Playing, odlicza oba timery i zwraca czas ruchu kolumny.
-Część klatki objęta proszkiem dostaje dodatkowe 20% czasu; reszta ma normalne tempo.
-Reszta z dzielenia ticków przez 5 jest przenoszona, więc podział klatek nie zmienia dystansu.
+Update dzieli klatkę według obu czasów wygaśnięcia: sam proszek mnoży czas ruchu
+przez 1,2, sam grzybek przez 0,5, a część wspólna przez 0,6. Pozostały czas ma zwykłe tempo.
+Reszta w dziesiątych częściach ticka jest przenoszona, więc podział klatek nie zmienia dystansu.
 GameScene → CarConvoy.Update(movementElapsed) → ConvoyMovement.Update.
 Model zachowuje podkroki, krzywe skrętu, ślad i odstępy, a także interpolację; animacje
 powiązane z RenderTime podążają za zegarem kolumny. PlayTime, timery powerupów,
-drżenie oraz ruch i puls przedmiotu nie przyspieszają.
+drżenie oraz ruch i puls przedmiotu zachowują zwykłe tempo.
 Proszek ustawia VisualEffectsSuppressed: GameScene zeruje wizualne przesunięcie świata,
 a RetroRenderer omija podwójne widzenie i tęczę bez zmiany ScorePermille.
-Grzybek ustawia ControlsReversed; MapDirection neguje wspólny wynik odczytu klawiatury,
+Grzybek spowalnia ruch do 0,5× i ustawia ControlsReversed; MapDirection neguje wspólny wynik odczytu klawiatury,
 pada i gestów. Zero pozostaje zerem; istniejące zasady kolejki skrętów nadal obowiązują.
 RainbowActive wymaga aktywnego grzybka i braku proszku. Proszek nie usuwa odwróconego
-sterowania ani nie zatrzymuje timerów ukrytych efektów. Po wygaśnięciu proszku widać
+sterowania ani spowolnienia grzybka (wspólnie daje 0,6×) i nie zatrzymuje timerów ukrytych efektów. Po wygaśnięciu proszku widać
 te efekty, które nadal trwają. Pauza i przegrana zamrażają timery; RETRY je zeruje.</li>
 <li><strong>Wskaźniki efektów:</strong> GameScene.DrawUI przekazuje ScreenShake.RemainingTime,
 PowerupEffects.PowderRemaining i MushroomRemaining do GameSceneUI.UpdateEffectIndicators.
@@ -246,7 +247,7 @@ które zwalnia teksturę PoliceLightbar; DuiGame zwalnia oba bufory RetroRendere
 <tr id="Pickup"><td><a href="../DUI.Game/GameObjects/Pickup.cs">Pickup</a></td><td>Przechowuje sprite’y pięciu rodzajów przedmiotów. Spawn wybiera typ, ustawia pozycję, losuje prędkość i resetuje puls. Porusza aktywny przedmiot o 0,5 jednostki na aktualizację, odbija go i pulsuje skalą wokół środka. Kolizje mają stały promień 20 dla wszystkich typów.</td></tr>
 <tr id="PickupType"><td><a href="../DUI.Game/GameObjects/PickupType.cs">PickupType</a></td><td>Rodzaj przedmiotu: Beer, Vodka, Powder, Mushroom lub Sausage.</td></tr>
 <tr id="PickupRules"><td><a href="../DUI.Game/GameObjects/PickupRules.cs">PickupRules</a></td><td>ChooseType losuje piwo 50%, wódkę 20%, proszek 5%, grzybek 5% i kiełbaskę 20%. ApplyScore zmienia promile o +0,2/+0,4/0/0/−0,4‰, z minimum 0. GrowsConvoy wydłuża kolumnę po napojach i proszku.</td></tr>
-<tr id="PowerupEffects"><td><a href="../DUI.Game/GameObjects/PowerupEffects.cs">PowerupEffects</a></td><td>Posiada niezależne timery proszku i grzybka po 10 sekund. PowderRemaining i MushroomRemaining udostępniają timery wskaźnikom UI. Collect odnawia czas. MapDirection odwraca wejście podczas grzybka. VisualEffectsSuppressed ukrywa efekty po proszku, a RainbowActive uwzględnia oba timery. Update odlicza zwykły czas i zwraca czas ruchu z premią 20% tylko w części klatki objętej proszkiem. Przenosi ułamki ticka; Reset usuwa oba efekty i resztę czasu.</td></tr>
+<tr id="PowerupEffects"><td><a href="../DUI.Game/GameObjects/PowerupEffects.cs">PowerupEffects</a></td><td>Posiada niezależne timery proszku i grzybka po 10 sekund. PowderRemaining i MushroomRemaining udostępniają timery wskaźnikom UI. Collect odnawia czas. MapDirection odwraca wejście podczas grzybka. VisualEffectsSuppressed ukrywa efekty po proszku, a RainbowActive uwzględnia oba timery. Update odlicza zwykły czas i zwraca czas ruchu skalowany dla części klatki objętych efektami: proszek 1,2×, grzybek 0,5×, oba 0,6×. Przenosi dziesiąte części ticka; Reset usuwa oba efekty i resztę czasu.</td></tr>
 <tr id="ScreenShake"><td><a href="../DUI.Game/Framework/Graphics/ScreenShake.cs">ScreenShake</a></td><td>Odmierza 3 sekundy wizualnego drżenia planszy: ±24 px i 18 Hz. RemainingTime udostępnia pozostały czas wskaźnikowi wódki. Restart odnawia czas, Update odmierza aktywną grę, Reset wyłącza efekt. Nie zarządza UI ani fizyką.</td></tr>
 <tr id="CarHop"><td><a href="../DUI.Game/GameObjects/CarHop.cs">CarHop</a></td><td>Stan pojedynczego podskoku auta. Advance wykrywa przekroczenie krawężnika przez przód na podstawie dwóch kolejnych CarPose i prostokątów trawy. Zapamiętuje czas startu oraz gotowość do ponownego wjazdu. GetTransform(RenderTime) zwraca mnożnik 1–1,28 i uniesienie 0–12 px przez 200 ms. EaseOutCubic steruje wybiciem, EaseInQuad lądowaniem.</td></tr>
 <tr id="CarSway"><td><a href="../DUI.Game/GameObjects/CarSway.cs">CarSway</a></td><td>Czysta funkcja CarPose → CarPose dodająca wizualne przesunięcie ±1,5 px i obrót ±2°. Faza zależy od drogi, więc segment powtarza falowanie głowy; okres odpowiada 1,2 s. Nie zmienia modelu ani kolizji.</td></tr>
@@ -382,7 +383,7 @@ czasy 10 sekund, odnawianie, nakładanie efektów, reset, podział czasu oraz 48
 odstępy aut, zwykłe tempo timerów, część klatki po wygaśnięciu i ułamki ticków.
 Testy kompilują te same źródła modeli, reguł, PowerupEffects, ScreenShake i GameDisplay co gra.</p>
 <p>Testy nie zastępują sprawdzenia renderowania, audio, przycisków Gum,
-jazdy po środkach rzędów i kolumn, płynnych łuków i odtwarzania ich przez ogon, łączenia kafelków parkingu, witryny, ogrodzenia i bramy, szarej siatki 80×80 na asfalcie i trawie (alpha 0,35 bez wzmocnienia na skrzyżowaniach, przycięcie do obszaru jazdy i bramy, warstwa pod sprite’ami), falowania aut i opóźnienia segmentów, radiowozów w ogonie i dwóch kolorów świateł na obracającym się dachu, powiększania każdego auta na trawie i podskoków przy wjeździe, pulsowania i zebrania butelki, rozprysku piwa, zmian promili +0,2/+0,4/−0,4‰, wzrostu po napojach i proszku, działania obu powerupów przez 10 sekund, odwracania wejścia oraz przyspieszenia 1,2×, drżenia samej planszy przez 3 sekundy po wódce i resetu do 0,0‰, położenia sprite’a przy przejściu 9,8‰ → 10,0‰ oraz utraty aktywności w uruchomionej aplikacji.
+jazdy po środkach rzędów i kolumn, płynnych łuków i odtwarzania ich przez ogon, łączenia kafelków parkingu, witryny, ogrodzenia i bramy, szarej siatki 80×80 na asfalcie i trawie (alpha 0,35 bez wzmocnienia na skrzyżowaniach, przycięcie do obszaru jazdy i bramy, warstwa pod sprite’ami), falowania aut i opóźnienia segmentów, radiowozów w ogonie i dwóch kolorów świateł na obracającym się dachu, powiększania każdego auta na trawie i podskoków przy wjeździe, pulsowania i zebrania butelki, rozprysku piwa, zmian promili +0,2/+0,4/−0,4‰, wzrostu po napojach i proszku, działania obu powerupów przez 10 sekund, odwracania wejścia, przyspieszenia 1,2×, spowolnienia 0,5× i wspólnego mnożnika 0,6×, drżenia samej planszy przez 3 sekundy po wódce i resetu do 0,0‰, położenia sprite’a przy przejściu 9,8‰ → 10,0‰ oraz utraty aktywności w uruchomionej aplikacji.
 Shader podwójnego widzenia wymaga sprawdzenia na GPU: brak efektu przy 0‰,
 alfa rosnąca o 0,01 na 0,1‰ od bazowego 0,1 i ograniczona do 0,5,
 rosnący promień, kołowa orbita przy różnych proporcjach okna,

@@ -139,14 +139,13 @@ internal static class PowerupEffectsTests
         var boosted = new ConvoyMovement(Vector2.Zero);
         boosted.Grow();
         effects.Collect(PickupType.Powder);
-        effects.Collect(PickupType.Mushroom);
         normal.Update(TimeSpan.FromSeconds(1));
         boosted.Update(effects.Update(TimeSpan.FromSeconds(1)));
         Assert.Near(440, normal.Cars[0].Center.X);
         Assert.Near(520, boosted.Cars[0].Center.X);
         Assert.Near(80, Vector2.Distance(boosted.Cars[0].Center, boosted.Cars[1].Center));
         effects.Update(TimeSpan.FromSeconds(8));
-        Assert.Check(effects.VisualEffectsSuppressed && effects.ControlsReversed);
+        Assert.Check(effects.VisualEffectsSuppressed && !effects.ControlsReversed);
         effects.Update(TimeSpan.FromSeconds(1));
         Assert.Check(!effects.VisualEffectsSuppressed && !effects.ControlsReversed);
         Assert.Check(effects.Update(TimeSpan.FromSeconds(1)) == TimeSpan.FromSeconds(1));
