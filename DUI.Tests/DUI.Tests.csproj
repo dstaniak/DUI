@@ -18,6 +18,7 @@
     <Compile Include="../DUI.Game/Framework/Circle.cs" Link="Circle.cs" />
     <Compile Include="../DUI.Game/GameObjects/PickupType.cs" Link="PickupType.cs" />
     <Compile Include="../DUI.Game/GameObjects/PickupRules.cs" Link="PickupRules.cs" />
+    <Compile Include="../DUI.Game/GameObjects/PowerupEffects.cs" Link="PowerupEffects.cs" />
     <Compile Include="../DUI.Game/Framework/Graphics/ScreenShake.cs" Link="ScreenShake.cs" />
   </ItemGroup>
 </Project>
