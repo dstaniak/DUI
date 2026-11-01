@@ -155,6 +155,10 @@ public class GameScene : Scene
 
     public void DrawUI()
     {
+        // Read the current timers after movement and collection, also on pause
+        // and retry frames. Hidden world visuals do not cancel their timers.
+        _ui.UpdateEffectIndicators(_screenShake.RemainingTime,
+            _powerups.PowderRemaining, _powerups.MushroomRemaining);
         _ui.Draw();
     }
 

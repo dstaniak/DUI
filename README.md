@@ -128,6 +128,14 @@ pomniejszania do 200 wierszy.
   RETRY usuwa efekty i przywraca normalne sterowanie oraz prędkość.
   Proszek ukrywa tęczę i drżenie, ale ich czas nadal upływa. Jeśli po
   wygaśnięciu proszku dany efekt nadal trwa, ponownie staje się widoczny.
+- Za wynikiem i znakiem ‰ są trzy stałe miejsca na ikonki: wódka, proszek,
+  grzybek. To osobne białe sprite’y 28×28 px z przezroczystym tłem,
+  dopasowane do pikselowego licznika. Ikonka aktywnego przedmiotu mruga: 0,3 s widoczna, 0,3 s ukryta.
+  Odliczanie pochodzi z tego samego timera co efekt (3 s / 10 s / 10 s).
+  Ponowne zebranie zaczyna od widocznej ikonki, wygaśnięcie i RETRY ją gaszą,
+  a pauza i koniec gry zamrażają mruganie. Wskaźniki pokazują aktywne timery
+  również wtedy, gdy proszek chwilowo ukrywa ich efekty wizualne.
+  Wszystkie trzy przesuwają się za wynikiem, gdy rośnie liczba jego cyfr.
 - Wódka uruchamia mocne drżenie kafelków i sprite’ów na planszy w lewo
   i prawo: ±24 piksele przy 720p, 18 cykli na sekundę, przez 3 sekundy.
   UI jest rysowane osobno i nie drży. Kolejna wódka odnawia czas;
@@ -256,7 +264,8 @@ odnawianie, nakładanie efektów, reset i podział czasu oraz prędkość 480 px
 odstępy aut, zwykłe tempo timerów i wygaśnięcie przyspieszenia wewnątrz klatki.
 Renderowanie, dźwięk, interakcje Gum i cykl życia aplikacji wymagają też
 sprawdzenia w uruchomionej grze, w tym niezmienionych kolorów i położenia
-UI przy aktywnych efektach i po zmianie rozmiaru okna; te testy nie
+UI przy aktywnych efektach i po zmianie rozmiaru okna, a także mrugania,
+wygasania i położenia trzech wskaźników za wynikiem; te testy nie
 potwierdzają działania na telefonie.
 
 ## Pochodzenie
@@ -307,3 +316,11 @@ teksturą 42×29 z przezroczystym tłem. Narysowano go jako pikselowe figury
 w [źródłowym SVG](SourceAssets/UI/per-mille.svg) i zrasteryzowano do PNG.
 UI dopasowuje go do skali fontu i przesuwa za liczbą przy zmianie jej szerokości.
 Punktacja używa `decimal`, aby przyrosty o 0,2 były dokładne.
+
+Wskaźniki aktywnych efektów mają osobne, białe sprite’y 28×28:
+[kieliszek](DUI.Game/Content/Images/UI/vodka-indicator.png),
+[woreczek](DUI.Game/Content/Images/UI/powder-indicator.png) i
+[grzybek](DUI.Game/Content/Images/UI/mushroom-indicator.png).
+Ich źródłowe SVG są w `SourceAssets/UI/`. Powstały z pikselowych prostokątów
+na siatce 14×14, powiększonych dwukrotnie bez antyaliasingu; używają tylko
+bieli i przezroczystości, podobnie jak znak promila.

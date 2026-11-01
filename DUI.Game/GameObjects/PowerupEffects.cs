@@ -12,6 +12,9 @@ public sealed class PowerupEffects
     private TimeSpan _mushroomRemaining;
     private long _boostRemainderTicks;
 
+    public TimeSpan PowderRemaining => _powderRemaining;
+    public TimeSpan MushroomRemaining => _mushroomRemaining;
+
     public bool VisualEffectsSuppressed => _powderRemaining > TimeSpan.Zero;
     public bool ControlsReversed => _mushroomRemaining > TimeSpan.Zero;
     public bool RainbowActive => ControlsReversed && !VisualEffectsSuppressed;
