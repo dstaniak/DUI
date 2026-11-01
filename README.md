@@ -273,7 +273,8 @@ dotnet build DUI.slnx
 dotnet run --project DUI.Tests
 ```
 
-52 testy obejmują oczekiwanie na krawędź kafelka, wszystkie kierunki skrętów,
+54 testy obejmują oczekiwanie na krawędź kafelka i spóźnione polecenie,
+500 kolejnych skrętów bez zejścia z osi siatki, wszystkie kierunki skrętów,
 kolejkę, odrzucanie nieprawidłowych poleceń, stałą prędkość,
 interpolację i różne podziały czasu. Sprawdzają odtwarzanie śladu przez
 cztery zakręty, odstępy, wzrost, ograniczenie pamięci historii, ciasny nawrót,

@@ -349,8 +349,9 @@ ContentManager Gum posiada teksturę; nie ma systemowej zależności od fontu.
 Usunięto tutorialowy atlas UI, 04b_30 i osobny sprite ‰. C64Theme rysuje ramki prostokątami,
 a C64Button nadaje kolory wszystkim stanom wejścia. Własne białe ikonki i gwiazdki pozostają osobnymi teksturami.</p>
 <h2>Weryfikacja i ograniczenia</h2>
-<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> uruchamia 52 testy bez GPU.
-<a href="../DUI.Tests/MovementTests.cs">MovementTests</a> sprawdza oczekiwanie na krawędź kafelka,
+<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> uruchamia 54 testy bez GPU.
+<a href="../DUI.Tests/MovementTests.cs">MovementTests</a> sprawdza oczekiwanie na krawędź kafelka, spóźnione polecenie,
+500 skrętów bez zejścia z osi siatki (stan logiczny i rysowany),
 cztery kierunki, stałą prędkość, kolejkę, odrzucanie zwrotu i powtórzeń,
 resztę czasu, interpolację, ślad przez cztery zakręty, odstępy, wzrost,
 ograniczenie historii, ciasny nawrót, kolizje między końcami podkroku,

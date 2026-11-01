@@ -12,6 +12,8 @@ internal static class MovementTests
         ("Input waits for the next tile edge before turning", AlignedTurn),
         ("All quarter turns follow constant-speed tangent arcs", QuarterTurns),
         ("An active turn finishes before two queued turns execute", QueuedTurns),
+        ("Late input waits for the following tile without teleporting", LateTurn),
+        ("Repeated turns keep both logical and rendered poses on grid lanes", GridLanes),
         ("Invalid, reverse and repeated targets do not occupy the queue", InvalidTargets),
         ("Fixed simulation and rendering are independent of frame partitions", FramePartitions),
         ("Followers replay the head's positions and headings through four bends", FollowTrail),
@@ -103,6 +105,37 @@ internal static class MovementTests
         Equal(Vector2.UnitY, movement.Cars[0].Direction);
         Near(40, movement.Cars[0].Center.X);
         Near(240 - 40 - 3 * Math.PI * 20, movement.Cars[0].Center.Y);
+    }
+
+    private static void LateTurn()
+    {
+        var movement = new ConvoyMovement(new Vector2(40));
+        movement.Update(TimeSpan.FromMilliseconds(105));
+        Check(movement.QueueDirection(Vector2.UnitY));
+        movement.Update(TimeSpan.FromMilliseconds(195));
+        Equal(new Vector2(160, 40), movement.Cars[0].Center);
+        Equal(Vector2.UnitX, movement.Cars[0].Direction);
+        movement.Update(TimeSpan.FromMilliseconds(200));
+        Near(200, movement.Cars[0].Center.X);
+        Equal(Vector2.UnitY, movement.Cars[0].Direction);
+    }
+
+    private static void GridLanes()
+    {
+        var movement = new ConvoyMovement(new Vector2(680, 360));
+        Vector2[] directions = [Vector2.UnitY, Vector2.UnitX, -Vector2.UnitY, Vector2.UnitX];
+        for (int turn = 0; turn < 500; turn++)
+        {
+            Vector2 direction = directions[turn % directions.Length];
+            Check(movement.QueueDirection(direction));
+            movement.Update(TimeSpan.FromMilliseconds(400 + turn % 37));
+            foreach (CarPose pose in new[] { movement.Cars[0], movement.GetRenderPose(0) })
+            {
+                Equal(direction, pose.Direction);
+                float across = direction.X == 0 ? pose.Center.X : pose.Center.Y;
+                Near(Math.Round((across - 40) / 80), (across - 40) / 80);
+            }
+        }
     }
 
     private static void InvalidTargets()
