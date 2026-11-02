@@ -9,8 +9,8 @@ https://creativecommons.org/publicdomain/zero/1.0/
 beer-burp.wav: "Burp #4" by Joseph SARDIN / BigSoundBank
 https://bigsoundbank.com/burp-4-s1710.html
 
-vodka-exhale.wav: final "ahh" from "Drinking.wav" by craigglenday
-https://freesound.org/people/craigglenday/sounds/517173/
+vodka-exhale.wav: "Relief - Ahhh" by Sadiquecat (shortened)
+https://freesound.org/people/Sadiquecat/sounds/801137/
 
 powder-sniff.wav: "Sniff" by OwlStorm (Ashe Kirk / Owlish Media)
 https://freesound.org/people/OwlStorm/sounds/151218/

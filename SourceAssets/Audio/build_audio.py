@@ -16,8 +16,8 @@ SAMPLE_RATE = 44100
 # Times are seconds in the original source. The last value removes low rumble.
 EFFECTS = (
     ("burp.wav", "beer-burp.wav", 0.0, 0.344, 70),
-    # Keep the natural "ahh" after the drink, without the preceding gulp.
-    ("drink-exhale.mp3", "vodka-exhale.wav", 2.78, 4.15, 70),
+    # Keep the voiced attack of the short "ahh", without its quiet tail.
+    ("relief-exhale.mp3", "vodka-exhale.wav", 0.03, 0.58, 70),
     ("sniff.mp3", "powder-sniff.wav", 0.10, 0.65, 100),
     ("crunch.1.ogg", "eat.wav", 0.50, 1.02, 80),
     ("crash.mp3", "crash.wav", 0.32, 1.65, 60),
