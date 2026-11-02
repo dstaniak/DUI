@@ -35,6 +35,7 @@ public sealed class DuiGame : Core
             Content.Load<Effect>("Effects/doubleVisionEffect"),
             Content.Load<Effect>("Effects/rainbowEffect"));
         UpdateDisplay();
+        Audio.SongVolume = 0.35f;
         Audio.PlaySong(_themeSong);
         _gameScene = new GameScene();
         ChangeScene(_gameScene);

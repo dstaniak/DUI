@@ -292,6 +292,27 @@ with the standard system button.
 - `DUI.Tests` — regression tests that run without a window or graphics device.
 - [Class map](ClassMap.html) — application responsibilities and flows.
 
+## Audio
+
+The supplied `SourceAssets/pydim-byte-hook-620646.mp3` replaces the tutorial
+music. `DuiGame` loads its Vorbis conversion (`Audio/theme`) and plays it
+on repeat with music volume set to 35%, leaving room for the pickup effects.
+
+`GameScene` preloads effects and chooses one using the collected `PickupType`
+before spawning the next item: beer burps, vodka exhales, powder sniffs,
+and mushrooms and sausages share an eating crunch. A separate car-crash
+sound plays once when either a boundary or tail collision changes the state
+from Playing to GameOver; repeated collision notifications are ignored.
+Effects are owned by the scene's ContentManager. UI clicks and pickup-wall
+bounces retain their existing sounds. Music continues during ordinary pause
+and game over; losing app focus pauses audio, and regaining focus resumes it.
+
+[Audio source notes](../SourceAssets/Audio/README.md) record the CC0 effects,
+original files, and reproduction steps. `SourceAssets/Audio/build_audio.py`
+uses FFmpeg to create short mono 44.1 kHz PCM effects with edge fades and
+-3 dBFS peaks, and the full stereo Vorbis track. MonoGame builds the finished
+assets and includes `Audio/credits.txt` in release content.
+
 ## Mobile
 
 The code accounts for touch gestures, pausing on focus loss, and a fixed
@@ -360,7 +381,9 @@ independent expiry of speed multipliers in either order, the portion of
 a frame after expiry, and fractional ticks.
 
 Rendering, audio, Gum interactions, and the application lifecycle also require
-checks in the running game. These include unchanged UI colors and positions
+checks in the running game. Audio checks include the music loop and balance,
+each pickup sound, one crash sound for both boundary and tail collisions,
+and focus-loss pause/resume. Visual checks include unchanged UI colors and positions
 with active effects and after resizing, as well as the blinking, expiry,
 and positioning of the three indicators after the alcohol counter.
 These tests do not establish that the game works on a phone.
@@ -369,7 +392,9 @@ These tests do not establish that the game works on a phone.
 
 Code and assets were copied from the local DungeonSlime project at
 `ec41fb7eefb4787a652538e37bc0eb0d025998dd`. The tutorial's pace, playfield size,
-UI, and audio were retained; smooth turns replaced grid movement.
+UI, and original audio were initially retained; smooth turns replaced grid
+movement. The supplied music and per-pickup/crash sounds now replace the
+tutorial theme and shared collection sound; UI and bounce audio remain.
 New car and bottle artwork replaces the characters, and the beer splash
 is generated in code. A parking lot replaces the dungeon. The title screen,
 its options and assets, the ImGui overlay, and desktop shader watching

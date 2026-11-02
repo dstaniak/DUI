@@ -20,12 +20,43 @@
 /processorParam:Version=3.8.5.0
 /build:Audio/bounce.wav
 
-#begin Audio/collect.wav
+#begin Audio/beer-burp.wav
 /importer:WavImporter
 /processor:SoundEffectProcessor
 /processorParam:Quality=Best
 /processorParam:Version=3.8.5.0
-/build:Audio/collect.wav
+/build:Audio/beer-burp.wav
+
+#begin Audio/vodka-exhale.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/processorParam:Version=3.8.5.0
+/build:Audio/vodka-exhale.wav
+
+#begin Audio/powder-sniff.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/processorParam:Version=3.8.5.0
+/build:Audio/powder-sniff.wav
+
+#begin Audio/eat.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/processorParam:Version=3.8.5.0
+/build:Audio/eat.wav
+
+#begin Audio/crash.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/processorParam:Version=3.8.5.0
+/build:Audio/crash.wav
+
+#begin Audio/credits.txt
+/copy:Audio/credits.txt
 
 #begin Audio/theme.ogg
 /importer:OggImporter
