@@ -1,0 +1,27 @@
+DUI audio
+
+Music: pydim-byte-hook-620646.mp3, supplied by the project owner
+for use in this game. Converted to Ogg Vorbis as theme.ogg.
+
+The following sound effects use CC0 1.0:
+https://creativecommons.org/publicdomain/zero/1.0/
+
+beer-burp.wav: "Burp #4" by Joseph SARDIN / BigSoundBank
+https://bigsoundbank.com/burp-4-s1710.html
+
+vodka-exhale.wav: "Relief - Ahhh" by Sadiquecat (shortened)
+https://freesound.org/people/Sadiquecat/sounds/801137/
+
+powder-sniff.wav: "Sniff" by OwlStorm (Ashe Kirk / Owlish Media)
+https://freesound.org/people/OwlStorm/sounds/151218/
+
+eat.wav: "7 Eating Crunches" by Tito and StarNinjas (crunch.1.ogg)
+https://opengameart.org/content/7-eating-crunches
+
+crash.wav: "Car Crash" by squareal
+https://freesound.org/people/squareal/sounds/237375/
+
+Effects were trimmed, filtered, faded, converted to mono 44.1 kHz
+16-bit PCM, and peak-normalized to -3 dBFS for this game.
+
+ui.wav and bounce.wav are retained from the DungeonSlime tutorial.

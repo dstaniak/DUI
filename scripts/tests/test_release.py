@@ -5,6 +5,7 @@ import struct
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import release
@@ -21,12 +22,30 @@ class ReleaseTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             release.archive_name("win-x64", "../../escape")
 
-    def test_content_includes_streamed_audio_and_raw_font(self):
+    def test_content_includes_buffered_music_and_raw_font(self):
         required = set(release.required_content())
-        for path in ("Audio/theme.ogg", "Audio/theme.xnb", "Fonts/c64.fnt",
+        for path in ("Audio/theme.xnb", "Audio/credits.txt", "Fonts/c64.fnt",
                      "Fonts/c64-license.txt", "Images/tilemap-definition.xml",
                      "Effects/rainbowEffect.xnb", "Effects/doubleVisionEffect.xnb"):
             self.assertIn(Path(path), required)
+        self.assertNotIn(Path("Audio/theme.ogg"), required)
+
+    def test_only_streamed_songs_require_a_separate_audio_file(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            content = root / "DUI.Game" / "Content"
+            content.mkdir(parents=True)
+            (content / "Content.mgcb").write_text(
+                "#begin Audio/song.ogg\n/processor:SongProcessor\n"
+                "/build:Audio/song.ogg\n"
+                "#begin Audio/theme.ogg\n/processor:SoundEffectProcessor\n"
+                "/build:Audio/theme.ogg\n"
+                "#begin Audio/credits.txt\n/copy:Audio/credits.txt\n",
+                encoding="utf-8")
+            with mock.patch.object(release, "ROOT", root):
+                self.assertEqual(set(release.required_content()), {
+                    Path("Audio/song.xnb"), Path("Audio/song.ogg"),
+                    Path("Audio/theme.xnb"), Path("Audio/credits.txt")})
 
     def test_missing_or_empty_resources_fail_validation(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -8,6 +8,11 @@ public sealed class PowerupEffects
 {
     public static readonly TimeSpan Duration = TimeSpan.FromSeconds(10);
 
+    private const int SpeedPrecision = 10;
+    private const int PowderSpeedTenths = 12;
+    private const int MushroomSpeedTenths = 5;
+    private const int CombinedSpeedTenths = PowderSpeedTenths * MushroomSpeedTenths / SpeedPrecision;
+
     private TimeSpan _powderRemaining;
     private TimeSpan _mushroomRemaining;
     private long _movementRemainderTenths;
@@ -18,6 +23,12 @@ public sealed class PowerupEffects
     public bool VisualEffectsSuppressed => _powderRemaining > TimeSpan.Zero;
     public bool ControlsReversed => _mushroomRemaining > TimeSpan.Zero;
     public bool RainbowActive => ControlsReversed && !VisualEffectsSuppressed;
+
+    /// <summary>The current speed, after collection or expiry, rather than the previous frame's average.</summary>
+    public float MovementSpeedMultiplier =>
+        (_powderRemaining > TimeSpan.Zero ? PowderSpeedTenths : SpeedPrecision) *
+        (_mushroomRemaining > TimeSpan.Zero ? MushroomSpeedTenths : SpeedPrecision) /
+        (float)(SpeedPrecision * SpeedPrecision);
 
     public void Collect(PickupType type)
     {
@@ -53,10 +64,11 @@ public sealed class PowerupEffects
         // Split at both expirations, even within one frame. Multipliers combine:
         // powder 12/10, mushroom 5/10, both 6/10. Carry tenths of a tick so
         // frame partitioning cannot change distance or lose fractional movement.
-        long scaledTenths = (powderTicks - overlapTicks) * 12 +
-            (mushroomTicks - overlapTicks) * 5 + overlapTicks * 6 + _movementRemainderTenths;
-        TimeSpan movementElapsed = TimeSpan.FromTicks(checked(normalTicks + scaledTenths / 10));
-        _movementRemainderTenths = scaledTenths % 10;
+        long scaledTenths = (powderTicks - overlapTicks) * PowderSpeedTenths +
+            (mushroomTicks - overlapTicks) * MushroomSpeedTenths +
+            overlapTicks * CombinedSpeedTenths + _movementRemainderTenths;
+        TimeSpan movementElapsed = TimeSpan.FromTicks(checked(normalTicks + scaledTenths / SpeedPrecision));
+        _movementRemainderTenths = scaledTenths % SpeedPrecision;
 
         // Suppression hides visuals without pausing either effect's lifetime.
         _powderRemaining = TimeSpan.FromTicks(Math.Max(0, _powderRemaining.Ticks - elapsed.Ticks));

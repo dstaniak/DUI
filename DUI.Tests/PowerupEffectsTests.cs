@@ -19,7 +19,10 @@ internal static class PowerupEffectsTests
         ("Powder speed handles expiration within a frame and fractional ticks", PartialBoost),
         ("Mushroom halves convoy speed for ten real seconds", MushroomSlowdown),
         ("Overlapping speed effects multiply and expire independently", OverlappingSpeeds),
-        ("Slow movement preserves fractional ticks across frames and reset", PartialSlowdown)
+        ("Slow movement preserves fractional ticks across frames and reset", PartialSlowdown),
+        ("The current music multiplier agrees with actual convoy movement", CurrentSpeed),
+        ("Music speed follows pickup refresh, pause and reset", SpeedLifecycle),
+        ("Music uses the speed after expiry rather than the frame average", SpeedAfterExpiry)
     ];
 
     private static void ReverseDirections()
@@ -259,5 +262,76 @@ internal static class PowerupEffectsTests
         whole.Update(TimeSpan.FromTicks(4));
         whole.Reset();
         Assert.Check(whole.Update(TimeSpan.FromTicks(1)) == TimeSpan.FromTicks(1));
+    }
+
+    private static void CurrentSpeed()
+    {
+        var cases = new (PickupType[] Pickups, float Speed)[]
+        {
+            ([], 1.0f),
+            ([PickupType.Powder], 1.2f),
+            ([PickupType.Mushroom], 0.5f),
+            ([PickupType.Powder, PickupType.Mushroom], 0.6f),
+            ([PickupType.Mushroom, PickupType.Powder], 0.6f)
+        };
+        foreach (var test in cases)
+        {
+            var effects = new PowerupEffects();
+            var movement = new ConvoyMovement(new Vector2(40));
+            foreach (PickupType pickup in test.Pickups)
+            {
+                effects.Collect(pickup);
+            }
+
+            Assert.Near(test.Speed, effects.MovementSpeedMultiplier);
+            movement.Update(effects.Update(TimeSpan.FromSeconds(1)));
+            Assert.Near(40 + 400 * effects.MovementSpeedMultiplier, movement.Cars[0].Center.X);
+        }
+    }
+
+    private static void SpeedLifecycle()
+    {
+        var effects = new PowerupEffects();
+        effects.Collect(PickupType.Powder);
+        effects.Collect(PickupType.Mushroom);
+        effects.Update(TimeSpan.FromSeconds(9));
+        effects.Collect(PickupType.Powder);
+        effects.Collect(PickupType.Mushroom);
+        effects.Update(TimeSpan.FromSeconds(9));
+        Assert.Near(0.6f, effects.MovementSpeedMultiplier);
+
+        foreach (PickupType pickup in new[] { PickupType.Beer, PickupType.Vodka, PickupType.Sausage })
+        {
+            effects.Collect(pickup);
+            effects.Update(TimeSpan.Zero);
+            Assert.Near(0.6f, effects.MovementSpeedMultiplier);
+        }
+
+        effects.Update(TimeSpan.FromSeconds(1));
+        Assert.Near(1.0f, effects.MovementSpeedMultiplier);
+        effects.Collect(PickupType.Mushroom);
+        Assert.Near(0.5f, effects.MovementSpeedMultiplier);
+        effects.Reset();
+        Assert.Near(1.0f, effects.MovementSpeedMultiplier);
+    }
+
+    private static void SpeedAfterExpiry()
+    {
+        foreach (bool powderFirst in new[] { false, true })
+        {
+            var effects = new PowerupEffects();
+            effects.Collect(powderFirst ? PickupType.Powder : PickupType.Mushroom);
+            effects.Update(TimeSpan.FromSeconds(4));
+            effects.Collect(powderFirst ? PickupType.Mushroom : PickupType.Powder);
+            Assert.Near(0.6f, effects.MovementSpeedMultiplier);
+
+            // One timer expires six seconds into this seven-second update.
+            TimeSpan movement = effects.Update(TimeSpan.FromSeconds(7));
+            Assert.Check(movement == TimeSpan.FromSeconds(powderFirst ? 4.1 : 4.8));
+            Assert.Near(powderFirst ? 0.5f : 1.2f, effects.MovementSpeedMultiplier);
+
+            effects.Update(TimeSpan.FromSeconds(4));
+            Assert.Near(1.0f, effects.MovementSpeedMultiplier);
+        }
     }
 }

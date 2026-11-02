@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DUI.GameObjects;
 using DUI.UI;
 using Microsoft.Xna.Framework;
@@ -27,7 +28,8 @@ public class GameScene : Scene
     private BeerBurst _beerBurst;
     private ParkingLot _parkingLot;
     private Rectangle _pickupArea;
-    private SoundEffect _collectSoundEffect;
+    private Dictionary<PickupType, SoundEffect> _pickupSoundEffects;
+    private SoundEffect _crashSoundEffect;
     // Alcohol level; decimal keeps pickup changes exact, independently of score.
     private decimal _scorePermille;
     private GameSceneUI _ui;
@@ -40,6 +42,7 @@ public class GameScene : Scene
     public decimal ScorePermille => _scorePermille;
     public bool VisualEffectsSuppressed => _powerups.VisualEffectsSuppressed;
     public bool RainbowActive => _powerups.RainbowActive;
+    public float MovementSpeedMultiplier => _powerups.MovementSpeedMultiplier;
 
     // Drives world effects only while playing; a new game resets it.
     public TimeSpan PlayTime { get; private set; }
@@ -74,7 +77,15 @@ public class GameScene : Scene
             LoadSprite("Images/sausage"),
             bounceEffect);
         _beerBurst = new BeerBurst(Core.GraphicsDevice);
-        _collectSoundEffect = Content.Load<SoundEffect>("Audio/collect");
+        _pickupSoundEffects = new Dictionary<PickupType, SoundEffect>
+        {
+            [PickupType.Beer] = Content.Load<SoundEffect>("Audio/beer-burp"),
+            [PickupType.Vodka] = Content.Load<SoundEffect>("Audio/vodka-exhale"),
+            [PickupType.Powder] = Content.Load<SoundEffect>("Audio/powder-sniff"),
+            [PickupType.Mushroom] = Content.Load<SoundEffect>("Audio/eat"),
+            [PickupType.Sausage] = Content.Load<SoundEffect>("Audio/eat")
+        };
+        _crashSoundEffect = Content.Load<SoundEffect>("Audio/crash");
         _grayscaleEffect = Content.Load<Effect>("Effects/grayscaleEffect");
     }
 
@@ -263,7 +274,7 @@ public class GameScene : Scene
 
         _scorePermille = PickupRules.ApplyScore(_scorePermille, type);
         _ui.UpdateScoreText(_scorePermille);
-        Core.Audio.PlaySoundEffect(_collectSoundEffect);
+        Core.Audio.PlaySoundEffect(_pickupSoundEffects[type]);
         SpawnPickupAwayFromConvoy();
     }
 
@@ -373,8 +384,15 @@ public class GameScene : Scene
 
     private void GameOver()
     {
-        _ui.ShowGameOverPanel();
+        if (_state != GameState.Playing)
+        {
+            return;
+        }
+
+        // Both collision events can arrive in one update; play one impact.
         _state = GameState.GameOver;
+        Core.Audio.PlaySoundEffect(_crashSoundEffect);
+        _ui.ShowGameOverPanel();
         _saturation = 1.0f;
     }
 

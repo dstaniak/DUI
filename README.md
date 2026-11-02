@@ -28,6 +28,8 @@ Pickups can help you recover or make your next turn much more challenging.
 Collecting the same timed pickup again refreshes its duration. Powder hides
 the mushroom's rainbow, but its reversed controls still apply. Active-effect
 icons blink beside the alcohol counter and flash faster during the last second.
+Music speeds up and rises in pitch with powder, slows and drops with a
+mushroom, and follows the combined 0.6× speed when both are active.
 
 ## Controls
 

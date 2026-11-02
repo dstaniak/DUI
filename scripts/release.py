@@ -88,13 +88,18 @@ def publish():
 def required_content():
     """Check every MGCB entry, including raw files used outside Content.Load."""
     manifest = ROOT / "DUI.Game" / "Content" / "Content.mgcb"
+    processor = None
     for line in manifest.read_text(encoding="utf-8").splitlines():
+        if line.startswith("#begin "):
+            processor = None
+        elif line.startswith("/processor:"):
+            processor = line.split(":", 1)[1]
         if line.startswith(("/build:", "/copy:")):
             command, value = line.split(":", 1)
             source, _, destination = value.partition(";")
             path = Path(destination or source)
             yield path.with_suffix(".xnb") if command == "/build" else path
-            if command == "/build" and path.suffix == ".ogg":
+            if command == "/build" and processor == "SongProcessor":
                 yield path  # SongProcessor also ships the streamed audio file.
 
 
