@@ -23,6 +23,18 @@ Windows i Linux. MGCB buduje zasoby podczas kompilacji. Kompilacja shadera
 na macOS/Linux wymaga środowiska Wine skonfigurowanego dla MonoGame MGFXC,
 tak jak w projekcie źródłowym.
 
+## Paczki do pobrania i itch.io
+
+GitHub Actions uruchamia testy na Windowsie, Linuxie i macOS (Intel/Apple Silicon).
+Push do `main` lub ręczne uruchomienie workflow **Desktop builds** przygotowuje
+cztery paczki zawierające .NET i zasoby gry. Są dostępne przez 30 dni jako
+artefakt `DUI-<wersja>-all-platforms`. Push tagu `vA.B.C.D` dodatkowo tworzy
+szkic GitHub Release z archiwami i sumami SHA-256.
+
+Publikacja na itch.io jest ręczna. Wersja macOS ma podpis ad hoc, bez
+certyfikatu Developer ID i notaryzacji. [Instrukcja wydawania](Docs/Releasing.md)
+opisuje pobieranie paczek, kontrolę gry i wgrywanie na itch.io.
+
 ## Oprawa retro
 
 Cała klatka, łącznie z UI, ma **1280×720 pikseli**. Kafelek zajmuje

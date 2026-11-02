@@ -1,0 +1,187 @@
+name: Desktop builds
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  tests:
+    name: Tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, ubuntu-22.04, macos-15, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Run game regression tests without a GPU
+        run: dotnet run --project DUI.Tests -c Release
+      - name: Check release tooling
+        run: python -m unittest discover -s scripts/tests -v
+
+  publish:
+    name: Publish four DesktopGL targets
+    if: github.event_name != 'pull_request'
+    needs: tests
+    runs-on: windows-2022
+    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Resolve package version
+        id: metadata
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: python scripts/release.py metadata --ref-type "$env:REF_TYPE" --ref-name "$env:REF_NAME" --sha "$env:COMMIT_SHA"
+      - name: Compile content and publish self-contained builds
+        run: python scripts/release.py publish
+      - name: Transfer publish directories to packaging runners
+        uses: actions/upload-artifact@v7
+        with:
+          name: publish-directories
+          path: artifacts/publish/
+          if-no-files-found: error
+          retention-days: 1
+
+  package:
+    name: Package ${{ matrix.rid }}
+    needs: publish
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: win-x64
+            os: windows-2022
+          - rid: linux-x64
+            os: ubuntu-22.04
+          - rid: osx-x64
+            os: macos-15-intel
+          - rid: osx-arm64
+            os: macos-15
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    env:
+      PACKAGE_VERSION: ${{ needs.publish.outputs.version }}
+      TARGET_RID: ${{ matrix.rid }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v8
+        with:
+          name: publish-directories
+          path: artifacts/publish/
+      - name: Package and verify extracted files
+        shell: bash
+        run: >-
+          python scripts/release.py package
+          --rid "$TARGET_RID" --version "$PACKAGE_VERSION"
+          --source "artifacts/publish/$TARGET_RID"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: package-${{ matrix.rid }}
+          path: artifacts/packages/*
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+  collect:
+    name: Collect verified packages and checksums
+    needs: [publish, package]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: package-*
+          merge-multiple: true
+          path: artifacts/distribution/
+      - name: Require all four packages and generate SHA-256
+        env:
+          PACKAGE_VERSION: ${{ needs.publish.outputs.version }}
+        run: python scripts/release.py checksums --directory artifacts/distribution --version "$PACKAGE_VERSION"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: DUI-${{ needs.publish.outputs.version }}-all-platforms
+          path: artifacts/distribution/*
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+  release:
+    name: Prepare draft GitHub Release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [publish, collect]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: DUI-${{ needs.publish.outputs.version }}-all-platforms
+          path: artifacts/distribution/
+      - name: Create or update the draft, never overwrite a published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.publish.outputs.version }}
+        run: |
+          if draft=$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft); then
+            if [ "$draft" != "true" ]; then
+              echo "Release is already published; refusing to replace its assets."
+              exit 1
+            fi
+            gh release upload "$RELEASE_TAG" artifacts/distribution/* --clobber
+          else
+            gh release create "$RELEASE_TAG" artifacts/distribution/* \
+              --verify-tag --draft --title "DUI $RELEASE_TAG" \
+              --notes-file Docs/ReleaseNotes.md
+          fi

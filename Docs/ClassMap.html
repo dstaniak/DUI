@@ -4,7 +4,20 @@
 <style>body{font:16px/1.6 system-ui;max-width:1080px;margin:48px auto;padding:0 24px;color:#172338;background:#f6f8fa}a{color:#174ca0}table{border-collapse:collapse;width:100%;background:white}th,td{text-align:left;vertical-align:top;padding:12px 16px;border:1px solid #d9e0e8}code{background:#e6edf4;padding:2px 5px}h1,h2{line-height:1.25}.flow{background:#e6edf4;padding:20px;border-radius:8px}</style>
 <h1>DUI — mapa klas i przepływów</h1>
 <p>Aktualny stan: edukacyjna gra z płynnie skręcającą kolumną radiowozów za czerwonym autem gracza, podskakujących na krawężnikach, losowanym piwem, wódką, proszkiem, grzybkiem i kiełbaską, rozpryskiem piany, drżeniem po wódce, przyspieszeniem i wyłączeniem efektów po proszku oraz tęczą, odwróceniem sterowania i spowolnieniem po grzybku na parkingu pod sklepem, bez menu głównego. Oprawa retro: 1280×720, UI z ekranową czcionką i pomarańczowo-żółtą paletą C64, kolory grafik i dwukolorowe wzory w wybranych cieniach tekstur. Działający host DesktopGL,
-wspólne źródła i zasoby, podstawy wejścia dotykowego. Hosty Android/iOS nie są jeszcze dodane.</p>
+wspólne źródła i zasoby, podstawy wejścia dotykowego. Konfiguracja CI przygotowuje paczki desktopowe na cztery architektury/systemy; hosty Android/iOS nie są jeszcze dodane.</p>
+<h2 id="Distribution">Budowanie i dystrybucja</h2>
+<p class="flow"><a href="../.github/workflows/desktop.yml">Desktop builds</a> → testy modeli na Windowsie, Linuxie i macOS Intel/Apple Silicon →
+publikacja czterech wariantów na Windowsie → pakowanie na docelowych systemach → walidacja rozpakowanych archiwów → SHA-256 i artefakty na 30 dni.
+Push tagu vA.B.C.D → szkic GitHub Release → ręczna kontrola gry i publikacja → ręczny upload na itch.io.</p>
+<p><a href="../scripts/release.py">release.py</a> publikuje self-contained .NET 10 z zasobami DesktopGL,
+sprawdza komplet contentu MGCB, natywne biblioteki, runtime, architekturę i prawa uruchamiania.
+macOS dostaje DUI.app z zasobami w Contents/Resources/Content i podpisem ad hoc,
+bez Developer ID ani notaryzacji. <a href="../scripts/tests/test_release.py">Testy wydawania</a>
+kontrolują nazwy wersji, zasoby, architekturę oraz komplet archiwów przed utworzeniem sum.
+Pull request uruchamia tylko testy; push do main i ręczne uruchomienie tworzą także paczki.
+Workflow nie podbija wersji projektu i nie nadpisuje opublikowanych Releases.
+<a href="Releasing.md">Instrukcja wydawania</a> opisuje pobieranie, kontrolę grafiki/audio,
+ograniczenia macOS oraz publikację na itch.io. Nie zmienia to przepływów rozgrywki.</p>
 <h2>Start i własność stanu</h2>
 <p class="flow"><a href="../DUI.Desktop/Program.cs">Program</a> →
 <a href="#DuiGame">DuiGame</a> → <a href="#Core">Core.ChangeScene</a> →
@@ -400,6 +413,7 @@ czasy 10 sekund, odnawianie, nakładanie efektów, reset, podział czasu oraz 48
 odstępy aut, zwykłe tempo timerów, niezależne wygasanie mnożników w obu kolejnościach,
 część klatki po wygaśnięciu i ułamki ticków.
 Testy kompilują te same źródła modeli, reguł, PowerupEffects, ScreenShake i GameDisplay co gra.</p>
+<p>Workflow Desktop builds uruchamia ten sam zestaw na Windowsie, Linuxie i obu architekturach macOS; wyniki CI nie potwierdzają działania GPU ani uruchomienia pobranej aplikacji z Findera.</p>
 <p>Testy nie zastępują sprawdzenia zdarzeń KeyDown/KeyUp w oknie, szybkich sekwencji strzałek/WASD, resetu bufora po pauzie, utracie aktywności i RETRY, ciaśniejszych skrętów do 20 px za krawędzią, renderowania, audio, przycisków Gum,
 jazdy po środkach rzędów i kolumn, płynnych łuków i odtwarzania ich przez ogon, łączenia kafelków parkingu, witryny, ogrodzenia i bramy, szarej siatki 80×80 na asfalcie i trawie (alpha 0,35 bez wzmocnienia na skrzyżowaniach, przycięcie do obszaru jazdy i bramy, warstwa pod sprite’ami), falowania aut i opóźnienia segmentów, radiowozów w ogonie i dwóch kolorów świateł na obracającym się dachu, powiększania każdego auta na trawie i podskoków przy wjeździe, pulsowania i zebrania butelki, rozprysku piwa, zmian promili +0,2/+0,4/−0,4‰, wzrostu po napojach i proszku, działania obu powerupów przez 10 sekund, odwracania wejścia, przyspieszenia 1,2×, spowolnienia 0,5× i wspólnego mnożnika 0,6×, drżenia samej planszy przez 3 sekundy po wódce i resetu do 0,0‰, położenia sprite’a przy przejściu 9,8‰ → 10,0‰ oraz utraty aktywności w uruchomionej aplikacji.
 Shader podwójnego widzenia wymaga sprawdzenia na GPU: brak efektu przy 0‰,
