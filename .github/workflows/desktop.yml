@@ -7,6 +7,11 @@ on:
     branches: [main]
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      sign_macos:
+        description: 'Sign and notarize macOS packages (main or release tag only)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -94,10 +99,14 @@ jobs:
           - rid: osx-arm64
             os: macos-15
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    timeout-minutes: 45
     env:
       PACKAGE_VERSION: ${{ needs.publish.outputs.version }}
       TARGET_RID: ${{ matrix.rid }}
+      SIGN_MACOS: >-
+        ${{ startsWith(matrix.rid, 'osx-') &&
+            ((github.ref_type == 'tag' && vars.MACOS_SIGNING_ENABLED == 'true') ||
+             (github.event_name == 'workflow_dispatch' && inputs.sign_macos)) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -109,12 +118,34 @@ jobs:
         with:
           name: publish-directories
           path: artifacts/publish/
+      - name: Import Developer ID and notarization credentials
+        if: env.SIGN_MACOS == 'true'
+        env:
+          APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: bash scripts/setup-macos-signing.sh
       - name: Package and verify extracted files
         shell: bash
-        run: >-
-          python scripts/release.py package
-          --rid "$TARGET_RID" --version "$PACKAGE_VERSION"
-          --source "artifacts/publish/$TARGET_RID"
+        run: |
+          signing=()
+          if [ "$SIGN_MACOS" = "true" ]; then
+            signing=(--signing-identity "$MACOS_SIGNING_IDENTITY"
+                     --notary-profile "$MACOS_NOTARY_PROFILE"
+                     --keychain "$MACOS_SIGNING_KEYCHAIN")
+          fi
+          python scripts/release.py package \
+            --rid "$TARGET_RID" --version "$PACKAGE_VERSION" \
+            --source "artifacts/publish/$TARGET_RID" "${signing[@]}"
+      - name: Remove temporary signing credentials
+        if: always() && env.SIGN_MACOS == 'true'
+        run: |
+          if [ -f "$RUNNER_TEMP/dui-signing.keychain-db" ]; then
+            security delete-keychain "$RUNNER_TEMP/dui-signing.keychain-db"
+          fi
+          rm -f "$RUNNER_TEMP/dui-signing.p12"
       - uses: actions/upload-artifact@v7
         with:
           name: package-${{ matrix.rid }}

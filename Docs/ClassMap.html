@@ -7,13 +7,18 @@
 wspólne źródła i zasoby, podstawy wejścia dotykowego. Konfiguracja CI przygotowuje paczki desktopowe na cztery architektury/systemy; hosty Android/iOS nie są jeszcze dodane.</p>
 <h2 id="Distribution">Budowanie i dystrybucja</h2>
 <p class="flow"><a href="../.github/workflows/desktop.yml">Desktop builds</a> → testy modeli na Windowsie, Linuxie i macOS Intel/Apple Silicon →
-publikacja czterech wariantów na Windowsie → pakowanie na docelowych systemach → walidacja rozpakowanych archiwów → SHA-256 i artefakty na 30 dni.
+publikacja czterech wariantów na Windowsie → pakowanie na docelowych systemach (opcjonalnie Developer ID → notaryzacja → dołączenie ticketu na Macu) → walidacja rozpakowanych archiwów → SHA-256 i artefakty na 30 dni.
 Push tagu vA.B.C.D → szkic GitHub Release → ręczna kontrola gry i publikacja → ręczny upload na itch.io.</p>
 <p><a href="../scripts/release.py">release.py</a> publikuje self-contained .NET 10 z zasobami DesktopGL,
 sprawdza komplet contentu MGCB, natywne biblioteki, runtime, architekturę i prawa uruchamiania.
-macOS dostaje DUI.app z zasobami w Contents/Resources/Content i podpisem ad hoc,
-bez Developer ID ani notaryzacji. <a href="../scripts/tests/test_release.py">Testy wydawania</a>
+macOS dostaje DUI.app z zasobami w Contents/Resources/Content i domyślnym podpisem ad hoc.
+Po <a href="MacSigning.md">konfiguracji Developer ID</a> tagi z włączonym MACOS_SIGNING_ENABLED lub ręczne sign_macos podpisują oba Maci,
+wymagają akceptacji Apple, dołączają ticket i ponownie tworzą ZIP. Błąd przerywa wydanie, bez powrotu do ad hoc.
+<a href="../scripts/setup-macos-signing.sh">Konfiguracja podpisu</a> importuje sekrety do tymczasowego pęku kluczy runnera; workflow usuwa go również po błędzie.
+<a href="../scripts/tests/test_release.py">Testy wydawania</a>
 kontrolują nazwy wersji, zasoby, architekturę oraz komplet archiwów przed utworzeniem sum.
+<a href="../scripts/tests/test_macos_signing.py">Testy podpisywania</a> sprawdzają wymagane opcje,
+przerwanie po odmowie Apple i błędach narzędzi oraz dołączenie ticketu dopiero po akceptacji; nie zastępują rzeczywistej notaryzacji.
 Pull request uruchamia tylko testy; push do main i ręczne uruchomienie tworzą także paczki.
 Workflow nie podbija wersji projektu i nie nadpisuje opublikowanych Releases.
 <a href="Releasing.md">Instrukcja wydawania</a> opisuje pobieranie, kontrolę grafiki/audio,
@@ -437,5 +442,6 @@ Sprawdzić przezroczyste brzegi, brak kopii UI w świecie i skalowanie obu warst
 w oknach szerokich, pionowych, nieparzystych oraz mniejszych niż raster.
 Wersja na fizyczny telefon, safe areas i zachowanie po utracie procesu
 pozostają do zweryfikowania po dodaniu hosta mobilnego.</p>
-<p><a href="../README.md">Uruchamianie, sterowanie i dalsze kroki mobilne</a></p>
+<p><a href="../README.md">Krótki opis rozgrywki i sterowania</a> ·
+<a href="DETAILS.md">Uruchamianie, szczegóły techniczne i dalsze kroki mobilne (EN)</a></p>
 </html>

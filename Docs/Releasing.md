@@ -25,8 +25,8 @@ trzeba dopuścić ten workflow w ustawieniach repozytorium/organizacji.
 |---|---|
 | Pull request do `main` | 64 testy gry i testy narzędzi wydawania na czterech runnerach |
 | Push do `main` | Testy, publikacja, cztery archiwa i sumy SHA-256 |
-| Ręczne **Run workflow** | Ten sam zestaw paczek; bez tworzenia Release |
-| Push tagu `vA.B.C.D` | Testy, paczki i szkic GitHub Release |
+| Ręczne **Run workflow** | Ten sam zestaw paczek; opcja `sign_macos` włącza podpis i notaryzację; bez tworzenia Release |
+| Push tagu `vA.B.C.D` | Testy, paczki i szkic GitHub Release; podpis Maca po włączeniu `MACOS_SIGNING_ENABLED` |
 
 Testy działają na Windows Server 2022, Ubuntu 22.04 oraz macOS 15 w obu
 architekturach. Nie potrzebują GPU. Windows publikuje kolejno `win-x64`,
@@ -46,8 +46,14 @@ w `Contents/Resources/Content`, metadane w `Contents/Info.plist`.
 Względne dowiązania zachowują ścieżki wyszukiwania .NET wewnątrz aplikacji;
 pakowanie sprawdza je także po rozpakowaniu. Uprawnienie `allow-jit`
 pozwala uruchomić kod .NET bez AOT.
-Podpis ad hoc jest sprawdzany również po rozpakowaniu. Nie potwierdza to
-tożsamości wydawcy i nie zastępuje Developer ID ani notaryzacji Apple.
+Domyślny podpis ad hoc jest sprawdzany również po rozpakowaniu. Nie potwierdza
+tożsamości wydawcy. Po [konfiguracji Developer ID](MacSigning.md) wydania
+mogą otrzymywać podpis z bezpiecznym znacznikiem czasu, hardened runtime,
+notaryzację Apple i dołączony ticket. ZIP powstaje ponownie po dołączeniu
+ticketu; skrypt sprawdza go i ocenę Gatekeepera także po rozpakowaniu.
+Tryb dystrybucji konkretnej paczki jest zapisany w `BUILD.txt`.
+Nieudany podpis, odrzucona notaryzacja lub przekroczenie czasu oczekiwania
+zatrzymuje job i utworzenie szkicu Release; nie ma powrotu do ad hoc.
 Minimalna deklarowana wersja macOS to 15; Linux wymaga bibliotek systemowych
 desktopu i sterownika OpenGL, których publikacja self-contained nie zastępuje.
 
@@ -77,7 +83,8 @@ tej retencji Actions. [GitHub: artefakty](https://docs.github.com/en/actions/how
 2. Wgraj cztery archiwa z Actions albo Release. Zaznacz właściwy system przy
    każdym pliku; oba Maci to macOS, z nazwami **Intel** i **Apple Silicon**.
 3. Dodaj opis, sterowanie, okładkę i zrzuty ekranu. W instrukcji instalacji
-   umieść informację o braku notaryzacji na Macu z [README gracza](PlayerReadme.txt).
+   podaj tryb podpisu Maca zgodny z `BUILD.txt`. Dla paczki ad hoc dołącz
+   instrukcję pierwszego uruchomienia z [README gracza](PlayerReadme.txt).
 4. Zachowaj stronę jako szkic, sprawdź podgląd i pobieranie paczek.
    Gdy wydanie jest gotowe, ustaw widoczność **Public**.
 
@@ -97,9 +104,11 @@ Automatyczna wysyłka przez butler nie jest obecnie skonfigurowana.
 - Porównaj SHA-256 z manifestem: `shasum -a 256` na Macu, `sha256sum`
   na Linuxie lub `Get-FileHash -Algorithm SHA256` w PowerShell.
 
-macOS może zablokować pierwsze uruchomienie pobranej aplikacji. Po próbie
+W przypadku paczek ad hoc macOS może zablokować pierwsze uruchomienie. Po próbie
 otwarcia użyj **Ustawienia systemowe → Prywatność i ochrona → Otwórz mimo to**.
 Nie wyłączaj globalnie Gatekeepera. [Instrukcja Apple](https://support.apple.com/en-gb/102445)
+Paczki Developer ID sprawdź po pobraniu przeglądarką, aby przetestować
+normalną kontrolę pobranego pliku przez Gatekeepera.
 
 ## Budowanie lokalne
 

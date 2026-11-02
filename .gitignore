@@ -39,6 +39,11 @@ ScaffoldingReadMe.txt
 # dotenv environment variables file
 .env
 
+# Local signing identities and private keys
+*.p12
+*.p8
+*.keychain-db
+
 # Others
 .DS_Store
 ~$*

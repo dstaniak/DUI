@@ -10,8 +10,11 @@ Pauza: Escape / Start / Back lub przycisk PAUSE.
 RESUME wznawia grę; RETRY zaczyna od nowa. Zamknij okno, aby wyjść.
 Wynik to liczba aut wraz z głową, pokazywana przez pięć gwiazdek.
 
-macOS: ta wersja nie ma certyfikatu Developer ID ani notaryzacji Apple.
-Po pierwszej próbie otwarcia system może wymagać zatwierdzenia aplikacji
+macOS: tryb podpisu tej paczki znajdziesz w BUILD.txt, w wierszu
+"macOS distribution". "Developer ID + Apple notarization" oznacza podpis
+wydawcy i dołączony ticket Apple. "ad hoc (not notarized)" oznacza paczkę
+testową bez notaryzacji. W tym drugim przypadku system może po pierwszej
+próbie otwarcia wymagać zatwierdzenia aplikacji
 w Ustawienia systemowe > Prywatność i ochrona > Otwórz mimo to.
 Dotyczy to tylko tej aplikacji; nie trzeba wyłączać ochrony systemu.
 https://support.apple.com/en-gb/102445

@@ -2,6 +2,7 @@
 """Publish and package DesktopGL builds. Requires Python 3.9+; no pip packages."""
 
 import argparse
+from dataclasses import dataclass
 import hashlib
 import json
 import os
@@ -25,6 +26,22 @@ TARGETS = {
     "osx-arm64": ("macos-arm64", ".zip"),
 }
 RELEASE_VERSION = r"v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
+
+
+@dataclass(frozen=True)
+class MacSigning:
+    identity: str
+    notary_profile: str
+    keychain: Path = None
+
+    def __post_init__(self):
+        if not re.fullmatch(r"[0-9a-fA-F]{40}", self.identity):
+            raise ValueError("Use the SHA-1 identity of a Developer ID Application certificate.")
+        if not self.notary_profile.strip():
+            raise ValueError("Developer ID packaging requires a notarytool keychain profile.")
+
+    def keychain_arguments(self):
+        return ["--keychain", str(self.keychain)] if self.keychain else []
 
 
 def run(*args):
@@ -128,7 +145,49 @@ def check_payload(binary_dir, content_dir, rid):
     check_architecture(binary_dir / executable, rid)
 
 
-def make_mac_app(payload, version):
+def sign_mac_code(path, signing=None, entitlements=None):
+    args = ["codesign", "--force", "--sign", signing.identity if signing else "-"]
+    if signing:
+        args += ["--timestamp", "--options", "runtime", *signing.keychain_arguments()]
+    else:
+        args += ["--timestamp=none"]
+    if entitlements:
+        args += ["--entitlements", entitlements]
+    run(*args, path)
+
+
+def notarize_mac_app(app, signing):
+    credentials = ["--keychain-profile", signing.notary_profile,
+                   *signing.keychain_arguments()]
+    # Stapling changes the bundle, so the submitted ZIP is never distributed.
+    with tempfile.TemporaryDirectory(prefix="dui-notary-") as temporary:
+        submission = Path(temporary) / "DUI.zip"
+        run("ditto", "-c", "-k", "--keepParent", "--norsrc", app, submission)
+        result = subprocess.run(
+            ["xcrun", "notarytool", "submit", str(submission), *credentials,
+             "--wait", "--timeout", "20m", "--output-format", "json"],
+            stdout=subprocess.PIPE, text=True, cwd=ROOT)
+        print(result.stdout)
+        try:
+            response = json.loads(result.stdout)
+        except json.JSONDecodeError:
+            result.check_returncode()
+            raise ValueError("Apple returned an invalid notarization response.")
+        if response["status"] in ("Accepted", "Invalid"):
+            run("xcrun", "notarytool", "log", response["id"], *credentials)
+        result.check_returncode()
+        if response["status"] != "Accepted":
+            raise ValueError(f"Apple notarization was not accepted: {response['status']}")
+    run("xcrun", "stapler", "staple", app)
+    verify_notarization(app)
+
+
+def verify_notarization(app):
+    run("xcrun", "stapler", "validate", app)
+    run("spctl", "--assess", "--type", "execute", "--verbose=2", app)
+
+
+def make_mac_app(payload, version, signing=None):
     app = payload / "DUI.app"
     binaries = app / "Contents" / "MacOS"
     resources = app / "Contents" / "Resources"
@@ -168,20 +227,21 @@ def make_mac_app(payload, version):
                 destination.chmod(0o644)
             path.symlink_to(Path("../Resources") / path.name)
 
-    # Sign nested native code first, then seal the bundle. This is ad hoc only,
-    # not Developer ID signing or notarization; no certificate/secret is needed.
+    # Sign nested native code first, then seal the bundle. Development builds
+    # use ad hoc signatures; Developer ID builds also require notarization.
     native = [*binaries.glob("*.dylib"), binaries / "createdump"]
     for path in native:
         if path.is_file():
             path.chmod(0o755)
-            run("codesign", "--force", "--sign", "-", "--timestamp=none", path)
+            sign_mac_code(path, signing)
             # .NET resolves the main managed assembly's link to Resources and
             # searches for its runtime/native dependencies beside that target.
             (resources / path.name).symlink_to(Path("../MacOS") / path.name)
     (binaries / "DUI.Desktop").chmod(0o755)
-    run("codesign", "--force", "--sign", "-", "--timestamp=none",
-        "--entitlements", ROOT / "scripts" / "macos.entitlements", app)
+    sign_mac_code(app, signing, ROOT / "scripts" / "macos.entitlements")
     run("codesign", "--verify", "--deep", "--strict", app)
+    if signing:
+        notarize_mac_app(app, signing)
     return app
 
 
@@ -192,7 +252,7 @@ def check_bundle_links(app):
             raise ValueError(f"Bundle link points outside the app: {path}")
 
 
-def verify_archive(archive, rid):
+def verify_archive(archive, rid, notarized=False):
     # Only extract archives produced by this script, in a disposable directory.
     with tempfile.TemporaryDirectory(prefix="dui-verify-") as temporary:
         extracted = Path(temporary)
@@ -203,6 +263,8 @@ def verify_archive(archive, rid):
             content_dir = app / "Contents" / "Resources" / "Content"
             run("plutil", "-lint", app / "Contents" / "Info.plist")
             run("codesign", "--verify", "--deep", "--strict", app)
+            if notarized:
+                verify_notarization(app)
             # The host resolves the managed assembly symlink before loading
             # the runtime. Check that location too, not just the launcher dir.
             managed_dir = (binary_dir / "DUI.Desktop.dll").resolve().parent
@@ -226,8 +288,10 @@ def verify_archive(archive, rid):
             raise ValueError("Archive lost the executable permission.")
 
 
-def package(rid, version, source, output):
+def package(rid, version, source, output, signing=None):
     validate_version(version)
+    if signing and not rid.startswith("osx-"):
+        raise ValueError("Developer ID signing is only supported for macOS packages.")
     if rid.startswith("osx-") and sys.platform != "darwin":
         raise ValueError("macOS packages must be created on macOS.")
     if rid == "linux-x64" and os.name != "posix":
@@ -238,10 +302,14 @@ def package(rid, version, source, output):
     with tempfile.TemporaryDirectory(prefix="dui-package-") as temporary:
         payload = Path(temporary) / "DUI"
         shutil.copytree(source, payload)
-        (payload / "BUILD.txt").write_text(f"DUI {version}\nTarget: {rid}\n", encoding="utf-8")
+        build_info = f"DUI {version}\nTarget: {rid}\n"
+        if rid.startswith("osx-"):
+            mode = "Developer ID + Apple notarization" if signing else "ad hoc (not notarized)"
+            build_info += f"macOS distribution: {mode}\n"
+        (payload / "BUILD.txt").write_text(build_info, encoding="utf-8")
         shutil.copy2(ROOT / "Docs" / "PlayerReadme.txt", payload / "README.txt")
         if rid.startswith("osx-"):
-            app = make_mac_app(payload, version)
+            app = make_mac_app(payload, version, signing)
             # ditto preserves Unix permissions and bundle metadata in ZIPs.
             run("ditto", "-c", "-k", "--keepParent", "--norsrc", app, archive)
         elif rid == "linux-x64":
@@ -255,7 +323,7 @@ def package(rid, version, source, output):
                 for path in sorted(payload.rglob("*")):
                     if path.is_file():
                         bundle.write(path, Path("DUI") / path.relative_to(payload))
-    verify_archive(archive, rid)
+    verify_archive(archive, rid, notarized=signing is not None)
     print(f"Verified {archive}")
 
 
@@ -287,6 +355,9 @@ def main():
     packaging.add_argument("--version", required=True)
     packaging.add_argument("--source", type=Path, required=True)
     packaging.add_argument("--output", type=Path, default=ROOT / "artifacts" / "packages")
+    packaging.add_argument("--signing-identity", help="Developer ID Application certificate SHA-1")
+    packaging.add_argument("--notary-profile", help="Stored notarytool keychain profile")
+    packaging.add_argument("--keychain", type=Path, help="Optional dedicated signing keychain")
     hashing = commands.add_parser("checksums")
     hashing.add_argument("--directory", type=Path, required=True)
     hashing.add_argument("--version", required=True)
@@ -300,7 +371,12 @@ def main():
     elif args.command == "publish":
         publish()
     elif args.command == "package":
-        package(args.rid, args.version, args.source.resolve(), args.output.resolve())
+        signing = None
+        if args.signing_identity or args.notary_profile or args.keychain:
+            if not args.signing_identity or not args.notary_profile:
+                parser.error("Both --signing-identity and --notary-profile are required.")
+            signing = MacSigning(args.signing_identity, args.notary_profile, args.keychain)
+        package(args.rid, args.version, args.source.resolve(), args.output.resolve(), signing)
     else:
         checksums(args.directory, args.version)
 
