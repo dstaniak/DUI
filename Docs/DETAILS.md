@@ -170,6 +170,8 @@ and panel headings are 64×64 px at 720p.
   Both powerup timers, shaking, and shaders use ordinary game time,
   independently of convoy speed changes. Pausing or losing freezes them;
   RETRY removes the effects and restores normal controls and speed.
+  Music follows the current convoy multiplier (1.2×, 0.5×, or 0.6×),
+  changing both playback speed and pitch without restarting the track.
   Powder hides the rainbow and shaking, but their timers continue running.
   The mushroom's slowdown and reversed controls remain active. If an effect
   still has time left when the powder expires, it becomes visible again.
@@ -295,8 +297,26 @@ with the standard system button.
 ## Audio
 
 The supplied `SourceAssets/pydim-byte-hook-620646.mp3` replaces the tutorial
-music. `DuiGame` loads its Vorbis conversion (`Audio/theme`) and plays it
-on repeat with music volume set to 35%, leaving room for the pickup effects.
+music. MonoGame builds its Vorbis source (`Audio/theme`) as a `SoundEffect`.
+`DuiGame` loads it once and `AudioController` owns a separate looping playback
+instance at 35% volume, leaving room for the pickup effects.
+
+After each scene update, `DuiGame` sends `GameScene.MovementSpeedMultiplier`
+from `PowerupEffects` to `AudioController.SongPlaybackRate`: normal 1×,
+powder 1.2×, mushroom 0.5×, both 0.6×. Collection, independent expiry,
+refresh, and RETRY update this value in the same frame. The multiplier
+shares the movement calculation's speed constants; it describes the current
+state, not the average of a frame spanning an expiry.
+The player sets `SoundEffectInstance.Pitch` to `log2(rate)`, changing speed
+and pitch in place without restarting or seeking the track. Effects retain
+their normal speed. Music and effect volumes are controlled separately;
+mute affects both channels, including effects started while muted.
+
+The full stereo track occupies about 22.2 MiB of PCM audio at runtime.
+Preloading avoids decoding or allocating another track when a powerup changes
+speed. The release includes `Audio/theme.xnb`; it does not need a separate
+streamed OGG. `scripts/release.py` distinguishes SoundEffectProcessor from
+SongProcessor when checking package contents.
 
 `GameScene` preloads effects and chooses one using the collected `PickupType`
 before spawning the next item: beer burps, vodka exhales, powder sniffs,
@@ -305,7 +325,9 @@ sound plays once when either a boundary or tail collision changes the state
 from Playing to GameOver; repeated collision notifications are ignored.
 Effects are owned by the scene's ContentManager. UI clicks and pickup-wall
 bounces retain their existing sounds. Music continues during ordinary pause
-and game over; losing app focus pauses audio, and regaining focus resumes it.
+and game over at the frozen powerup rate. RETRY restores 1× at the current
+track position. Losing app focus pauses audio; regaining focus resumes it
+without changing the rate or position, while gameplay still waits for RESUME.
 
 [Audio source notes](../SourceAssets/Audio/README.md) record the CC0 effects,
 original files, and reproduction steps. `SourceAssets/Audio/build_audio.py`
@@ -382,6 +404,8 @@ a frame after expiry, and fractional ticks.
 
 Rendering, audio, Gum interactions, and the application lifecycle also require
 checks in the running game. Audio checks include the music loop and balance,
+pitch and speed changes for each powerup and their overlap, independent expiry,
+RETRY returning to 1× without restarting, separate channel volumes and mute,
 each pickup sound, one crash sound for both boundary and tail collisions,
 and focus-loss pause/resume. Visual checks include unchanged UI colors and positions
 with active effects and after resizing, as well as the blinking, expiry,

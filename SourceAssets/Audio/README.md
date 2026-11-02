@@ -4,6 +4,10 @@ The original music is `../pydim-byte-hook-620646.mp3`, supplied by the
 project owner with permission to use it in this type of game. It is not
 part of the CC0 effect collection below. The full track is converted to
 `DUI.Game/Content/Audio/theme.ogg`, played on repeat at 35% music volume.
+MonoGame builds it as a SoundEffect in `Audio/theme.xnb`, with about 22.2 MiB
+of preloaded PCM audio. A single looping instance changes speed and pitch
+with the convoy: powder 1.2×, mushroom 0.5×, both 0.6×, otherwise 1×.
+Changes preserve the playback position. No extra tempo variants are needed.
 
 These source effects were downloaded on 2026-11-02. Each source page
 identifies its sound as [CC0 1.0][cc0]. Copies kept here are unmodified;

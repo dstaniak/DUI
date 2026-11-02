@@ -42,6 +42,7 @@ public class GameScene : Scene
     public decimal ScorePermille => _scorePermille;
     public bool VisualEffectsSuppressed => _powerups.VisualEffectsSuppressed;
     public bool RainbowActive => _powerups.RainbowActive;
+    public float MovementSpeedMultiplier => _powerups.MovementSpeedMultiplier;
 
     // Drives world effects only while playing; a new game resets it.
     public TimeSpan PlayTime { get; private set; }

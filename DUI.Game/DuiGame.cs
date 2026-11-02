@@ -3,8 +3,8 @@ using DUI.Scenes;
 using Gum.Forms;
 using Gum.Forms.Controls;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Media;
 using MonoGameGum;
 using MonoGameLibrary;
 using MonoGameLibrary.Graphics;
@@ -14,7 +14,7 @@ namespace DUI;
 public sealed class DuiGame : Core
 {
     private GameScene _gameScene;
-    private Song _themeSong;
+    private SoundEffect _themeSong;
     private Point _screenSize;
     private RetroRenderer _renderer;
 
@@ -43,13 +43,15 @@ public sealed class DuiGame : Core
 
     protected override void LoadContent()
     {
-        _themeSong = Content.Load<Song>("Audio/theme");
+        _themeSong = Content.Load<SoundEffect>("Audio/theme");
     }
 
     protected override void Update(GameTime gameTime)
     {
         UpdateDisplay();
         base.Update(gameTime);
+        // The scene has now processed collection, expiry and RETRY this frame.
+        Audio.SongPlaybackRate = _gameScene.MovementSpeedMultiplier;
     }
 
     protected override void Draw(GameTime gameTime)

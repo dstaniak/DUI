@@ -60,7 +60,7 @@
 
 #begin Audio/theme.ogg
 /importer:OggImporter
-/processor:SongProcessor
+/processor:SoundEffectProcessor
 /processorParam:Quality=Best
 /processorParam:Version=3.8.5.0
 /build:Audio/theme.ogg

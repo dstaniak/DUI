@@ -21,12 +21,13 @@ class ReleaseTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             release.archive_name("win-x64", "../../escape")
 
-    def test_content_includes_streamed_audio_and_raw_font(self):
+    def test_content_includes_buffered_music_and_raw_font(self):
         required = set(release.required_content())
-        for path in ("Audio/theme.ogg", "Audio/theme.xnb", "Fonts/c64.fnt",
+        for path in ("Audio/theme.xnb", "Audio/credits.txt", "Fonts/c64.fnt",
                      "Fonts/c64-license.txt", "Images/tilemap-definition.xml",
                      "Effects/rainbowEffect.xnb", "Effects/doubleVisionEffect.xnb"):
             self.assertIn(Path(path), required)
+        self.assertNotIn(Path("Audio/theme.ogg"), required)
 
     def test_missing_or_empty_resources_fail_validation(self):
         with tempfile.TemporaryDirectory() as temporary:
