@@ -421,7 +421,7 @@ zmiany tempa nie dekodują ani nie tworzą kopii utworu. Osobny plik OGG do stre
 nie jest potrzebny; scripts/release.py uwzględnia typ procesora przy walidacji wydania.
 Stary wspólny collect.wav został usunięty; ui.wav i bounce.wav pozostają.</p>
 <h2>Weryfikacja i ograniczenia</h2>
-<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> uruchamia 64 testy bez GPU.
+<p><a href="../DUI.Tests/Program.cs">DUI.Tests</a> uruchamia 67 testów bez GPU.
 <a href="../DUI.Tests/MovementTests.cs">MovementTests</a> sprawdza oczekiwanie na krawędź kafelka, polecenie poza tolerancją,
 500 skrętów bez zejścia z osi siatki (stan logiczny i rysowany),
 cztery kierunki, stałą prędkość, kolejkę, odrzucanie zwrotu i powtórzeń,
@@ -455,10 +455,15 @@ Trzy <a href="../DUI.Tests/PickupTests.cs">PickupTests</a> sprawdzają rozkład
 50/20/5/5/20, mieszane zmiany promili, wzrost i limit 0‰ po zakąsce. Cztery
 <a href="../DUI.Tests/ScreenShakeTests.cs">ScreenShakeTests</a> sprawdzają 18 Hz i ±24 px,
 czas 3 sekund, zamrożenie fazy, reset, odnowienie i podział czasu.
-Jedenaście <a href="../DUI.Tests/PowerupEffectsTests.cs">PowerupEffectsTests</a> sprawdza wszystkie kierunki,
+Czternaście <a href="../DUI.Tests/PowerupEffectsTests.cs">PowerupEffectsTests</a> sprawdza wszystkie kierunki,
 czasy 10 sekund, odnawianie, nakładanie efektów, reset, podział czasu oraz 480, 200 i 240 px/s,
 odstępy aut, zwykłe tempo timerów, niezależne wygasanie mnożników w obu kolejnościach,
-część klatki po wygaśnięciu i ułamki ticków.
+część klatki po wygaśnięciu i ułamki ticków. Trzy regresje tempa muzyki porównują
+MovementSpeedMultiplier z rzeczywistym ruchem auta, sprawdzają odnowienie, pauzę
+i reset oraz bieżący mnożnik po wygaśnięciu zamiast średniej z poprzedniej klatki.
+<a href="../scripts/tests/test_release.py">Testy wydania</a> sprawdzają, że utwór
+budowany przez SoundEffectProcessor wymaga tylko XNB, a SongProcessor także
+osobnego pliku audio.
 Testy kompilują te same źródła modeli, reguł, PowerupEffects, ScreenShake i GameDisplay co gra.</p>
 <p>Workflow Desktop builds uruchamia ten sam zestaw na Windowsie, Linuxie i obu architekturach macOS; wyniki CI nie potwierdzają działania GPU ani uruchomienia pobranej aplikacji z Findera.</p>
 <p>Testy nie zastępują sprawdzenia zdarzeń KeyDown/KeyUp w oknie, szybkich sekwencji strzałek/WASD, resetu bufora po pauzie, utracie aktywności i RETRY, ciaśniejszych skrętów do 20 px za krawędzią, renderowania, zapętlenia nowej muzyki i jej balansu z efektami, zmiany tempa i wysokości 1,2×/0,5×/0,6× bez restartu, niezależnego wygasania efektów, powrotu do 1× przy RETRY, osobnych głośności i wyciszania obu kanałów, beknięcia po piwie, chuchnięcia po wódce, pociągnięcia nosem po proszku, jedzenia po grzybku i kiełbasce, pojedynczego dźwięku zderzenia ze ścianą i ogonem, przycisków Gum,

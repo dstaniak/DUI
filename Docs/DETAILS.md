@@ -363,7 +363,7 @@ dotnet build DUI.slnx
 dotnet run --project DUI.Tests
 ```
 
-The 64 tests cover waiting for tile edges and commands outside the tolerance,
+The 67 tests cover waiting for tile edges and commands outside the tolerance,
 500 consecutive turns without leaving the grid axes, all turn directions,
 queuing, rejection of invalid commands, constant speed, interpolation,
 and different frame-time partitions. They check trail replay through four
@@ -396,11 +396,15 @@ Three `PickupTests` check the exact 50/20/5/5/20 probabilities, mixed sequences
 of score changes and growth, and the 0‰ lower limit after a snack.
 Four `ScreenShakeTests` check amplitude and frequency, the 3-second duration,
 pause, reset, retriggering, and independence from frame-time partitioning.
-Eleven `PowerupEffectsTests` check directions, both 10-second durations,
+Fourteen `PowerupEffectsTests` check directions, both 10-second durations,
 refreshing, overlapping effects, reset, time partitioning, and speeds of
 480, 200, and 240 px/s. They also check car spacing, ordinary timer speed,
 independent expiry of speed multipliers in either order, the portion of
-a frame after expiry, and fractional ticks.
+a frame after expiry, and fractional ticks. Three music-speed regressions
+compare the current multiplier with actual convoy movement, check refresh,
+pause and reset, and distinguish the speed after expiry from a frame average.
+Release tests verify that buffered music needs its XNB only, while a
+SongProcessor entry also requires the separate streamed audio file.
 
 Rendering, audio, Gum interactions, and the application lifecycle also require
 checks in the running game. Audio checks include the music loop and balance,
