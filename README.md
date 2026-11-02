@@ -5,6 +5,8 @@ Drive the red car, collect pickups, and grow a convoy of police cars behind you.
 Keep clear of the fence, storefront, closed gate, and your own tail.
 One crash ends the run.
 
+![DUI gameplay: a red car leading a convoy of police cars through the parking lot](Docs/Images/DUI-Game.jpg)
+
 ## How to Play
 
 The car keeps moving, so plan your turns and leave yourself an escape route.
