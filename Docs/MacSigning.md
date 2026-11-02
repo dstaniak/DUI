@@ -1,115 +1,116 @@
-# Developer ID i notaryzacja DUI
+# Developer ID and DUI notarization
 
-Podpisywanie jest opcjonalne. Zwykły push do `main` nadal tworzy paczki ad hoc.
-Konfiguracja poniżej włącza podpis Developer ID oraz notaryzację Apple dla
-obu architektur macOS. Gra pozostaje dystrybuowana przez GitHub/itch.io.
+Signing is optional. A regular push to `main` still produces ad hoc packages.
+The setup below enables Developer ID signing and Apple notarization for
+both macOS architectures. The game continues to be distributed through GitHub/itch.io.
 
-## 1. Utwórz certyfikat
+## 1. Create a certificate
 
-Potrzebne jest aktywne członkostwo Apple Developer Program i uprawnienia
-Account Holder do utworzenia certyfikatu Developer ID.
+You need an active Apple Developer Program membership and Account Holder
+permissions to create a Developer ID certificate.
 
-1. Otwórz **Xcode → Settings → Accounts** i dodaj swoje konto Apple.
-2. Wybierz właściwy zespół, **Manage Certificates**, następnie **+ → Developer ID Application**.
-3. Po utworzeniu kliknij certyfikat prawym przyciskiem i wybierz **Export Certificate**.
-   Zapisz plik `.p12` poza repozytorium i zabezpiecz go hasłem.
+1. Open **Xcode → Settings → Accounts** and add your Apple account.
+2. Select the appropriate team, **Manage Certificates**, then **+ → Developer ID Application**.
+3. Once created, right-click the certificate and select **Export Certificate**.
+   Save the `.p12` file outside the repository and protect it with a password.
 
-Eksport musi zawierać certyfikat i jego klucz prywatny. Sam plik `.cer`
-nie wystarczy. DUI potrzebuje certyfikatu **Developer ID Application**;
-typy Apple Development, Apple Distribution i Developer ID Installer
-służą innym zastosowaniom.
+The export must include the certificate and its private key. A `.cer` file
+alone is not enough. DUI requires a **Developer ID Application** certificate;
+Apple Development, Apple Distribution, and Developer ID Installer certificates
+serve other purposes.
 
-Jeżeli tworzysz certyfikat przez portal Apple, wygeneruj CSR w Dostępie do
-pęku kluczy, wybierz Developer ID Application w portalu, wgraj CSR i zainstaluj
-pobrany `.cer` na tym samym Macu. Następnie wyeksportuj tożsamość jako `.p12`.
-[Tworzenie certyfikatu — Apple](https://developer.apple.com/help/account/certificates/create-developer-id-certificates/)
-[Zarządzanie i eksport w Xcode — Apple](https://developer.apple.com/documentation/xcode/sharing-your-teams-signing-certificates)
+If you create the certificate through Apple's portal, generate a CSR in
+Keychain Access, select Developer ID Application in the portal, upload the CSR,
+and install the downloaded `.cer` on the same Mac. Then export the identity as `.p12`.
+[Creating a certificate — Apple](https://developer.apple.com/help/account/certificates/create-developer-id-certificates/)
+[Managing and exporting in Xcode — Apple](https://developer.apple.com/documentation/xcode/sharing-your-teams-signing-certificates)
 
-## 2. Dodaj sekrety GitHuba
+## 2. Add GitHub secrets
 
-W repozytorium wybierz **Settings → Secrets and variables → Actions → Secrets**.
-Dodaj pięć sekretów repozytorium:
+In the repository, select **Settings → Secrets and variables → Actions → Secrets**.
+Add five repository secrets:
 
-| Nazwa | Zawartość |
+| Name | Contents |
 |---|---|
-| `APPLE_CERTIFICATE_P12_BASE64` | Plik `.p12` zakodowany Base64 |
-| `APPLE_CERTIFICATE_PASSWORD` | Hasło ustawione przy eksporcie `.p12` |
-| `APPLE_ID` | Adres e-mail konta Apple Developer |
-| `APPLE_TEAM_ID` | Team ID z informacji o członkostwie w koncie deweloperskim |
-| `APPLE_APP_PASSWORD` | Osobne hasło aplikacji utworzone dla notaryzacji DUI |
+| `APPLE_CERTIFICATE_P12_BASE64` | The Base64-encoded `.p12` file |
+| `APPLE_CERTIFICATE_PASSWORD` | The password set when exporting `.p12` |
+| `APPLE_ID` | The Apple Developer account's email address |
+| `APPLE_TEAM_ID` | The Team ID from the developer account's membership information |
+| `APPLE_APP_PASSWORD` | A separate app-specific password created for DUI notarization |
 
-Aby skopiować certyfikat do schowka na Macu:
+To copy the certificate to the clipboard on a Mac:
 
 ```sh
-base64 -i "/pełna/ścieżka/DeveloperID.p12" | pbcopy
+base64 -i "/full/path/DeveloperID.p12" | pbcopy
 ```
 
-Wklej wynik bezpośrednio do sekretu GitHuba. Hasło aplikacji utwórz w
-**account.apple.com → Logowanie i zabezpieczenia → Hasła aplikacji**.
-To hasło do notaryzacji, osobne od hasła eksportu `.p12` i głównego hasła Apple.
-Nie umieszczaj certyfikatu, klucza ani haseł w repozytorium lub rozmowie.
-Sam Team ID nie jest kluczem podpisującym.
-[Sekrety certyfikatów — GitHub](https://docs.github.com/en/actions/how-tos/deploy/deploy-to-third-party-platforms/sign-xcode-applications)
-[Hasła aplikacji — Apple](https://support.apple.com/en-us/102654)
+Paste the result directly into the GitHub secret. Create the app-specific password at
+**account.apple.com → Sign-In and Security → App-Specific Passwords**.
+This password is for notarization, separate from the `.p12` export password and
+main Apple password. Do not put the certificate, key, or passwords in the
+repository or chat. The Team ID alone is not a signing key.
+[Certificate secrets — GitHub](https://docs.github.com/en/actions/how-tos/deploy/deploy-to-third-party-platforms/sign-xcode-applications)
+[App-specific passwords — Apple](https://support.apple.com/en-us/102654)
 
-## 3. Sprawdź i włącz wydania
+## 3. Test and enable releases
 
-1. Uruchom **Actions → Desktop builds → Run workflow** na `main`, zaznaczając
+1. Run **Actions → Desktop builds → Run workflow** on `main`, enabling
    **Sign and notarize macOS packages** (`sign_macos`).
-2. Pobierz obie paczki macOS. `BUILD.txt` powinien zawierać
+2. Download both macOS packages. `BUILD.txt` should contain
    `macOS distribution: Developer ID + Apple notarization`.
-3. Sprawdź start z Findera po pobraniu ZIP przez przeglądarkę, dźwięk i grafikę
-   na obu architekturach. Sam sukces notaryzacji nie testuje działania gry.
-4. W **Settings → Secrets and variables → Actions → Variables** dodaj zmienną
-   repozytorium `MACOS_SIGNING_ENABLED` o wartości `true`.
-   Od tego momentu tagi `vA.B.C.D` automatycznie podpisują i notaryzują oba Maci.
+3. After downloading the ZIP through a browser, test launching from Finder,
+   audio, and graphics on both architectures. Successful notarization alone
+   does not test whether the game works.
+4. In **Settings → Secrets and variables → Actions → Variables**, add the
+   repository variable `MACOS_SIGNING_ENABLED` with the value `true`.
+   From then on, `vA.B.C.D` tags automatically sign and notarize both Mac packages.
 
-Bez tej zmiennej tagi zachowują dotychczasowy tryb ad hoc. Ręczna opcja
-`sign_macos` umożliwia próbę przed włączeniem podpisywania tagów.
-Podpisywanie obsługuje wyłącznie `main` i tagi wydań; pull requesty uruchamiają
-testy bez sekretów. Brak sekretu albo błąd Apple przerywa podpisany build,
-bez publikowania paczek ad hoc w jego zastępstwie.
+Without this variable, tags keep the existing ad hoc mode. The manual
+`sign_macos` option allows a trial before enabling signing for tags.
+Signing supports only `main` and release tags; pull requests run tests without
+secrets. A missing secret or Apple error stops the signed build,
+without publishing ad hoc packages as a replacement.
 
-## Co robi workflow
+## What the workflow does
 
-[Skrypt konfiguracji](../scripts/setup-macos-signing.sh) importuje tożsamość
-do tymczasowego pęku kluczy na jednorazowym runnerze GitHuba. Sprawdza typ
-certyfikatu oraz zgodność Team ID i zapisuje profil `notarytool`.
-Sekrety są dostępne tylko w kroku konfiguracji macOS. Końcowy krok usuwa
-pęk kluczy również po błędzie; plik `.p12` jest usuwany zaraz po konfiguracji.
-Nie używaj skryptu konfiguracji na własnym Macu ani runnerze self-hosted.
+The [setup script](../scripts/setup-macos-signing.sh) imports the identity into
+a temporary keychain on an ephemeral GitHub runner. It checks the certificate
+type and matching Team ID, then saves a `notarytool` profile.
+Secrets are available only in the macOS setup step. The final step removes
+the keychain even after a failure; the `.p12` file is removed immediately after setup.
+Do not use the setup script on your own Mac or a self-hosted runner.
 
-[release.py](../scripts/release.py) podpisuje wszystkie dołączone biblioteki
-natywne i `createdump`, a potem `DUI.app`. Podpis Developer ID włącza hardened
-runtime i znacznik czasu Apple. Główny program zachowuje `allow-jit` dla .NET.
-Usługa Apple musi zwrócić `Accepted`; log notaryzacji trafia do logu joba.
-Skrypt dołącza ticket do aplikacji, tworzy końcowy ZIP i sprawdza podpis,
-ticket oraz ocenę Gatekeepera po jego rozpakowaniu. Dopiero potem powstają
-sumy kontrolne i artefakty. Windows i Linux zachowują dotychczasowe pakowanie.
+[release.py](../scripts/release.py) signs all bundled native libraries and
+`createdump`, followed by `DUI.app`. The Developer ID signature enables hardened
+runtime and an Apple timestamp. The main executable keeps `allow-jit` for .NET.
+Apple's service must return `Accepted`; the notarization log goes into the job log.
+The script staples the ticket to the app, creates the final ZIP, and checks
+the signature, ticket, and Gatekeeper assessment after extraction. Only then
+are checksums and artifacts created. Windows and Linux keep their existing packaging.
 
-Oczekiwanie na Apple ma limit 20 minut. Po przekroczeniu limitu sprawdź
-identyfikator zgłoszenia w logu; usługa może nadal je przetwarzać. Job nie
-wydaje wówczas paczki. Po rozwiązaniu problemu ponów workflow.
-[Notaryzacja — Apple](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution)
-[Podpis i JIT w .NET — Microsoft](https://learn.microsoft.com/en-us/dotnet/core/deploying/macos)
+The wait for Apple has a 20-minute timeout. If it times out, check the submission
+ID in the log; the service may still be processing it. The job does not release
+a package in that case. After resolving the problem, rerun the workflow.
+[Notarization — Apple](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution)
+[Signing and JIT in .NET — Microsoft](https://learn.microsoft.com/en-us/dotnet/core/deploying/macos)
 
-## Podpis lokalny
+## Local signing
 
-Na Macu z zainstalowaną tożsamością wyświetl jej odcisk SHA-1:
+On a Mac with the identity installed, display its SHA-1 fingerprint:
 
 ```sh
 security find-identity -v -p codesigning
 xcrun notarytool store-credentials dui-notary
 ```
 
-Drugie polecenie interaktywnie poprosi o dane Apple. Następnie:
+The second command interactively prompts for Apple credentials. Then run:
 
 ```sh
 python3 scripts/release.py package --rid osx-arm64 --version v1.0.0.0 \
   --source artifacts/publish/osx-arm64 \
-  --signing-identity "40-ZNAKOWY-ODCISK-SHA1" --notary-profile dui-notary
+  --signing-identity "40-CHARACTER-SHA1-FINGERPRINT" --notary-profile dui-notary
 ```
 
-Podstaw rzeczywisty odcisk, wersję i architekturę. Opcjonalne `--keychain`
-wskazuje osobny pęk kluczy; domyślnie narzędzia korzystają z pęku użytkownika.
-Podpis i notaryzacja zawsze występują razem. Bez obu opcji powstaje paczka ad hoc.
+Substitute the actual fingerprint, version, and architecture. The optional
+`--keychain` points to a separate keychain; by default, tools use the user's keychain.
+Signing and notarization always go together. Without both options, an ad hoc package is created.

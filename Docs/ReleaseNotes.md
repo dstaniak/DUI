@@ -1,21 +1,21 @@
-Paczki DUI zawierają środowisko .NET oraz zasoby gry.
+DUI packages include the .NET runtime and game assets.
 
-- Windows x64: rozpakuj ZIP i uruchom `DUI/DUI.Desktop.exe`.
-- Linux x64: rozpakuj TAR.GZ i uruchom `DUI/DUI.Desktop`.
-- macOS: wybierz Intel (`macos-x64`) albo Apple Silicon (`macos-arm64`),
-  rozpakuj ZIP i uruchom `DUI.app`.
+- Windows x64: extract the ZIP and run `DUI/DUI.Desktop.exe`.
+- Linux x64: extract the TAR.GZ and run `DUI/DUI.Desktop`.
+- macOS: choose Intel (`macos-x64`) or Apple Silicon (`macos-arm64`),
+  extract the ZIP, and launch `DUI.app`.
 
-macOS: tryb podpisu i notaryzacji jest zapisany w `BUILD.txt` wewnątrz aplikacji.
-Paczka ad hoc może wymagać zatwierdzenia pierwszego uruchomienia w ustawieniach
-**Prywatność i ochrona → Otwórz mimo to**. Paczka Developer ID ma dołączony
-ticket notaryzacji Apple.
+macOS: the signing and notarization mode is recorded in `BUILD.txt` inside the app.
+An ad hoc package may require approval on first launch in
+**Privacy & Security → Open Anyway**. A Developer ID package has a stapled
+Apple notarization ticket.
 
-`SHA256SUMS.txt` zawiera sumy kontrolne czterech archiwów.
-Sterowanie: strzałki/WASD lub pad, Escape pauzuje grę.
+`SHA256SUMS.txt` contains checksums for the four archives.
+Controls: arrow keys/WASD or a controller; Escape pauses the game.
 
-Przed opublikowaniem tego szkicu:
+Before publishing this draft:
 
-- [ ] Sprawdź uruchomienie pobranych paczek na Windowsie, Linuxie i obu Macach.
-- [ ] Sprawdź dźwięk, shadery powerupów, sterowanie, pauzę i RETRY.
-- [ ] Podaj powyżej tryb podpisu macOS zgodny z `BUILD.txt` tego wydania.
-- [ ] Dopisz opis zmian w tym wydaniu i usuń tę listę kontrolną.
+- [ ] Check that the downloaded packages launch on Windows, Linux, and both Mac architectures.
+- [ ] Check audio, powerup shaders, controls, pausing, and RETRY.
+- [ ] State the macOS signing mode above, matching this release's `BUILD.txt`.
+- [ ] Add a description of the changes in this release and remove this checklist.

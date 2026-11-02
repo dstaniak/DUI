@@ -1,31 +1,31 @@
 DUI - Snake
 
-Rozpakuj całe archiwum. Gra zawiera .NET i swoje zasoby; nie wymaga SDK.
-Windows: uruchom DUI.Desktop.exe w katalogu DUI.
-Linux x64: uruchom ./DUI.Desktop w katalogu DUI.
-macOS: uruchom DUI.app. Wybierz paczkę Intel albo Apple Silicon.
+Extract the entire archive. The game includes .NET and its assets; no SDK is required.
+Windows: run DUI.Desktop.exe in the DUI directory.
+Linux x64: run ./DUI.Desktop in the DUI directory.
+macOS: launch DUI.app. Choose the Intel or Apple Silicon package.
 
-Sterowanie: strzałki / WASD, D-pad lub lewy drążek pada.
-Pauza: Escape / Start / Back lub przycisk PAUSE.
-RESUME wznawia grę; RETRY zaczyna od nowa. Zamknij okno, aby wyjść.
-Wynik to liczba aut wraz z głową, pokazywana przez pięć gwiazdek.
+Controls: arrow keys / WASD, D-pad, or the controller's left stick.
+Pause: Escape / Start / Back or the PAUSE button.
+RESUME continues the game; RETRY starts over. Close the window to exit.
+The score counts all cars, including the head, and is shown by five stars.
 
-macOS: tryb podpisu tej paczki znajdziesz w BUILD.txt, w wierszu
-"macOS distribution". "Developer ID + Apple notarization" oznacza podpis
-wydawcy i dołączony ticket Apple. "ad hoc (not notarized)" oznacza paczkę
-testową bez notaryzacji. W tym drugim przypadku system może po pierwszej
-próbie otwarcia wymagać zatwierdzenia aplikacji
-w Ustawienia systemowe > Prywatność i ochrona > Otwórz mimo to.
-Dotyczy to tylko tej aplikacji; nie trzeba wyłączać ochrony systemu.
+macOS: the signing mode for this package is listed in BUILD.txt on the
+"macOS distribution" line. "Developer ID + Apple notarization" means it has
+a publisher signature and a stapled Apple ticket. "ad hoc (not notarized)"
+means it is a test package without notarization. In the latter case, after
+the first attempt to open it, the system may require you to approve the app
+in System Settings > Privacy & Security > Open Anyway.
+This applies only to this app; you do not need to disable system protection.
 https://support.apple.com/en-gb/102445
 
-Wspierane paczki: Windows x64, Linux x64, macOS 15+ Intel / Apple Silicon.
-Wymagany jest system zgodny z .NET 10 oraz działający sterownik OpenGL.
-Linux wymaga zwyklych bibliotek systemowych desktopu (m.in. glibc, ICU,
-X11/Wayland i obsługi dźwięku); self-contained dołącza .NET, nie cały system.
+Supported packages: Windows x64, Linux x64, macOS 15+ Intel / Apple Silicon.
+A .NET 10-compatible operating system and a working OpenGL driver are required.
+Linux requires standard desktop system libraries (including glibc, ICU,
+X11/Wayland, and audio support); self-contained includes .NET, not the entire OS.
 
-Zgłoszenia problemów: https://github.com/dstaniak/DUI/issues
-Podaj system, nazwę paczki, kroki odtworzenia i komunikat błędu.
-Identyfikator paczki znajduje się w BUILD.txt (na Macu: wewnątrz
-DUI.app/Contents/MacOS). Licencja fontu: Content/Fonts/c64-license.txt
-(na Macu Content jest w DUI.app/Contents/Resources).
+Report issues: https://github.com/dstaniak/DUI/issues
+Include your OS, package name, steps to reproduce, and the error message.
+The package identifier is in BUILD.txt (on Mac: inside
+DUI.app/Contents/MacOS). Font license: Content/Fonts/c64-license.txt
+(on Mac, Content is in DUI.app/Contents/Resources).

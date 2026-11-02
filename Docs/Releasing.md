@@ -1,118 +1,118 @@
-# Wydawanie DUI
+# Releasing DUI
 
-Workflow [Desktop builds](../.github/workflows/desktop.yml) przygotowuje grę
-na Windows x64, Linux x64 oraz macOS Intel i Apple Silicon. Paczki zawierają
-.NET 10, biblioteki MonoGame/Gum i zasoby. Gracz nie potrzebuje SDK ani MGCB.
-Nie obejmuje to portów mobilnych ani wersji przeglądarkowej.
+The [Desktop builds](../.github/workflows/desktop.yml) workflow prepares the game
+for Windows x64, Linux x64, and macOS Intel and Apple Silicon. Packages include
+.NET 10, MonoGame/Gum libraries, and assets. Players do not need the SDK or MGCB.
+This does not cover mobile ports or a browser version.
 
-## Pierwsze uruchomienie CI
+## First CI run
 
-1. Umieść konfigurację i skrypty na GitHubie w gałęzi `main`.
-2. Otwórz repozytorium → **Actions → Desktop builds**. Push do `main`
-   uruchamia proces automatycznie; **Run workflow** pozwala uruchomić go ręcznie.
-3. Po sukcesie pobierz artefakt **DUI-dev-<SHA>-all-platforms** z dołu strony
-   wykonania. Rozpakuj zewnętrzny ZIP GitHuba — w środku są cztery właściwe
-   archiwa gry i `SHA256SUMS.txt`. To wewnętrzne archiwa wgrywa się na itch.io.
+1. Add the configuration and scripts to the `main` branch on GitHub.
+2. Open the repository → **Actions → Desktop builds**. A push to `main`
+   starts the process automatically; **Run workflow** lets you start it manually.
+3. After a successful run, download the **DUI-dev-<SHA>-all-platforms** artifact
+   at the bottom of the run page. Extract GitHub's outer ZIP — it contains the
+   four game archives and `SHA256SUMS.txt`. Upload these inner archives to itch.io.
 
-Nie potrzeba PAT ani klucza itch.io. Jobs mają `contents: read`; tylko
-przygotowanie szkicu Release dostaje `contents: write` przez `GITHUB_TOKEN`.
-Jeżeli polityka organizacji blokuje GitHub Actions lub zapis do Releases,
-trzeba dopuścić ten workflow w ustawieniach repozytorium/organizacji.
+No PAT or itch.io key is required. Jobs have `contents: read`; only the job
+preparing the draft Release gets `contents: write` through `GITHUB_TOKEN`.
+If an organization policy blocks GitHub Actions or writing to Releases,
+allow this workflow in the repository/organization settings.
 
-## Co uruchamia workflow
+## Workflow triggers
 
-| Zdarzenie | Wynik |
+| Event | Result |
 |---|---|
-| Pull request do `main` | 64 testy gry i testy narzędzi wydawania na czterech runnerach |
-| Push do `main` | Testy, publikacja, cztery archiwa i sumy SHA-256 |
-| Ręczne **Run workflow** | Ten sam zestaw paczek; opcja `sign_macos` włącza podpis i notaryzację; bez tworzenia Release |
-| Push tagu `vA.B.C.D` | Testy, paczki i szkic GitHub Release; podpis Maca po włączeniu `MACOS_SIGNING_ENABLED` |
+| Pull request to `main` | 64 game tests and release tooling tests on four runners |
+| Push to `main` | Tests, publishing, four archives, and SHA-256 checksums |
+| Manual **Run workflow** | The same set of packages; `sign_macos` enables signing and notarization; no Release is created |
+| Push of a `vA.B.C.D` tag | Tests, packages, and a draft GitHub Release; Mac signing when `MACOS_SIGNING_ENABLED` is enabled |
 
-Testy działają na Windows Server 2022, Ubuntu 22.04 oraz macOS 15 w obu
-architekturach. Nie potrzebują GPU. Windows publikuje kolejno `win-x64`,
-`linux-x64`, `osx-x64` i `osx-arm64` z tym samym contentem DesktopGL;
-kompilacja shaderów na Windowsie nie wymaga Wine.
+Tests run on Windows Server 2022, Ubuntu 22.04, and macOS 15 on both
+architectures. They do not need a GPU. Windows publishes `win-x64`,
+`linux-x64`, `osx-x64`, and `osx-arm64` in sequence with the same DesktopGL content;
+shader compilation on Windows does not require Wine.
 
-[Skrypt wydawania](../scripts/release.py) używa Release, self-contained,
-bez trimming, AOT, single-file, ReadyToRun i tiered compilation.
-Pakowanie odbywa się na systemie docelowym. Skrypt sprawdza zasoby wpisane
-w MGCB, strumieniowane OGG, biblioteki natywne, dołączony runtime i architekturę
-pliku wykonywalnego, a potem rozpakowuje archiwum i ponawia kontrolę.
-Linux zachowuje bit wykonywalności w TAR.GZ; macOS używa `ditto` do ZIP.
+The [release script](../scripts/release.py) uses Release, self-contained,
+without trimming, AOT, single-file, ReadyToRun, or tiered compilation.
+Packaging takes place on the target operating system. The script checks the
+assets listed in MGCB, streamed OGG files, native libraries, the bundled runtime,
+and executable architecture, then extracts the archive and repeats the checks.
+Linux preserves the executable bit in TAR.GZ; macOS uses `ditto` for ZIP.
 
-Mac otrzymuje `DUI.app`: program i biblioteki natywne w `Contents/MacOS`,
-zarządzane DLL i konfigurację .NET w `Contents/Resources`, zasoby gry
-w `Contents/Resources/Content`, metadane w `Contents/Info.plist`.
-Względne dowiązania zachowują ścieżki wyszukiwania .NET wewnątrz aplikacji;
-pakowanie sprawdza je także po rozpakowaniu. Uprawnienie `allow-jit`
-pozwala uruchomić kod .NET bez AOT.
-Domyślny podpis ad hoc jest sprawdzany również po rozpakowaniu. Nie potwierdza
-tożsamości wydawcy. Po [konfiguracji Developer ID](MacSigning.md) wydania
-mogą otrzymywać podpis z bezpiecznym znacznikiem czasu, hardened runtime,
-notaryzację Apple i dołączony ticket. ZIP powstaje ponownie po dołączeniu
-ticketu; skrypt sprawdza go i ocenę Gatekeepera także po rozpakowaniu.
-Tryb dystrybucji konkretnej paczki jest zapisany w `BUILD.txt`.
-Nieudany podpis, odrzucona notaryzacja lub przekroczenie czasu oczekiwania
-zatrzymuje job i utworzenie szkicu Release; nie ma powrotu do ad hoc.
-Minimalna deklarowana wersja macOS to 15; Linux wymaga bibliotek systemowych
-desktopu i sterownika OpenGL, których publikacja self-contained nie zastępuje.
+Mac packages contain `DUI.app`: the executable and native libraries in
+`Contents/MacOS`, managed DLLs and .NET configuration in `Contents/Resources`,
+game assets in `Contents/Resources/Content`, and metadata in `Contents/Info.plist`.
+Relative symlinks preserve .NET lookup paths inside the app;
+packaging also checks them after extraction. The `allow-jit` entitlement
+allows .NET code to run without AOT.
+The default ad hoc signature is also checked after extraction. It does not
+verify the publisher's identity. After [Developer ID setup](MacSigning.md),
+releases can use a signature with a secure timestamp, hardened runtime,
+Apple notarization, and a stapled ticket. The ZIP is recreated after stapling;
+the script checks the ticket and Gatekeeper assessment after extraction as well.
+The distribution mode of each package is recorded in `BUILD.txt`.
+A signing failure, rejected notarization, or timeout stops the job and prevents
+creation of the draft Release; there is no fallback to ad hoc.
+The declared minimum macOS version is 15; Linux requires desktop system libraries
+and an OpenGL driver, which a self-contained publish does not replace.
 
-## Wydanie z numerem
+## Versioned releases
 
-Tag musi mieć dokładnie format `vA.B.C.D`, np. `v1.0.0.0`.
-Niepoprawne tagi zaczynające się od `v` zatrzymują budowanie paczek.
-Workflow nie tworzy tagów i nie zmienia wersji w plikach projektu.
-Numer tagu identyfikuje archiwa i `BUILD.txt`; metadane macOS używają
-trzech pierwszych członów, a pełny numer zachowują w `CFBundleGetInfoString`.
-Paczki z gałęzi używają `dev-` i pierwszych 12 znaków SHA.
+The tag must follow the exact `vA.B.C.D` format, for example `v1.0.0.0`.
+Invalid tags starting with `v` stop package builds.
+The workflow does not create tags or change versions in project files.
+The tag version identifies archives and `BUILD.txt`; macOS metadata uses
+the first three components and retains the full version in `CFBundleGetInfoString`.
+Branch packages use `dev-` and the first 12 characters of the SHA.
 
-Po wybraniu numeru i commita utwórz tag oraz wyślij go na GitHub zgodnie
-z regułami projektu. Po zakończeniu workflow przejdź do **Releases**:
-pojawi się szkic z czterema archiwami i `SHA256SUMS.txt`.
-Uzupełnij opis zmian, wykonaj kontrolę gry i dopiero wtedy opublikuj szkic.
-Ponowne wykonanie może zastąpić pliki istniejącego szkicu; opublikowanego
-wydania workflow nie nadpisuje. Wtedy należy przygotować nowy tag.
+After choosing the version and commit, create the tag and push it to GitHub
+according to the project rules. Once the workflow finishes, open **Releases**:
+a draft will appear with four archives and `SHA256SUMS.txt`.
+Add the change description and check the game before publishing the draft.
+A rerun can replace files in an existing draft; the workflow does not overwrite
+a published release. In that case, prepare a new tag.
 
-Paczki w Actions są przechowywane 30 dni; surowe katalogi służące do
-przekazania między runnerami — 1 dzień. Załączniki Releases nie podlegają
-tej retencji Actions. [GitHub: artefakty](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts)
+Actions packages are retained for 30 days; raw directories used to transfer
+files between runners are retained for 1 day. Release attachments are not
+subject to this Actions retention period. [GitHub: artifacts](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts)
 
-## Ręczne wgranie na itch.io
+## Manual upload to itch.io
 
-1. W itch.io wybierz **Create new game**, klasyfikację gry i projekt do pobrania.
-2. Wgraj cztery archiwa z Actions albo Release. Zaznacz właściwy system przy
-   każdym pliku; oba Maci to macOS, z nazwami **Intel** i **Apple Silicon**.
-3. Dodaj opis, sterowanie, okładkę i zrzuty ekranu. W instrukcji instalacji
-   podaj tryb podpisu Maca zgodny z `BUILD.txt`. Dla paczki ad hoc dołącz
-   instrukcję pierwszego uruchomienia z [README gracza](PlayerReadme.txt).
-4. Zachowaj stronę jako szkic, sprawdź podgląd i pobieranie paczek.
-   Gdy wydanie jest gotowe, ustaw widoczność **Public**.
+1. On itch.io, select **Create new game**, the game classification, and a downloadable project.
+2. Upload the four archives from Actions or the Release. Select the appropriate OS
+   for each file; both Mac packages use macOS, with **Intel** and **Apple Silicon** in their names.
+3. Add a description, controls, cover image, and screenshots. In the installation
+   instructions, state the Mac signing mode from `BUILD.txt`. For an ad hoc package,
+   include the first-launch instructions from the [player README](PlayerReadme.txt).
+4. Keep the page as a draft and check its preview and package downloads.
+   When the release is ready, set its visibility to **Public**.
 
-Przy aktualizacji wgrywaj archiwa nowego wydania na tę samą stronę.
-Automatyczna wysyłka przez butler nie jest obecnie skonfigurowana.
-[Instrukcja itch.io](https://itch.io/docs/creators/getting-started)
+For updates, upload the new release's archives to the same page.
+Automatic uploads through butler are not currently configured.
+[itch.io guide](https://itch.io/docs/creators/getting-started)
 
-## Kontrola przed publikacją
+## Pre-publication checks
 
-- Pobierz i rozpakuj paczkę poza repozytorium; sprawdź także ścieżkę ze spacjami.
-- Uruchom ją bez korzystania z `dotnet run`. Na Macu otwórz `DUI.app` z Findera.
-- Sprawdź dźwięk, drżenie po wódce, tęczę po grzybku i wyciszanie efektów
-  po proszku; UI powinno pozostawać poza shaderami.
-- Sprawdź strzałki/WASD, pauzę, utratę aktywności, RESUME oraz RETRY.
-- Wykonaj tę kontrolę na Windowsie, Linuxie i obu architekturach Maca.
-  Automatyczne testy modeli i struktury paczek nie sprawdzają grafiki ani audio.
-- Porównaj SHA-256 z manifestem: `shasum -a 256` na Macu, `sha256sum`
-  na Linuxie lub `Get-FileHash -Algorithm SHA256` w PowerShell.
+- Download and extract the package outside the repository; also test a path with spaces.
+- Launch it without `dotnet run`. On Mac, open `DUI.app` from Finder.
+- Check audio, vodka shaking, the mushroom rainbow, and visual effect suppression
+  after powder; the UI should remain unaffected by shaders.
+- Check arrow keys/WASD, pausing, focus loss, RESUME, and RETRY.
+- Perform these checks on Windows, Linux, and both Mac architectures.
+  Automated model and package structure tests do not check graphics or audio.
+- Compare SHA-256 against the manifest: `shasum -a 256` on Mac, `sha256sum`
+  on Linux, or `Get-FileHash -Algorithm SHA256` in PowerShell.
 
-W przypadku paczek ad hoc macOS może zablokować pierwsze uruchomienie. Po próbie
-otwarcia użyj **Ustawienia systemowe → Prywatność i ochrona → Otwórz mimo to**.
-Nie wyłączaj globalnie Gatekeepera. [Instrukcja Apple](https://support.apple.com/en-gb/102445)
-Paczki Developer ID sprawdź po pobraniu przeglądarką, aby przetestować
-normalną kontrolę pobranego pliku przez Gatekeepera.
+For ad hoc packages, macOS may block the first launch. After attempting to open
+the app, use **System Settings → Privacy & Security → Open Anyway**.
+Do not disable Gatekeeper globally. [Apple guide](https://support.apple.com/en-gb/102445)
+Check Developer ID packages after downloading them through a browser to test
+the normal Gatekeeper checks for downloaded files.
 
-## Budowanie lokalne
+## Local builds
 
-Wymagane: .NET SDK 10 i Python 3.9+. Z katalogu repozytorium:
+Requirements: .NET SDK 10 and Python 3.9+. From the repository directory:
 
 ```sh
 python3 scripts/release.py publish
@@ -120,9 +120,9 @@ python3 scripts/release.py package --rid osx-arm64 --version dev-0123456789ab --
 python3 -m unittest discover -s scripts/tests -v
 ```
 
-Zastąp przykładowy identyfikator własnym SHA. Na Windowsie użyj `python`
-zamiast `python3`. Publikacja lokalna na macOS/Linux wymaga konfiguracji
-Wine/MGFXC, tak samo jak zwykły build gry. Paczki macOS twórz na Macu.
-Linuxowe TAR.GZ można przygotować na systemie Unix, również na Macu,
-ale uruchomienie gry trzeba sprawdzić na Linuxie; CI pakuje je na Ubuntu.
-Wyniki są w ignorowanym katalogu `artifacts/`.
+Replace the sample identifier with your own SHA. On Windows, use `python`
+instead of `python3`. Local publishing on macOS/Linux requires Wine/MGFXC
+configuration, just like a regular game build. Create macOS packages on a Mac.
+Linux TAR.GZ archives can be prepared on a Unix system, including a Mac,
+but the game must be tested on Linux; CI packages them on Ubuntu.
+Output goes into the ignored `artifacts/` directory.
