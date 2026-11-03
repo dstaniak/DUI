@@ -120,16 +120,6 @@ When the issue nr is known, then you can reach github directly to inspect the
 ticket and execute actions appropriate for the description. After reading the
 ticket ask the user for action approval.
 
-## Performance requirements
-
-This project's critical value is performance. Snappy seek, play, pause and
-scrubbing is crucial for the user experience and life of the program. Always
-take into consideration this assumption. Don't be deceived though, code
-maintanability, readability and clean architecture is also very high priority.
-
-Other aspect of this requirement is the multiplatform target. We need to focus
-on non-regressive and performant approcha on both targets: Windows and MacOS.
-
 ## Class map html doc
 
 The project contains Docs/ClassMap.html which needs to be constantly held
