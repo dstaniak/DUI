@@ -1,6 +1,6 @@
 using Microsoft.Xna.Framework;
 
-namespace MonoGameLibrary.Graphics;
+namespace DUI.Graphics;
 
 /// <summary>
 /// Maps the fixed 720p frame onto the whole window, without borders.

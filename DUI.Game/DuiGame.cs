@@ -1,18 +1,19 @@
 using System;
+using DUI.Graphics;
 using DUI.Scenes;
 using Gum.Forms;
 using Gum.Forms.Controls;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
-using Microsoft.Xna.Framework.Graphics;
 using MonoGameGum;
 using MonoGameLibrary;
-using MonoGameLibrary.Graphics;
+using MonoGameLibrary.Content;
 
 namespace DUI;
 
 public sealed class DuiGame : Core
 {
+    public static GameDisplay Display { get; } = new();
     private GameScene _gameScene;
     private SoundEffect _themeSong;
     private Point _screenSize;
@@ -21,7 +22,7 @@ public sealed class DuiGame : Core
     public DuiGame() : base("DUI — Snake", 1280, 720, false)
     {
         // The collectible moves 0.5 pixels per update; keep its 60 Hz pace
-        // regardless of a phone's display refresh rate.
+        // regardless of the display refresh rate.
         IsFixedTimeStep = true;
         TargetElapsedTime = TimeSpan.FromSeconds(1.0 / 60.0);
     }
@@ -32,8 +33,8 @@ public sealed class DuiGame : Core
         GameController.Initialize(Window);
         InitializeGum();
         _renderer = new RetroRenderer(GraphicsDevice,
-            Content.Load<Effect>("Effects/doubleVisionEffect"),
-            Content.Load<Effect>("Effects/rainbowEffect"));
+            Content.WatchMaterial("Effects/doubleVisionEffect"),
+            Content.WatchMaterial("Effects/rainbowEffect"));
         UpdateDisplay();
         Audio.SongVolume = 0.35f;
         Audio.PlaySong(_themeSong);
@@ -54,10 +55,10 @@ public sealed class DuiGame : Core
         Audio.SongPlaybackRate = _gameScene.MovementSpeedMultiplier;
     }
 
-    protected override void Draw(GameTime gameTime)
+    protected override void DrawScene(GameTime gameTime)
     {
         _renderer.BeginFrame();
-        base.Draw(gameTime);
+        base.DrawScene(gameTime);
         _renderer.BeginUiFrame();
         _gameScene.DrawUI();
         _renderer.Present(SpriteBatch, Display, _gameScene.ScorePermille, _gameScene.PlayTime,

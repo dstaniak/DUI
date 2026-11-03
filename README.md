@@ -42,4 +42,14 @@ mushroom, and follows the combined 0.6× speed when both are active.
 
 The game also pauses when you switch away from its window.
 
-[Project details](Docs/DETAILS.md)
+## Development
+
+`MonoGameLibrary` is a reusable DesktopGL library; `DUI.Game` references it,
+and `DUI.Desktop` builds the executable and content. Mobile targets are not planned.
+
+Run `dotnet run --project DUI.Desktop`. In Debug, **F12** toggles shader property
+windows. Enable **Override values** to edit parameters while the game runs.
+Shader source changes rebuild and reload automatically; `--no-reload` disables
+the build watcher. Release builds have no active inspector or watcher.
+
+[Project details and shader workflow](Docs/DETAILS.md)

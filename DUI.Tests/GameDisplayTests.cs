@@ -1,8 +1,8 @@
 using System;
+using Assert = DUI.Tests.MovementTests;
+using DUI.Graphics;
 using DUI.Input;
 using Microsoft.Xna.Framework;
-using MonoGameLibrary.Graphics;
-using Assert = DUI.Tests.MovementTests;
 
 namespace DUI.Tests;
 

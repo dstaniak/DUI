@@ -1,8 +1,9 @@
 using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MonoGameLibrary.Graphics;
 
-namespace MonoGameLibrary.Graphics;
+namespace DUI.Graphics;
 
 /// <summary>Composes an affected world and a separate, unfiltered UI layer at 720p.</summary>
 public sealed class RetroRenderer : IDisposable
@@ -19,18 +20,20 @@ public sealed class RetroRenderer : IDisposable
     private readonly GraphicsDevice _graphicsDevice;
     private readonly RenderTarget2D _scene;
     private readonly RenderTarget2D _ui;
-    private readonly Effect _doubleVisionEffect;
-    private readonly Effect _rainbowEffect;
+    private readonly Material _doubleVisionEffect;
+    private readonly Material _rainbowEffect;
 
-    public RetroRenderer(GraphicsDevice graphicsDevice, Effect doubleVisionEffect, Effect rainbowEffect)
+    public RetroRenderer(GraphicsDevice graphicsDevice, Material doubleVisionEffect, Material rainbowEffect)
     {
         _graphicsDevice = graphicsDevice;
         _scene = new RenderTarget2D(graphicsDevice, GameDisplay.RasterWidth, GameDisplay.RasterHeight);
         _ui = new RenderTarget2D(graphicsDevice, GameDisplay.RasterWidth, GameDisplay.RasterHeight);
-        // ContentManager owns both effects; this renderer owns the two buffers.
+        // This renderer owns both watched materials and both frame buffers.
         _doubleVisionEffect = doubleVisionEffect;
         _rainbowEffect = rainbowEffect;
-        _doubleVisionEffect.Parameters["GhostTexture"].SetValue(_scene);
+        _doubleVisionEffect.SetParameter("GhostTexture", _scene);
+        _doubleVisionEffect.IsDebugVisible = true;
+        _rainbowEffect.IsDebugVisible = true;
     }
 
     public void BeginFrame()
@@ -62,9 +65,9 @@ public sealed class RetroRenderer : IDisposable
         if (rainbowActive && !visualEffectsSuppressed)
         {
             float phase = (float)(playTime.TotalSeconds % RainbowPeriodSeconds / RainbowPeriodSeconds);
-            _rainbowEffect.Parameters["Phase"].SetValue(phase);
+            _rainbowEffect.SetParameter("Phase", phase);
             // A translucent color-only pass overlays the world before the UI.
-            spriteBatch.Begin(blendState: BlendState.NonPremultiplied, effect: _rainbowEffect);
+            spriteBatch.Begin(blendState: BlendState.NonPremultiplied, effect: _rainbowEffect.Effect);
             spriteBatch.Draw(_scene, display.OutputBounds, Color.White);
             spriteBatch.End();
         }
@@ -78,6 +81,8 @@ public sealed class RetroRenderer : IDisposable
 
     public void Dispose()
     {
+        _doubleVisionEffect.Dispose();
+        _rainbowEffect.Dispose();
         _scene.Dispose();
         _ui.Dispose();
     }
@@ -98,9 +103,9 @@ public sealed class RetroRenderer : IDisposable
         Vector2 offset = new(
             radius * (float)Math.Cos(angle) / outputBounds.Width,
             radius * (float)Math.Sin(angle) / outputBounds.Height);
-        _doubleVisionEffect.Parameters["GhostOffset"].SetValue(offset);
+        _doubleVisionEffect.SetParameter("GhostOffset", offset);
         float alpha = Math.Min(MaxGhostAlpha, BaseGhostAlpha + (float)scorePermille * AlphaPerPermille);
-        _doubleVisionEffect.Parameters["GhostAlpha"].SetValue(alpha);
-        return _doubleVisionEffect;
+        _doubleVisionEffect.SetParameter("GhostAlpha", alpha);
+        return _doubleVisionEffect.Effect;
     }
 }

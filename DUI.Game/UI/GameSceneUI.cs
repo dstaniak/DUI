@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using DUI.Graphics;
 using DUI.GameObjects;
 using Gum.DataTypes;
 using Microsoft.Xna.Framework;

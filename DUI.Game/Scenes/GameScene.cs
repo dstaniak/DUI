@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using DUI.GameObjects;
+using DUI.Graphics;
 using DUI.UI;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGameGum;
 using MonoGameLibrary;
+using MonoGameLibrary.Content;
 using MonoGameLibrary.Graphics;
 using MonoGameLibrary.Scenes;
 
@@ -34,7 +36,7 @@ public class GameScene : Scene
     private decimal _scorePermille;
     private GameSceneUI _ui;
     private GameState _state;
-    private Effect _grayscaleEffect;
+    private Material _grayscaleEffect;
     private float _saturation = 1.0f;
     private const float FadeSpeed = 0.01f;
 
@@ -86,14 +88,18 @@ public class GameScene : Scene
             [PickupType.Sausage] = Content.Load<SoundEffect>("Audio/eat")
         };
         _crashSoundEffect = Content.Load<SoundEffect>("Audio/crash");
-        _grayscaleEffect = Content.Load<Effect>("Effects/grayscaleEffect");
+        _grayscaleEffect = Content.WatchMaterial("Effects/grayscaleEffect");
+        _grayscaleEffect.IsDebugVisible = true;
     }
 
     public override void Update(GameTime gameTime)
     {
         GameController.Update();
         GameState stateBeforeUi = _state;
-        _ui.Update(gameTime);
+        if (!Core.DebugWantsMouse && !Core.DebugWantsKeyboard)
+        {
+            _ui.Update(gameTime);
+        }
 
         // A click that resumes or restarts belongs to the UI. It must not also
         // steer the first frame of the resumed game.
@@ -150,8 +156,8 @@ public class GameScene : Scene
         Effect sceneEffect = null;
         if (_state != GameState.Playing)
         {
-            _grayscaleEffect.Parameters["Saturation"].SetValue(_saturation);
-            sceneEffect = _grayscaleEffect;
+            _grayscaleEffect.SetParameter("Saturation", _saturation);
+            sceneEffect = _grayscaleEffect.Effect;
         }
 
         // This batch contains only the world. DuiGame captures UI separately.
@@ -195,6 +201,7 @@ public class GameScene : Scene
 
     public override void UnloadContent()
     {
+        _grayscaleEffect?.Dispose();
         _convoy.Dispose();
         _beerBurst?.Dispose();
         _parkingLot?.Dispose();

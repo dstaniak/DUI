@@ -40,6 +40,11 @@ public static class GameController
 
     public static void Update()
     {
+        if (Core.DebugWantsKeyboard)
+        {
+            s_steering.Reset(Keyboard.GetState());
+        }
+
         UpdatePointer();
         s_fallbackDirection = ReadPadDirection();
         if (s_fallbackDirection == Vector2.Zero)
@@ -69,6 +74,11 @@ public static class GameController
 
     private static void OnKeyDown(object sender, InputKeyEventArgs args)
     {
+        if (Core.DebugWantsKeyboard)
+        {
+            return;
+        }
+
         s_steering.KeyDown(args.Key);
     }
 
@@ -79,6 +89,12 @@ public static class GameController
 
     private static void UpdatePointer()
     {
+        if (Core.DebugWantsMouse)
+        {
+            ResetPointer();
+            return;
+        }
+
         s_swipeDirection = Vector2.Zero;
         TouchCollection touches = TouchPanel.GetState();
         if (touches.Count > 0)
@@ -93,7 +109,7 @@ public static class GameController
         }
 
         var mouse = Core.Input.Mouse;
-        Vector2 position = Core.Display.ToGamePosition(mouse.Position.ToVector2());
+        Vector2 position = DuiGame.Display.ToGamePosition(mouse.Position.ToVector2());
         if (mouse.WasButtonJustPressed(MouseButton.Left))
         {
             s_swipe.Begin(position);
@@ -146,7 +162,7 @@ public static class GameController
     {
         foreach (TouchLocation touch in touches)
         {
-            Vector2 position = Core.Display.ToGamePosition(touch.Position);
+            Vector2 position = DuiGame.Display.ToGamePosition(touch.Position);
             if (touch.State == TouchLocationState.Pressed && !s_touchId.HasValue)
             {
                 s_touchId = touch.Id;
@@ -198,7 +214,7 @@ public static class GameController
     public static bool Pause()
     {
         return
-            s_keyboard.WasKeyJustPressed(Keys.Escape) ||
+            (!Core.DebugWantsKeyboard && s_keyboard.WasKeyJustPressed(Keys.Escape)) ||
             s_gamepad.WasButtonJustPressed(Buttons.Start) ||
             s_gamepad.WasButtonJustPressed(Buttons.Back);
     }

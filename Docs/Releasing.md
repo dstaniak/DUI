@@ -2,7 +2,7 @@
 
 The [Desktop builds](../.github/workflows/desktop.yml) workflow prepares the game
 for Windows x64, Linux x64, and macOS Intel and Apple Silicon. Packages include
-.NET 10, MonoGame/Gum libraries, and assets. Players do not need the SDK or MGCB.
+.NET 10, separate DUI.Game/MonoGameLibrary assemblies, MonoGame/Gum/ImGui libraries, and assets. Players do not need the SDK or MGCB.
 This does not cover mobile ports or a browser version.
 
 ## First CI run

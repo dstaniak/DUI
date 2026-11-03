@@ -135,12 +135,13 @@ def check_payload(binary_dir, content_dir, rid):
     require_files(binary_dir, [executable, "DUI.Desktop.dll",
                               "DUI.Desktop.deps.json", "DUI.Desktop.runtimeconfig.json",
                               "System.Private.CoreLib.dll", "MonoGame.Framework.dll",
-                              "MonoGameGum.dll"])
+                              "MonoGameGum.dll", "DUI.Game.dll", "MonoGameLibrary.dll",
+                              "ImGui.NET.dll"])
     native_files = {
-        "win-x64": ["coreclr.dll", "hostfxr.dll", "hostpolicy.dll", "SDL2.dll", "openal.dll"],
-        "linux-x64": ["libcoreclr.so", "libhostfxr.so", "libhostpolicy.so", "libSDL2-2.0.so.0", "libopenal.so"],
-        "osx-x64": ["libcoreclr.dylib", "libhostfxr.dylib", "libhostpolicy.dylib", "libSDL2-2.0.0.dylib", "libopenal.dylib"],
-        "osx-arm64": ["libcoreclr.dylib", "libhostfxr.dylib", "libhostpolicy.dylib", "libSDL2-2.0.0.dylib", "libopenal.dylib"],
+        "win-x64": ["coreclr.dll", "hostfxr.dll", "hostpolicy.dll", "SDL2.dll", "openal.dll", "cimgui.dll"],
+        "linux-x64": ["libcoreclr.so", "libhostfxr.so", "libhostpolicy.so", "libSDL2-2.0.so.0", "libopenal.so", "libcimgui.so"],
+        "osx-x64": ["libcoreclr.dylib", "libhostfxr.dylib", "libhostpolicy.dylib", "libSDL2-2.0.0.dylib", "libopenal.dylib", "libcimgui.dylib"],
+        "osx-arm64": ["libcoreclr.dylib", "libhostfxr.dylib", "libhostpolicy.dylib", "libSDL2-2.0.0.dylib", "libopenal.dylib", "libcimgui.dylib"],
     }
     require_files(binary_dir, native_files[rid])
     require_files(content_dir, required_content())

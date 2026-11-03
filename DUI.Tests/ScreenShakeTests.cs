@@ -1,6 +1,6 @@
 using System;
-using MonoGameLibrary.Graphics;
 using Assert = DUI.Tests.MovementTests;
+using DUI.Graphics;
 
 namespace DUI.Tests;
 

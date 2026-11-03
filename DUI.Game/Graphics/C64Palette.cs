@@ -1,7 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 
-namespace MonoGameLibrary.Graphics;
+namespace DUI.Graphics;
 
 /// <summary>The 16 VIC-II colors, using the Pepto PAL RGB approximation shipped by VICE.</summary>
 public static class C64Palette

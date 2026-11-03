@@ -1,6 +1,6 @@
 using System;
 
-namespace MonoGameLibrary.Graphics;
+namespace DUI.Graphics;
 
 /// <summary>A three-second horizontal shake, measured in 1280x720 game pixels.</summary>
 public sealed class ScreenShake

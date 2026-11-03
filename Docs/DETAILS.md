@@ -237,11 +237,14 @@ with the standard system button.
 
 ## Structure
 
-- `DUI.Desktop` — entry point and dependency on the DesktopGL backend.
-- `DUI.Game` — shared game code, Gum UI, assets, and the required parts of
-  the tutorial library. `DUI.Game.projitems` includes the source files in
-  the platform project, allowing a future mobile host to use its own
-  MonoGame backend.
+- `MonoGameLibrary` — a separate reusable DesktopGL library: scenes, input,
+  sprites, atlases, tilemaps, audio, easing, watched assets, materials, and ImGui.
+  It has no dependency on DUI, Gum, game assets, or gameplay rules.
+- `DUI.Game` — a class library containing gameplay, Gum UI, and game-specific
+  graphics (`GameDisplay`, `RetroRenderer`, `C64Palette`, `ScreenShake`).
+  It references `MonoGameLibrary`; its assets stay in `DUI.Game/Content`.
+- `DUI.Desktop` — executable entry point, DesktopGL backend, content compilation,
+  and the development shader watcher. It references `DUI.Game`.
 - `KeyboardSteering` — arrow-key/WASD press ordering, suppression of automatic
   repeats, and input reset. The buffer holds eight events; the movement
   model still accepts at most two pending turns and rejects overflow
@@ -284,14 +287,21 @@ with the standard system button.
   the unaffected UI. Both layers scale to the same area using `PointClamp`.
   `DuiGame` supplies the alcohol level, active game time, and powerup flags;
   it switches buffers between `GameScene.Draw` and `DrawUI` and disposes
-  of both on exit. Shaders belong to the main `ContentManager`.
+  of both on exit. `RetroRenderer` also owns and disposes the two watched
+  materials. `GameScene` owns its watched grayscale material. Each material
+  owns an isolated content manager, so reloading cannot invalidate another user.
 - `C64Theme` — shared font, color roles, and rectangular surfaces using
   the C64 palette. `C64Button` retains Gum input handling while supplying
   its own focus, hover, pressed, and disabled colors.
 - `ScoreStars` — five dimmed stars with white fills clipped to whole pixels
   based on `GameScene.Score` (convoy length). `GameSceneUI` positions them
   after the powerup slots in the separate UI layer.
-- `DUI.Tests` — regression tests that run without a window or graphics device.
+- `DUI.Tests` — regression tests against the actual game/library assemblies,
+  without a window or graphics device. Internal game types are visible to this
+  test assembly through `InternalsVisibleTo`.
+- `MonoGameLibrary.Tests` — an explicit GPU suite referencing only the reusable
+  library. Exercises shader reload, parameter preservation, failure recovery,
+  material isolation, the inspector, texture bindings, and resource disposal.
 - [Class map](ClassMap.html) — application responsibilities and flows.
 
 ## Audio
@@ -335,24 +345,40 @@ uses FFmpeg to create short mono 44.1 kHz PCM effects with edge fades and
 -3 dBFS peaks, and the full stereo Vorbis track. MonoGame builds the finished
 assets and includes `Audio/credits.txt` in release content.
 
-## Mobile
+## Desktop development and shader inspection
 
-The code accounts for touch gestures, pausing on focus loss, and a fixed
-1280×720 playfield and frame fitted to the entire window. Resizing the screen
-does not change rules, collision geometry, or game speed. Updates run at
-a fixed 60 Hz, including on higher-refresh-rate displays.
+DesktopGL on Windows, Linux, and macOS is the target. Mobile hosts are not
+planned. Existing pointer/touch gestures and window resizing remain available;
+the game keeps its 1280×720 coordinates and fixed 60 Hz updates.
 
-The first mobile version should use landscape orientation to preserve
-the tutorial's layout. The project does not yet contain Android/iOS hosts
-or APK/IPA packages. The next step is choosing the first platform and adding
-its host, SDK, safe areas for screen cutouts, and physical-device tests.
-Gestures and button sizes will then need evaluation on a real phone.
-Portrait mode currently scales the playfield; a dedicated portrait layout
-requires a separate presentation decision.
+Run `dotnet run --project DUI.Desktop` for a Debug build. Press **F12** to show
+or hide ImGui property windows for grayscale, double vision, and rainbow.
+Enable **Override values** before editing numeric parameters to prevent the
+game from replacing them every frame. Float/vector controls accept negative
+values; Ctrl-click permits direct numeric entry. Textures have bounded previews.
+The effect still follows gameplay activation: pause/game over enables grayscale,
+alcohol enables double vision, and mushroom enables the rainbow unless suppressed.
 
-MonoGame provides separate Android and iOS backends:
-[supported platforms](https://docs.monogame.net/articles/getting_started/platforms.html),
-[touch input](https://docs.monogame.net/articles/getting_to_know/howto/input/HowTo_UseMultiTouchInput.html).
+Core starts the ImGui frame before scene input and draws it after
+`DuiGame.DrawScene` has presented the world and Gum UI. Captured mouse/keyboard
+input does not also steer the car, pause the game, or activate Gum buttons.
+Hiding the inspector preserves overrides; uncheck the option to restore
+normal game-driven parameters.
+
+Debug startup automatically launches `dotnet watch` against the desktop
+project's `BuildShaderContent` target. Editing `.fx`, `.fxh`, or the MGCB manifest
+rebuilds and copies content without replacing running assemblies. MGCB needs
+the same Wine/MGFXC setup as a normal shader build on Linux/macOS.
+Use `dotnet run --project DUI.Desktop -- --no-reload` to disable the build watcher.
+The watcher is disposed with the game. Release builds start neither it nor ImGui.
+
+`Material.UpdateWatchedMaterials` checks changed compiled XNB files at most twice
+per second, including while gameplay is paused. Reload creates a candidate in
+an isolated content manager before replacing the current effect. Compatible
+scalar/vector/matrix/texture values survive, removed or changed parameters use
+the new shader's defaults, and the old effect is then disposed. An invalid XNB
+keeps the previous effect alive and reports the failure in the inspector;
+a successful later build clears it. Texture previews reuse bindings.
 
 ## Verification
 
@@ -414,7 +440,16 @@ each pickup sound, one crash sound for both boundary and tail collisions,
 and focus-loss pause/resume. Visual checks include unchanged UI colors and positions
 with active effects and after resizing, as well as the blinking, expiry,
 and positioning of the three indicators after the alcohol counter.
-These tests do not establish that the game works on a phone.
+The model suite does not create a graphics device. Run the separate GPU suite
+in Debug after building the desktop content:
+
+```sh
+dotnet run --project MonoGameLibrary.Tests -- DUI.Desktop/bin/Debug/net10.0/Content
+```
+
+It requires a graphics device. On a headless Linux machine with no sound device,
+`ALSOFT_DRIVERS=null` can be used for automated checks; listening tests still
+require real audio output.
 
 ## Origins and Assets
 
@@ -425,8 +460,8 @@ movement. The supplied music and per-pickup/crash sounds now replace the
 tutorial theme and shared collection sound; UI and bounce audio remain.
 New car and bottle artwork replaces the characters, and the beer splash
 is generated in code. A parking lot replaces the dungeon. The title screen,
-its options and assets, the ImGui overlay, and desktop shader watching
-were omitted. Color fading during pauses and game over remains.
+its options and assets were omitted. ImGui, watched shader materials,
+and desktop shader rebuilding have been restored in `MonoGameLibrary`. Color fading during pauses and game over remains.
 
 Tutorial: [Building a 2D Game — MonoGame](https://docs.monogame.net/articles/tutorials/building_2d_games/).
 

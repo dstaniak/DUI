@@ -8,7 +8,20 @@
     <FileVersion>1.0.0.0</FileVersion>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../DUI.Game/DUI.Game.csproj" />
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" />
+    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.5.1" />
+    <MonoGameContentReference Include="../DUI.Game/Content/Content.mgcb" Link="Content/Content.mgcb" />
   </ItemGroup>
-  <Import Project="../DUI.Game/DUI.Game.projitems" />
+  <ItemGroup Condition="'$(OnlyWatchContentFiles)' == 'true'">
+    <Watch Include="../DUI.Game/Content/**/*.fx;../DUI.Game/Content/**/*.fxh;../DUI.Game/Content/Content.mgcb" />
+    <Compile Update="**/*.cs" Watch="false" />
+    <ProjectReference Update="@(ProjectReference)" Watch="false" />
+  </ItemGroup>
+  <!-- Reload content without rebuilding or replacing the running assemblies. -->
+  <Target Name="BuildShaderContent" DependsOnTargets="IncludeContent">
+    <Copy SourceFiles="@(ExtraContent)"
+          DestinationFiles="@(ExtraContent->'$(OutputPath)%(ContentDir)%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
 </Project>

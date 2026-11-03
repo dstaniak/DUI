@@ -1,4 +1,7 @@
 <Solution>
+  <Project Path="MonoGameLibrary/MonoGameLibrary.csproj" />
+  <Project Path="MonoGameLibrary.Tests/MonoGameLibrary.Tests.csproj" />
+  <Project Path="DUI.Game/DUI.Game.csproj" />
   <Project Path="DUI.Desktop/DUI.Desktop.csproj" />
   <Project Path="DUI.Tests/DUI.Tests.csproj" />
 </Solution>
